@@ -302,6 +302,9 @@ ipcMain.on('his', async (e, ev) => {
     openNote(paneIdx, 0, 0, { id: ev.id, box });
   }
 });
+// He removed a note with its ✕: if it was still waiting for ➤, it doesn't go.
+ipcMain.on('removed', (e, localId) => { const p = paneOf(e.sender); if (!p) return; const i = panes.indexOf(p);
+  pending = pending.filter(m => !(m.pane === i && (m.id === localId || m.gid === i * 1000 + localId))); puckSay(); log({ who: 'hunter', op: 'remove', id: i * 1000 + localId }); });
 ipcMain.on('undo', async () => {
   if (noteWin) { const at = noteAt; noteAt = null; closeNote(); if (at && at.tie && panes[at.pane]) await run(panes[at.pane], { op: 'draft', id: at.tie.id, rect: null }); }
   const last = pending.pop(); puckSay();

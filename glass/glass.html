@@ -41,6 +41,13 @@
   .card .more { display: none; margin-top: 3px; font-size: 12px; color: var(--dim); }
   .card.long .more { display: block; }
   .card.dragging { cursor: grabbing; }
+  /* ✕ on every card (his ask, Nov 7: "I can't get rid of the box... I can't delete it"): on his note it takes the whole thread, on mine just my card. */
+  .card .x { position: absolute; top: -11px; right: -11px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--odie); background: #15171c; color: var(--ink);
+             font: 700 12px/20px "Segoe UI"; text-align: center; padding: 0; cursor: pointer; opacity: 0; transition: opacity .15s; box-shadow: 0 0 0 2px rgba(0,0,0,.7); }
+  .card.hunter .x { border-color: var(--his); }
+  .card:hover .x { opacity: 1; }
+  .card .x:hover { background: #e5534b; border-color: #e5534b; color: #fff; }
+  .card.proposal .x { display: none; }
   /* Where I am with his mark, right on it: on it (amber, breathing), done (green), needs you (blue). */
   .badge { position: absolute; padding: 2px 9px 2px 4px; border-radius: 999px; font: 600 12px/18px "Segoe UI"; white-space: nowrap; pointer-events: none;
            display: flex; align-items: center; gap: 5px; background: var(--card); border: 1px solid var(--odie); color: var(--ink); box-shadow: 0 3px 10px rgba(0,0,0,.6); }
@@ -189,6 +196,10 @@ function makeCard(G, who, text, to) {
   const el = document.createElement('div'); el.className = 'card ' + who;
   el.innerHTML = `<span class="who">${who === 'hunter' ? 'You' : 'Odie'}</span><span class="txt"></span><span class="more">click to open ▾</span>`;
   el.querySelector('.txt').textContent = text;
+  const x = document.createElement('button'); x.className = 'x'; x.title = who === 'hunter' ? 'Remove this note and its answers' : 'Remove my note'; x.textContent = '✕';
+  x.addEventListener('click', e => { e.stopPropagation(); const c = el._c; if (!c) return;
+    if (c.who === 'hunter') { host.removed(G.id); removeGroup(G); } else removeCard(c); });
+  el.appendChild(x);
   G.box.appendChild(el);
   const line = document.createElementNS(NS, 'line'); line.setAttribute('class', 'tie ' + who);
   const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('r', 4); dot.setAttribute('class', 'dot ' + who);
@@ -276,6 +287,8 @@ document.addEventListener('mousedown', e => {
   if (!el || e.button !== 0 || e.target.closest('button')) return;
   e.stopImmediatePropagation(); e.preventDefault();
   drag = { c: el._c, sx: e.clientX, sy: e.clientY, l: parseFloat(el.style.left) || 0, t: parseFloat(el.style.top) || 0, moved: false };
+  // My answers ride along with his note, so a drag never stretches a line across his screen.
+  drag.with = []; for (const G of groups.values()) for (const k of G.cards) if (k.to === el._c && k.G === el._c.G) drag.with.push({ k, l: parseFloat(k.el.style.left) || 0, t: parseFloat(k.el.style.top) || 0 });
 }, true);
 document.addEventListener('mousemove', e => {
   if (drag) {
@@ -283,6 +296,7 @@ document.addEventListener('mousemove', e => {
     if (!drag.moved && Math.hypot(dx, dy) < 4) return;
     drag.moved = true; drag.c.el.classList.add('dragging');
     drag.c.el.style.left = (drag.l + dx) + 'px'; drag.c.el.style.top = (drag.t + dy) + 'px';
+    for (const w of drag.with) { w.k.el.style.left = (w.l + dx) + 'px'; w.k.el.style.top = (w.t + dy) + 'px'; }
     reaimTo(drag.c); e.stopImmediatePropagation(); return;
   }
   hover(e.clientX, e.clientY);
