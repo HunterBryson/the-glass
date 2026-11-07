@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Note to Odie</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Segoe UI", system-ui, sans-serif; }
+  .card { position: relative; box-sizing: border-box; height: 100%; padding: 0 13px 10px; background: #15171c; color: #eceae6; border: 1px solid #2a2e36; border-left: 3px solid #6cc6ff; border-radius: 9px; display: flex; flex-direction: column; }
+  /* The top bar is a handle: grab it and put the box wherever you want it. */
+  .bar { cursor: move; display: flex; align-items: center; justify-content: space-between; height: 26px; flex: none; }
+  .who { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #6cc6ff; font-weight: 600; }
+  .grip { color: #5c636d; font-size: 12px; letter-spacing: 1px; }
+  textarea { flex: 1; width: calc(100% - 4px); margin-bottom: 38px; background: transparent; border: 0; outline: 0; resize: none; color: #eceae6; font: 15px/1.4 "Segoe UI"; padding: 0; }
+  textarea::placeholder { color: #6b717a; }
+  #mic { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid #2a2e36; background: #1d2027; color: #eceae6;
+         font: 16px/1 "Segoe UI Emoji", "Segoe UI Symbol"; cursor: pointer; }
+  #mic:hover { border-color: #6cc6ff; }
+  #mic.on { background: #6cc6ff; color: #0d1116; border-color: #6cc6ff; animation: beat 1.2s ease-in-out infinite; }
+  #mic.busy { opacity: .6; cursor: default; }
+  @keyframes beat { 50% { box-shadow: 0 0 0 6px rgba(108,198,255,.25); } }
+  #den { position: absolute; right: 48px; bottom: 8px; height: 34px; padding: 0 11px; border-radius: 17px; border: 1px solid #2a2e36; background: #1d2027; color: #eceae6;
+         font: 600 13px/32px "Segoe UI"; cursor: pointer; }
+  #den:hover { border-color: #f5a524; color: #f5a524; }
+  #state { position: absolute; right: 130px; bottom: 15px; font-size: 12px; color: #6cc6ff; }
+</style>
+</head>
+<body>
+<div class="card"><div class="bar"><span class="who">You</span><span class="grip">⠿ drag</span></div>
+  <textarea id="t" placeholder="Write or talk to Odie… Enter to keep, Esc to drop"></textarea>
+  <button id="den" title="Keep your words on the mark and send it to the Den">⤓ Den</button>
+  <button id="mic" title="Talk instead of typing (click again when you're done)">🎙</button><span id="state"></span></div>
+<script>
+const t = document.getElementById('t'), mic = document.getElementById('mic'), state = document.getElementById('state');
+if (new URLSearchParams(location.search).get("tie") === "1") t.placeholder = "What is this about? Type, or talk with Win+H. Enter ties it, Esc skips";
+t.focus();
+let rec = null, busy = false;
+const say = s => state.textContent = s;
+document.getElementById('den').addEventListener('mousedown', e => e.preventDefault());
+document.getElementById('den').addEventListener('click', () => { if (!busy) host.noteDen(t.value.trim()); });
+// The box grows with what's in it, so a long voice note is readable before he keeps it.
+function fit() {
+  // Measure the words themselves, not the box (the box fills its space, so measuring it only ever grows).
+  const keep = t.style.cssText; t.style.flex = 'none'; t.style.height = '0px'; const need = t.scrollHeight; t.style.cssText = keep;
+  const h = Math.min(320, Math.max(130, need + 26 + 38 + 16)); if (Math.abs(h - innerHeight) > 4) host.noteSize(h);
+}
+t.addEventListener('input', fit);
+// Grab the top bar and move the box anywhere; the line to his mark follows.
+const bar = document.querySelector('.bar');
+bar.addEventListener('pointerdown', e => { bar.setPointerCapture(e.pointerId); host.noteDrag('start', e.screenX, e.screenY); e.preventDefault(); });
+bar.addEventListener('pointermove', e => { if (bar.hasPointerCapture(e.pointerId)) host.noteDrag('move', e.screenX, e.screenY); });
+bar.addEventListener('pointerup', e => { bar.releasePointerCapture(e.pointerId); host.noteDrag('end', e.screenX, e.screenY); t.focus(); });
+t.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!busy) host.noteDone(t.value.trim()); }
+  if (e.key === 'Escape') { e.preventDefault(); if (rec && rec.state === 'recording') { rec.onstop = null; rec.stop(); } host.noteDone(''); }
+});
+// Talking: click the mic, talk, click again. The Ear (his own model, on this PC) writes it into the box.
+mic.addEventListener('click', async () => {
+  if (rec && rec.state === 'recording') { rec.stop(); return; }
+  if (busy) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = [];
+    rec = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    rec.ondataavailable = e => chunks.push(e.data);
+    rec.onstop = async () => {
+      stream.getTracks().forEach(x => x.stop());
+      mic.classList.remove('on'); mic.classList.add('busy'); say('writing it down…');
+      const r = await host.noteAudio(await new Blob(chunks).arrayBuffer());
+      busy = false; mic.classList.remove('busy'); say(r.error || '');
+      if (r.text) t.value = (t.value.trim() ? t.value.trim() + ' ' : '') + r.text;
+      fit(); t.focus(); t.selectionStart = t.selectionEnd = t.value.length;
+    };
+    rec.start(); busy = true; mic.classList.add('on'); say('listening…');
+  } catch (e) { say('no mic: ' + (e.message || e)); }
+});
+// Clicking away keeps what's written, but never while it's still listening or writing.
+window.addEventListener('blur', () => { if (!busy) host.noteDone(t.value.trim()); });
+</script>
+</body>
+</html>

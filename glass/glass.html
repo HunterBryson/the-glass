@@ -1,0 +1,611 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>The glass</title>
+<style>
+  :root {
+    --odie: #f5a524; --his: #6cc6ff;
+    --card: #15171c; --edge: #2a2e36; --ink: #eceae6; --dim: #9aa0a8;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; font-family: "Segoe UI", system-ui, sans-serif; user-select: none; }
+  svg#marks { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  #layer { position: fixed; left: 0; top: 0; width: 0; height: 0; }
+
+  /* A group is one thing on his screen: a mark, the words tied to it, and my answer. It moves as one. */
+  .grp { transition: transform .12s linear, opacity .4s; }
+  .grp.gone { visibility: hidden; }
+  .grp.old { opacity: .38; }
+  div.grp.old:hover { opacity: 1; }
+  .gbox { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+
+  .stroke { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .odie { stroke: var(--odie); stroke-width: 4; filter: drop-shadow(0 0 6px rgba(245,165,36,.55)) drop-shadow(0 1px 1px rgba(0,0,0,.8)); }
+  .his  { stroke: var(--his);  stroke-width: 4; filter: drop-shadow(0 0 6px rgba(108,198,255,.5)) drop-shadow(0 1px 1px rgba(0,0,0,.8)); }
+  .tie { fill: none; stroke-width: 1.7; stroke-dasharray: 5 4; filter: drop-shadow(0 1px 1px rgba(0,0,0,.9)); }
+  .tie.hunter { stroke: var(--his); } .tie.odie { stroke: var(--odie); }
+  .dot.hunter { fill: var(--his); } .dot.odie { fill: var(--odie); }
+
+  .card { position: absolute; width: max-content; max-width: 300px; box-sizing: border-box; padding: 8px 12px 10px;
+          background: var(--card); color: var(--ink); font-size: 15px; line-height: 1.4; white-space: pre-wrap;
+          border: 1px solid var(--edge); border-left: 3px solid var(--odie); border-radius: 9px; box-shadow: 0 8px 28px rgba(0,0,0,.55);
+          cursor: grab; opacity: 0; transition: opacity .25s, box-shadow .15s; }
+  .card.show { opacity: 1; }
+  .card.hunter { border-left-color: var(--his); }
+  .card .who { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; color: var(--odie); margin-bottom: 2px; }
+  .card.hunter .who { color: var(--his); }
+  .card.folded .txt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+  .card .more { display: none; margin-top: 3px; font-size: 12px; color: var(--dim); }
+  .card.long .more { display: block; }
+  .card.dragging { cursor: grabbing; box-shadow: 0 14px 40px rgba(0,0,0,.75); }
+  /* Where I am with his mark, right on it: on it (amber, breathing), done (green), needs you (blue). */
+  .badge { position: absolute; padding: 2px 9px 2px 4px; border-radius: 999px; font: 600 12px/18px "Segoe UI"; white-space: nowrap; pointer-events: none;
+           display: flex; align-items: center; gap: 5px; background: var(--card); border: 1px solid var(--odie); color: var(--ink); box-shadow: 0 3px 10px rgba(0,0,0,.6); }
+  .badge img { width: 16px; height: 16px; border-radius: 50%; }
+  .badge.working { animation: breathe 1.6s ease-in-out infinite; }
+  .badge.done { border-color: #5fd38d; } .badge.done b { color: #5fd38d; }
+  .badge.you { border-color: var(--his); } .badge.you b { color: var(--his); }
+  @keyframes breathe { 50% { box-shadow: 0 0 0 5px rgba(245,165,36,.22), 0 3px 10px rgba(0,0,0,.6); } }
+  /* "Click here": a ring on the real button, numbered when it's a step. */
+  .ring { position: absolute; border: 3px solid var(--odie); border-radius: 10px; pointer-events: none; animation: ringpulse 1.1s ease-in-out infinite; }
+  .ring .num { position: absolute; left: -15px; top: -15px; width: 26px; height: 26px; border-radius: 50%; background: var(--odie); color: #15171c;
+               font: 700 14px/26px "Segoe UI"; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,.6); }
+  @keyframes ringpulse { 50% { box-shadow: 0 0 0 9px rgba(245,165,36,.28); } }
+  /* Before and after, right over the page: my version, with what changed. */
+  .card.proposal { max-width: none; white-space: normal; border-left-width: 4px; }
+  .proposal .txt ins { color: #ffc65c; text-decoration: none; background: rgba(245,165,36,.16); border-radius: 3px; padding: 0 2px; }
+  .proposal.keptcard { border-color: #3fb950 !important; }
+  .proposal.keptcard .who { color: #3fb950 !important; }
+  .proposal .txt del { color: #7d838c; text-decoration: line-through; }
+  .proposal.plain .txt del { display: none; }
+  .proposal .acts { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .proposal button { height: 30px; padding: 0 14px; border-radius: 15px; border: 1px solid var(--edge); background: #1d2027; color: var(--ink); font: 600 13px "Segoe UI"; cursor: pointer; }
+  .proposal button.keep { background: var(--odie); color: #15171c; border-color: var(--odie); }
+  .proposal button:hover { filter: brightness(1.12); }
+  .proposal .hint { margin-left: auto; font-size: 12px; color: var(--dim); }
+  /* Watching a spot: a quiet dashed outline that lights up when it changes. */
+  .swapbox { position: absolute; border: 2px solid rgba(245,165,36,.7); border-radius: 8px; background: rgba(245,165,36,.05); pointer-events: none; }
+  .swapbox.kept { border-color: #5fd38d; background: rgba(95,211,141,.05); }
+  .swapbox.stuck { border-color: var(--his); }
+  .watchbox { position: absolute; border: 2px dashed rgba(245,165,36,.55); border-radius: 8px; pointer-events: none; }
+  .watchbox.hit { border-style: solid; border-color: var(--odie); animation: ringpulse 1.1s ease-in-out 6; }
+  .badge.watch { border-color: rgba(245,165,36,.55); color: var(--dim); }
+  .ask { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: var(--card); border: 2px solid var(--his);
+         color: var(--his); font: 700 20px/30px "Segoe UI"; text-align: center; box-shadow: 0 0 12px rgba(108,198,255,.5); pointer-events: none; }
+
+  /* My cursor */
+  #me { position: fixed; left: 0; top: 0; pointer-events: none; transition: opacity .6s; will-change: transform; opacity: 0; }
+  #me.on { opacity: 1; } #me.idle { opacity: .45; }
+  #me svg { display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.7)); }
+  #me .tag { position: absolute; left: 20px; top: 22px; display: flex; align-items: center; gap: 6px; padding: 3px 9px 3px 3px; border-radius: 999px;
+             background: var(--card); border: 1px solid var(--odie); color: var(--ink); font-size: 12px; font-weight: 600; white-space: nowrap; }
+  #me .tag img { width: 20px; height: 20px; border-radius: 50%; }
+  #me .say { position: absolute; left: 20px; top: 50px; max-width: 300px; padding: 8px 11px; border-radius: 9px; background: var(--card);
+             border: 1px solid var(--edge); border-left: 3px solid var(--odie); color: var(--ink); font-size: 14px; display: none; white-space: pre-wrap; }
+  .pulse { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 3px solid var(--odie); pointer-events: none;
+           animation: pulse 1.1s ease-out 2; }
+  @keyframes pulse { from { transform: scale(.6); opacity: 1; } to { transform: scale(3.2); opacity: 0; } }
+
+  body.mode-pen, body.mode-pen *, body.mode-box, body.mode-box * { cursor: crosshair !important; }
+  body.mode-note, body.mode-note * { cursor: text !important; }
+  body.mode-ask, body.mode-ask * { cursor: help !important; }
+  body[class*="mode-"] .card, body[class*="mode-"] .card * { cursor: grab !important; }
+</style>
+</head>
+<body>
+<svg id="marks" xmlns="http://www.w3.org/2000/svg"></svg>
+<div id="layer"></div>
+<div id="me"><svg width="26" height="30" viewBox="0 0 26 30"><path d="M2 2 L2 24 L8 18.5 L12.5 28 L16.5 26 L12 17 L20 17 Z" fill="#f5a524" stroke="#15171c" stroke-width="2" stroke-linejoin="round"/></svg>
+  <div class="tag"><img src="odie.png" alt="">Odie</div><div class="say"></div></div>
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('marks'), layer = document.getElementById('layer');
+const me = document.getElementById('me'), sayEl = me.querySelector('.say');
+let origin = { x: 0, y: 0 }, scr = { width: innerWidth, height: innerHeight };
+let pos = { x: 0, y: 0 }, idleT, hideT, nextId = 1, mode = 'off';
+const groups = new Map(); // id -> { id, who, g, box, dx, dy, mark, cards }
+
+host.onSetup(s => { origin = s.origin; scr = { ...s.size }; pos = { x: scr.width / 2, y: scr.height / 2 }; place(); });
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function place() { me.style.transform = `translate(${pos.x - 2}px, ${pos.y - 2}px)`; }
+function wake() {
+  clearTimeout(idleT); clearTimeout(hideT);
+  me.classList.add('on'); me.classList.remove('idle');
+  idleT = setTimeout(() => me.classList.add('idle'), 9000);
+  hideT = setTimeout(() => me.classList.remove('on'), 90000);
+}
+async function glide(x, y, ms) {
+  wake();
+  const a = { ...pos }, d = Math.hypot(x - a.x, y - a.y);
+  ms = ms ?? Math.min(900, 250 + d * 0.45);
+  const t0 = performance.now(), bend = Math.min(60, d * 0.12) * (Math.random() < .5 ? -1 : 1);
+  const nx = -(y - a.y) / (d || 1), ny = (x - a.x) / (d || 1);
+  while (true) {
+    const t = Math.min(1, (performance.now() - t0) / ms), e = ease(t), arc = Math.sin(Math.PI * e) * bend;
+    pos = { x: a.x + (x - a.x) * e + nx * arc, y: a.y + (y - a.y) * e + ny * arc }; place();
+    if (t >= 1) break; await new Promise(requestAnimationFrame);
+  }
+  pos = { x, y }; place();
+}
+
+function polyline(cls, parent = svg) { const p = document.createElementNS(NS, 'polyline'); p.setAttribute('class', 'stroke ' + cls); parent.appendChild(p); return p; }
+function setPts(p, pts) { p.setAttribute('points', pts.map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')); }
+async function trace(pts, ms, parent) {
+  const line = polyline('odie', parent);
+  await glide(pts[0][0], pts[0][1]);
+  const t0 = performance.now();
+  while (true) {
+    const t = Math.min(1, (performance.now() - t0) / ms), n = Math.max(2, Math.ceil(ease(t) * pts.length));
+    const shown = pts.slice(0, n); setPts(line, shown);
+    const tip = shown[shown.length - 1]; pos = { x: tip[0], y: tip[1] }; place(); wake();
+    if (t >= 1) break; await new Promise(requestAnimationFrame);
+  }
+  setPts(line, pts); return line;
+}
+const wob = (s = 1) => (Math.random() - .5) * 2 * s;
+function ellipsePts(cx, cy, rx, ry) {
+  const pts = [], turns = 1.12, steps = 90, start = -Math.PI * .75, ph = Math.random() * 6;
+  for (let i = 0; i <= steps; i++) {
+    const a = start + (i / steps) * turns * Math.PI * 2, k = 1 + 0.035 * Math.sin(a * 2 + ph) + (i / steps) * 0.05;
+    pts.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]);
+  }
+  return pts;
+}
+function seg(a, b, n = 16, w = 1.2) { const o = []; for (let i = 0; i <= n; i++) { const t = i / n; o.push([a[0] + (b[0] - a[0]) * t + wob(w), a[1] + (b[1] - a[1]) * t + wob(w)]); } return o; }
+function boxPts(x1, y1, x2, y2) {
+  const p = 6, a = [x1 - p, y1 - p], b = [x2 + p, y1 - p], c = [x2 + p, y2 + p], d = [x1 - p, y2 + p];
+  return [...seg(a, b), ...seg(b, c).slice(1), ...seg(c, d).slice(1), ...seg(d, [a[0] + 10, a[1] + 2]).slice(1)];
+}
+const around = (x, y, w = 120, h = 60) => ({ x1: x - w, y1: y - h, x2: x + w, y2: y + h });
+const rnd = r => ({ x1: Math.round(r.x1), y1: Math.round(r.y1), x2: Math.round(r.x2), y2: Math.round(r.y2) });
+
+// ---- Groups: everything about one thing moves together, so it stays on what it's about ----
+function makeGroup(who, mark, anchor) {
+  const id = nextId++;
+  const g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'grp'); svg.appendChild(g);
+  const box = document.createElement('div'); box.className = 'gbox grp'; layer.appendChild(box);
+  const G = { id, who, g, box, dx: 0, dy: 0, mark: mark || null, cards: [] };
+  groups.set(id, G);
+  const a = anchor || mark; if (a) host.track(id, rnd(a));
+  return G;
+}
+function removeGroup(G) { G.g.remove(); G.box.remove(); groups.delete(G.id); host.untrack([G.id]); }
+function shiftGroup(G, dx, dy, shown) {
+  G.dx = dx; G.dy = dy;
+  const t = `translate(${dx}px, ${dy}px)`; G.g.style.transform = t; G.box.style.transform = t;
+  G.g.classList.toggle('gone', !shown); G.box.classList.toggle('gone', !shown);
+}
+host.onShift(({ id, dx, dy, shown }) => { const G = groups.get(id); if (G) shiftGroup(G, dx, dy, shown); });
+function setOld(G, old) { G.g.classList.toggle('old', old); G.box.classList.toggle('old', old); }
+
+// A card is a note: his words or mine. Its line runs to what it's about (a mark, or his note).
+function makeCard(G, who, text, to) {
+  const el = document.createElement('div'); el.className = 'card ' + who;
+  el.innerHTML = `<span class="who">${who === 'hunter' ? 'You' : 'Odie'}</span><span class="txt"></span><span class="more">click to open ▾</span>`;
+  el.querySelector('.txt').textContent = text;
+  G.box.appendChild(el);
+  const line = document.createElementNS(NS, 'line'); line.setAttribute('class', 'tie ' + who);
+  const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('r', 4); dot.setAttribute('class', 'dot ' + who);
+  const c = { el, line, dot, who, G, to: to || null };
+  el._c = c; G.cards.push(c);
+  // Long notes fold to a few lines; a click opens them.
+  if (text.length > 240 || text.split('\n').length > 6) el.classList.add('long', 'folded');
+  return c;
+}
+function removeCard(c) {
+  c.el.remove(); c.line.remove(); c.dot.remove();
+  c.G.cards = c.G.cards.filter(k => k !== c);
+  for (const G of groups.values()) for (const k of G.cards) if (k.to === c) { k.to = null; aim(k); }
+}
+const local = el => { const x = parseFloat(el.style.left) || 0, y = parseFloat(el.style.top) || 0; return { x1: x, y1: y, x2: x + el.offsetWidth, y2: y + el.offsetHeight }; };
+const rectOf = r => ({ x1: r.left, y1: r.top, x2: r.right, y2: r.bottom });
+function aim(c) {
+  const G = c.G, m = c.to === 'mark' ? G.mark : c.to ? local(c.to.el) : null;
+  if (!m) { c.line.remove(); c.dot.remove(); return; }
+  if (!c.line.parentNode) { G.g.appendChild(c.line); G.g.appendChild(c.dot); }
+  const r = local(c.el), cx = (r.x1 + r.x2) / 2, cy = (r.y1 + r.y2) / 2;
+  const p1 = [clamp(cx, m.x1, m.x2), clamp(cy, m.y1, m.y2)];
+  const p2 = [clamp(p1[0], r.x1, r.x2), clamp(p1[1], r.y1, r.y2)];
+  const touching = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) < 6;
+  c.line.style.display = c.dot.style.display = touching ? 'none' : '';
+  c.line.setAttribute('x1', p1[0]); c.line.setAttribute('y1', p1[1]); c.line.setAttribute('x2', p2[0]); c.line.setAttribute('y2', p2[1]);
+  c.dot.setAttribute('cx', p1[0]); c.dot.setAttribute('cy', p1[1]);
+}
+const aimAll = G => G.cards.forEach(aim);
+function reaimTo(c) { aim(c); for (const G of groups.values()) for (const k of G.cards) if (k.to === c) aim(k); }
+
+// Where a new card goes: beside what it's about, on the side with room, never over another note or his mark.
+function seen() {
+  const out = [];
+  for (const G of groups.values()) {
+    if (G.box.classList.contains('gone')) continue;
+    for (const k of G.cards) out.push(rectOf(k.el.getBoundingClientRect()));
+  }
+  return out;
+}
+function placeCard(c, hint) {
+  const G = c.G, el = c.el; el.style.left = '0px'; el.style.top = '0px';
+  const w = el.offsetWidth, h = el.offsetHeight, gap = 26;
+  const M = G.mark && { x1: G.mark.x1 + G.dx, y1: G.mark.y1 + G.dy, x2: G.mark.x2 + G.dx, y2: G.mark.y2 + G.dy };
+  const cands = [];
+  if (hint) cands.push([hint.x, hint.y]);
+  const prev = G.cards.filter(k => k !== c).map(k => rectOf(k.el.getBoundingClientRect()));
+  if (prev.length) { const r = prev[prev.length - 1]; cands.push([r.x1, r.y2 + 10], [r.x2 + 14, r.y1], [r.x1 - 14 - w, r.y1], [r.x1, r.y1 - 10 - h]); }
+  if (M) cands.push([M.x2 + gap, M.y1], [M.x1 - gap - w, M.y1], [M.x1, M.y2 + gap], [M.x2 + gap, M.y2 - h], [M.x1, M.y1 - gap - h]);
+  if (!cands.length) cands.push([pos.x + 20, pos.y]);
+  const avoid = seen().filter(o => o !== c.el); if (M) avoid.push(M);
+  const free = (x, y) => x >= 8 && y >= 8 && x + w <= scr.width - 8 && y + h <= scr.height - 8 &&
+    !avoid.some(o => x < o.x2 + 8 && x + w > o.x1 - 8 && y < o.y2 + 8 && y + h > o.y1 - 8);
+  let p = cands.find(([x, y]) => free(x, y));
+  // Nothing free right there: slide along that side until there's room.
+  for (let i = 0; !p && i < cands.length; i++) {
+    const x = clamp(cands[i][0], 8, scr.width - w - 8);
+    for (let k = 1; k < 30 && !p; k++) for (const s of [1, -1]) { const y = cands[i][1] + s * k * 24; if (free(x, y)) { p = [x, y]; break; } }
+  }
+  if (!p) p = [clamp(cands[0][0], 8, scr.width - w - 8), clamp(cands[0][1], 8, scr.height - h - 8)];
+  el.style.left = (p[0] - G.dx) + 'px'; el.style.top = (p[1] - G.dy) + 'px';
+  aim(c); requestAnimationFrame(() => el.classList.add('show'));
+  return p;
+}
+function putCard(c, x, y) { c.el.style.left = (x - c.G.dx) + 'px'; c.el.style.top = (y - c.G.dy) + 'px'; aim(c); requestAnimationFrame(() => c.el.classList.add('show')); }
+
+// ---- Grab any note, anytime. The glass feels the mouse go by and only catches it over a note. ----
+let catching = false, last = { x: -1, y: -1 }, drag = null;
+function overCard(x, y) { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('.card') : null; }
+function hover(x, y) {
+  last = { x, y };
+  const on = !!drag || (mode === 'off' && !!overCard(x, y));
+  if (on !== catching) { catching = on; host.catchMouse(on); }
+}
+// Tell the glass where my notes are, so it can catch his mouse over them (and only there).
+let lastRects = '';
+setInterval(() => {
+  const rs = [];
+  for (const G of groups.values()) { if (G.box.classList.contains('gone')) continue; for (const k of G.cards) { const r = k.el.getBoundingClientRect(); if (r.width) rs.push({ x1: Math.round(r.left) - 2, y1: Math.round(r.top) - 2, x2: Math.round(r.right) + 2, y2: Math.round(r.bottom) + 2 }); } }
+  const s = JSON.stringify(rs); if (s !== lastRects) { lastRects = s; host.cardRects(rs); }
+}, 200);
+document.addEventListener('mouseleave', () => { if (catching && !drag) { catching = false; host.catchMouse(false); } });
+document.addEventListener('mousedown', e => {
+  const el = e.target.closest && e.target.closest('.card');
+  if (!el || e.button !== 0 || e.target.closest('button')) return;
+  e.stopImmediatePropagation(); e.preventDefault();
+  drag = { c: el._c, sx: e.clientX, sy: e.clientY, l: parseFloat(el.style.left) || 0, t: parseFloat(el.style.top) || 0, moved: false };
+}, true);
+document.addEventListener('mousemove', e => {
+  if (drag) {
+    const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+    drag.moved = true; drag.c.el.classList.add('dragging');
+    drag.c.el.style.left = (drag.l + dx) + 'px'; drag.c.el.style.top = (drag.t + dy) + 'px';
+    reaimTo(drag.c); e.stopImmediatePropagation(); return;
+  }
+  hover(e.clientX, e.clientY);
+}, true);
+document.addEventListener('mouseup', e => {
+  if (!drag) return;
+  const d = drag; drag = null; d.c.el.classList.remove('dragging');
+  if (!d.moved && d.c.el.classList.contains('long')) { d.c.el.classList.toggle('folded'); d.c.el.querySelector('.more').textContent = d.c.el.classList.contains('folded') ? 'click to open ▾' : 'click to fold ▴'; }
+  reaimTo(d.c); e.stopImmediatePropagation(); hover(e.clientX, e.clientY);
+}, true);
+// Scrolling always reaches his page, even with a tool on or over a note.
+document.addEventListener('wheel', () => { catching = false; host.passWheel(); }, { passive: true });
+
+window.glass = {
+  async do(c) {
+    if (c.enter) {
+      const ty = c.y ?? c.y1 ?? (c.points ? c.points[0][1] : scr.height / 2), tx = c.x ?? c.x1 ?? (c.points ? c.points[0][0] : scr.width / 2);
+      pos = c.enter === 'left' ? { x: 0, y: ty } : c.enter === 'right' ? { x: scr.width - 1, y: ty } : c.enter === 'top' ? { x: tx, y: 0 } : { x: tx, y: scr.height - 1 };
+      place();
+    }
+    const mine = async (mark, draw, text, anchor) => {
+      const G = makeGroup('odie', mark, anchor);
+      if (draw) await draw(G);
+      if (text) { const k = makeCard(G, 'odie', text, mark ? 'mark' : null); const p = mark ? placeCard(k) : placeCard(k, { x: c.x + 14, y: c.y - 20 }); stepOff(p, k); }
+      return G.id;
+    };
+    switch (c.op) {
+      case 'move': await glide(c.x, c.y); return 0;
+      case 'point': {
+        await glide(c.x, c.y);
+        const p = document.createElement('div'); p.className = 'pulse'; p.style.left = c.x + 'px'; p.style.top = c.y + 'px'; layer.appendChild(p);
+        setTimeout(() => p.remove(), 2400);
+        return c.note ? mine({ x1: c.x - 6, y1: c.y - 6, x2: c.x + 6, y2: c.y + 6 }, null, c.note, around(c.x, c.y, 80, 40)) : 0;
+      }
+      case 'circle': {
+        const rx = c.rx ?? c.r ?? 40, ry = c.ry ?? c.r ?? rx, m = { x1: c.x - rx, y1: c.y - ry, x2: c.x + rx, y2: c.y + ry };
+        return mine(m, G => trace(ellipsePts(c.x, c.y, rx, ry), 700, G.g), c.note);
+      }
+      case 'box': {
+        const b = { x1: Math.min(c.x1, c.x2), y1: Math.min(c.y1, c.y2), x2: Math.max(c.x1, c.x2), y2: Math.max(c.y1, c.y2) };
+        return mine(b, G => trace(boxPts(b.x1, b.y1, b.x2, b.y2), 800, G.g), c.note);
+      }
+      case 'underline': {
+        const m = { x1: Math.min(c.x1, c.x2), y1: c.y - 24, x2: Math.max(c.x1, c.x2), y2: c.y + 8 };
+        return mine(m, G => trace(seg([c.x1, c.y + 4], [c.x2, c.y + 4], 24, 1.4), 420, G.g), c.note);
+      }
+      case 'arrow': {
+        const a = [c.x1, c.y1], b = [c.x2, c.y2], ang = Math.atan2(b[1] - a[1], b[0] - a[0]), h = 16;
+        const m = { x1: c.x2 - 10, y1: c.y2 - 10, x2: c.x2 + 10, y2: c.y2 + 10 };
+        return mine(m, async G => {
+          await trace(seg(a, b, 20, 1), 450, G.g);
+          await trace([[b[0] - h * Math.cos(ang - .45), b[1] - h * Math.sin(ang - .45)], b, [b[0] - h * Math.cos(ang + .45), b[1] - h * Math.sin(ang + .45)]], 160, G.g);
+        }, c.note, around(c.x2, c.y2, 100, 50));
+      }
+      case 'pen': {
+        const xs = c.points.map(p => p[0]), ys = c.points.map(p => p[1]);
+        return mine({ x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) }, G => trace(c.points, c.ms || 600, G.g), c.note);
+      }
+      case 'note': { await glide(c.x, c.y); return mine(null, null, c.text, around(c.x, c.y, 140, 60)); }
+      case 'answer': {
+        // My answer to one of his marks: beside it, tied to it, moving with it.
+        const G = groups.get(c.id); if (!G) throw new Error(`no mark #${c.id} on this screen`);
+        const his = G.cards.find(k => k.who === 'hunter');
+        const k = makeCard(G, 'odie', c.text, G.mark ? 'mark' : his || null);
+        if (!G.mark && his) k.to = his;
+        setOld(G, false);
+        const p = placeCard(k);
+        await glide(p[0] - 30, p[1] + 10); stepOff(p, k);
+        return G.id;
+      }
+      case 'status': {
+        const G = groups.get(c.id); if (!G) throw new Error(`no mark #${c.id} on this screen`);
+        if (G.badge) G.badge.remove();
+        if (c.state === 'clear') { G.badge = null; return G.id; }
+        const words = { working: "Odie's on it", done: 'done', you: 'needs you' };
+        const b = document.createElement('div'); b.className = 'badge ' + c.state;
+        b.innerHTML = `<img src="odie.png" alt=""><b></b>`; b.querySelector('b').textContent = c.text || words[c.state] || c.state;
+        const m = G.mark || (G.cards[0] && local(G.cards[0].el)) || { x1: 20, y1: 40 };
+        b.style.left = (m.x1 - 2) + 'px'; b.style.top = Math.max(4, m.y1 - 28) + 'px';
+        G.box.appendChild(b); G.badge = b; setOld(G, false);
+        return G.id;
+      }
+      case 'say': {
+        wake(); sayEl.textContent = c.text; sayEl.style.display = c.text ? 'block' : 'none';
+        if (c.text) setTimeout(() => { if (sayEl.textContent === c.text) sayEl.style.display = 'none'; }, c.ms || 8000);
+        return 0;
+      }
+      case 'clear': {
+        let n = 0;
+        for (const G of [...groups.values()]) {
+          if (c.id) { if (G.id === c.id) { removeGroup(G); n++; } continue; }
+          const who = c.who || 'all';
+          if (who === 'all' || G.who === who) { removeGroup(G); n++; continue; }
+          for (const k of [...G.cards]) if (k.who === who) { removeCard(k); n++; }
+        }
+        hover(last.x, last.y);
+        return n;
+      }
+      case 'hide': me.classList.remove('on'); return 0;
+      case 'tienote': {
+        // His words, tied to his mark: the card lands where his note box was, a line back to the mark.
+        const G = groups.get(c.id); if (!G) return 0;
+        draft(G, null);
+        const k = makeCard(G, 'hunter', c.text, 'mark');
+        putCard(k, c.card.x, c.card.y);
+        return c.id;
+      }
+      case 'draft': { const G = groups.get(c.id); if (G) draft(G, c.rect); return 0; }
+      case 'hisnote': {
+        const G = makeGroup('hunter', null, around(c.x + 140, c.y + 50, 140, 60));
+        const k = makeCard(G, 'hunter', c.text, null);
+        putCard(k, c.x, c.y);
+        return G.id;
+      }
+      case 'sent': {
+        // What he just sent stays bright; everything from before steps back.
+        for (const G of groups.values()) setOld(G, !c.ids.includes(G.id));
+        for (const G of groups.values()) if (G.steerCard && c.ids.includes(G.id)) G.steerCard.el.querySelector('.who').textContent = 'You · steer (sent)';
+        return 0;
+      }
+      case 'ring': {
+        // A ring on the real thing he should click, with my words beside it.
+        const p = 5, r = { x1: c.x1 - p, y1: c.y1 - p, x2: c.x2 + p, y2: c.y2 + p };
+        await glide((r.x1 + r.x2) / 2 + 10, r.y2 + 6);
+        const G = makeGroup('odie', r);
+        const ring = document.createElement('div'); ring.className = 'ring';
+        Object.assign(ring.style, { left: r.x1 + 'px', top: r.y1 + 'px', width: (r.x2 - r.x1) + 'px', height: (r.y2 - r.y1) + 'px' });
+        if (c.n) { const n = document.createElement('div'); n.className = 'num'; n.textContent = c.n; ring.appendChild(n); }
+        G.box.appendChild(ring);
+        if (c.note) { const k = makeCard(G, 'odie', c.note, 'mark'); placeCard(k); }
+        return G.id;
+      }
+      case 'propose': {
+        // My version BESIDE what it replaces: his paragraph gets an outline, my card shows my words clean.
+        // Word-by-word markup only when I changed a few words; a rewrite reads as a rewrite.
+        let G = c.id ? groups.get(c.id) : null, r;
+        if (G) r = { x1: G.mark.x1 + G.dx, y1: G.mark.y1 + G.dy, x2: G.mark.x2 + G.dx, y2: G.mark.y2 + G.dy };
+        else { r = { x1: c.x1 - 6, y1: c.y1 - 6, x2: c.x2 + 6, y2: c.y2 + 6 }; G = makeGroup('odie', r); }
+        // A new version replaces the one before it, in the same place.
+        const prev = G.cards.find(x => x.el.classList.contains('proposal')); let at = null;
+        if (prev) { at = { x: parseFloat(prev.el.style.left) + G.dx, y: parseFloat(prev.el.style.top) + G.dy }; removeCard(prev); }
+        if (G.swap) G.swap.remove();
+        const out = document.createElement('div'); out.className = 'swapbox';
+        Object.assign(out.style, { left: (r.x1 - G.dx) + 'px', top: (r.y1 - G.dy) + 'px', width: (r.x2 - r.x1) + 'px', height: (r.y2 - r.y1) + 'px' });
+        G.box.appendChild(out); G.swap = out;
+        const k = makeCard(G, 'odie', '', 'mark'); k.el.classList.add('proposal'); k.el.classList.remove('long', 'folded');
+        const small = false; // always my version clean, beside his: the crossed-out markup is what he can't read
+        k.el.querySelector('.who').textContent = small ? 'Odie · my edit' : 'Odie · my version of the outlined part';
+        k.el.querySelector('.txt').innerHTML = small ? diffHtml(c.old || '', c.new || '') : esc(c.new || '');
+        const acts = document.createElement('div'); acts.className = 'acts';
+        acts.innerHTML = `<button class="keep">✓ Keep</button><button class="steer">✎ Steer</button><button class="drop">✗ Drop</button><span class="hint"></span>`;
+        k.el.appendChild(acts);
+        const hint = acts.querySelector('.hint');
+        acts.querySelector('.keep').onclick = () => { hint.textContent = 'writing it…'; host.proposal(G.id, 'keep'); };
+        acts.querySelector('.drop').onclick = () => { host.proposal(G.id, 'drop'); };
+        acts.querySelector('.steer').onclick = () => { const b = k.el.getBoundingClientRect(); hint.textContent = ''; host.steer(G.id, { x: Math.round(b.left), y: Math.round(b.bottom + 8), w: Math.round(b.width) }); };
+        k.el.style.width = '400px';
+        const p = at ? (putCard(k, at.x, at.y), [at.x, at.y]) : placeCard(k);
+        await glide(p[0] - 20, p[1] + 12); stepOff(p, k);
+        return G.id;
+      }
+      case 'steercard': {
+        // His steer stays on screen, under my version, so he sees it landed. A new steer replaces the last one.
+        const G = groups.get(c.id); if (!G) return 0;
+        if (G.steerCard) removeCard(G.steerCard);
+        const mine = G.cards.find(x => x.el.classList.contains('proposal'));
+        const k = makeCard(G, 'hunter', c.text, mine || 'mark'); k.el.querySelector('.who').textContent = 'You · steer (waiting for ➤)';
+        k.el.style.width = '400px'; placeCard(k); G.steerCard = k;
+        return G.id;
+      }
+      case 'unsteer': { const G = groups.get(c.id); if (G && G.steerCard) { removeCard(G.steerCard); G.steerCard = null; } return 0; }
+      case 'proposed': {
+        // He chose. The card goes; the outline says what happened. Nothing is ever left lying over his page.
+        const G = groups.get(c.id); if (!G) return 0;
+        const k = G.cards.find(x => x.el.classList.contains('proposal'));
+        if (c.choice === 'drop') { if (k) removeCard(k); removeGroup(G); return 0; }
+        // Kept: the card STAYS where he was looking, says it's in, and holds my words until the page shows them
+        // (his catch, Nov 7: "I clicked keep and everything disappeared... I need a confirmation"). I clear it after I rebuild.
+        if (k && c.ok) {
+          const a = k.el.querySelector('.acts'); if (a) a.remove();
+          k.el.querySelector('.who').textContent = 'Kept ✓ in the letter · the page shows it after your next ➤';
+          k.el.classList.add('keptcard');
+          if (G.swap) G.swap.classList.add('kept');
+          if (G.badge) G.badge.remove();
+          return G.id;
+        }
+        if (k) removeCard(k);
+        if (G.swap) G.swap.classList.add(c.ok ? 'kept' : 'stuck');
+        if (G.badge) G.badge.remove();
+        const b = document.createElement('div'); b.className = 'badge ' + (c.ok ? 'done' : 'you'); b.innerHTML = `<img src="odie.png" alt=""><b></b>`;
+        b.querySelector('b').textContent = c.text || (c.ok ? 'kept ✓' : 'needs you');
+        const m = G.mark; b.style.left = (m.x2 - G.dx + 8) + 'px'; b.style.top = (m.y1 - G.dy) + 'px'; G.box.appendChild(b); G.badge = b;
+        setTimeout(() => { if (groups.has(G.id)) removeGroup(G); }, 12000);
+        return G.id;
+      }
+      case 'watchmark': {
+        const r = { x1: c.x1, y1: c.y1, x2: c.x2, y2: c.y2 }, G = c.id ? groups.get(c.id) : makeGroup('odie', r);
+        const m = G.mark || r;
+        const w = document.createElement('div'); w.className = 'watchbox';
+        Object.assign(w.style, { left: (m.x1 - 4) + 'px', top: (m.y1 - 4) + 'px', width: (m.x2 - m.x1 + 8) + 'px', height: (m.y2 - m.y1 + 8) + 'px' });
+        G.box.appendChild(w); G.watch = w;
+        if (G.badge) G.badge.remove();
+        const b = document.createElement('div'); b.className = 'badge watch'; b.innerHTML = `<img src="odie.png" alt=""><b></b>`;
+        b.querySelector('b').textContent = 'watching' + (c.label ? ': ' + c.label : '');
+        b.style.left = (m.x1 - 2) + 'px'; b.style.top = Math.max(4, m.y1 - 30) + 'px'; G.box.appendChild(b); G.badge = b;
+        return G.id;
+      }
+      case 'watchhit': {
+        const G = groups.get(c.id); if (!G) return 0;
+        if (G.watch) { G.watch.classList.remove('hit'); void G.watch.offsetWidth; G.watch.classList.add('hit'); }
+        setOld(G, false);
+        const old = G.cards.find(x => x.who === 'odie'); if (old) removeCard(old);
+        const k = makeCard(G, 'odie', c.text, 'mark'); placeCard(k);
+        return G.id;
+      }
+      case 'rect': {
+        // Where a mark is right now, in this screen's pixels (for cutting it out of the screen).
+        const G = groups.get(c.id); if (!G) return null;
+        if (!G.mark) return { mark: false };
+        return { mark: true, x1: G.mark.x1 + G.dx, y1: G.mark.y1 + G.dy, x2: G.mark.x2 + G.dx, y2: G.mark.y2 + G.dy };
+      }
+      case 'list': return [...groups.values()].map(G => ({ id: G.id, who: G.who, cards: G.cards.map(k => k.who) }));
+      default: throw new Error('unknown op ' + c.op);
+    }
+  },
+};
+const esc = t => t.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+// How much of it changed (0 = same, 1 = all new): small edits show word by word, rewrites show clean.
+function changedShare(a, b) {
+  const A = a.split(/\s+/).filter(Boolean), B = b.split(/\s+/).filter(Boolean); if (!A.length || !B.length) return 1;
+  const n = A.length, m = B.length, L = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+  const same = (x, y) => x.toLowerCase().replace(/[^a-z0-9]/g, '') === y.toLowerCase().replace(/[^a-z0-9]/g, '');
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = same(A[i], B[j]) ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  return 1 - L[0][0] / Math.max(n, m);
+}
+// Word by word: what I cut is struck through, what I added is lit.
+function diffHtml(a, b) {
+  const esc = t => t.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+  const A = a.split(/(\s+)/).filter(x => x.trim()), B = b.split(/(\s+)/).filter(x => x.trim());
+  if (!A.length) return esc(b);
+  const n = A.length, m = B.length, L = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+  const same = (x, y) => x.toLowerCase().replace(/[^a-z0-9]/g, '') === y.toLowerCase().replace(/[^a-z0-9]/g, '');
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = same(A[i], B[j]) ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const ops = []; let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (same(A[i], B[j])) { ops.push(['=', A[i], B[j]]); i++; j++; }
+    else if (L[i + 1][j] >= L[i][j + 1]) ops.push(['-', A[i++]]);
+    else ops.push(['+', B[j++]]);
+  }
+  while (i < n) ops.push(['-', A[i++]]);
+  while (j < m) ops.push(['+', B[j++]]);
+  // A word or two in common between changes ("I", "a") is not a real match: fold it into the change,
+  // so each change reads as one piece: the whole old stretch struck, then the whole new stretch.
+  for (let k = 0; k < ops.length; k++) {
+    if (ops[k][0] !== '=') continue;
+    let e = k; while (e < ops.length && ops[e][0] === '=') e++;
+    const before = k > 0 && ops[k - 1][0] !== '=', after = e < ops.length && ops[e][0] !== '=';
+    if (before && after && e - k <= 3) for (let q = k; q < e; q++) ops.splice(q, 1, ['-', ops[q][1]], ['+', ops[q][2]]), q++, e++;
+    k = e - 1;
+  }
+  const out = []; let del = [], ins = [];
+  const flush = () => { if (del.length) out.push(`<del>${esc(del.join(' '))}</del>`); if (ins.length) out.push(`<ins>${esc(ins.join(' '))}</ins>`); del = []; ins = []; };
+  for (const o of ops) { if (o[0] === '=') { flush(); out.push(esc(o[2])); } else if (o[0] === '-') del.push(o[1]); else ins.push(o[1]); }
+  flush();
+  return out.join(' ');
+}
+// My cursor steps off my own note so it never sits on the words.
+function stepOff(p, k) { setTimeout(() => glide(Math.max(4, p[0] - 30), Math.min(scr.height - 40, p[1] + k.el.offsetHeight + 12), 350), 150); }
+
+// While his note box is open, a line runs from his mark to it, wherever he drags it.
+function draft(G, rect) {
+  if (!rect) { if (G.draft) { G.draft.line.remove(); G.draft.dot.remove(); G.draft = null; } return; }
+  if (!G.draft) {
+    const line = document.createElementNS(NS, 'line'); line.setAttribute('class', 'tie hunter');
+    const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('r', 4); dot.setAttribute('class', 'dot hunter');
+    G.g.appendChild(line); G.g.appendChild(dot); G.draft = { line, dot };
+  }
+  const m = G.mark || around(0, 0, 1, 1), r = { x1: rect.x1 - G.dx, y1: rect.y1 - G.dy, x2: rect.x2 - G.dx, y2: rect.y2 - G.dy };
+  const cx = (r.x1 + r.x2) / 2, cy = (r.y1 + r.y2) / 2, p1 = [clamp(cx, m.x1, m.x2), clamp(cy, m.y1, m.y2)], p2 = [clamp(p1[0], r.x1, r.x2), clamp(p1[1], r.y1, r.y2)];
+  const l = G.draft.line; l.setAttribute('x1', p1[0]); l.setAttribute('y1', p1[1]); l.setAttribute('x2', p2[0]); l.setAttribute('y2', p2[1]);
+  G.draft.dot.setAttribute('cx', p1[0]); G.draft.dot.setAttribute('cy', p1[1]);
+}
+
+// ---- His side ----
+host.onMode(m => { mode = m; document.body.className = m === 'off' ? '' : 'mode-' + m; hover(last.x, last.y); });
+document.addEventListener('contextmenu', e => { e.preventDefault(); if (mode !== 'off') host.mode('off'); });
+
+let box = null;
+const boxRect = (a, b) => ({ x1: Math.min(a[0], b[0]), y1: Math.min(a[1], b[1]), x2: Math.max(a[0], b[0]), y2: Math.max(a[1], b[1]) });
+function drawRect(el, r) { el.setAttribute('x', r.x1); el.setAttribute('y', r.y1); el.setAttribute('width', r.x2 - r.x1); el.setAttribute('height', r.y2 - r.y1); }
+const toScreen = r => ({ x1: r.x1 + origin.x, y1: r.y1 + origin.y, x2: r.x2 + origin.x, y2: r.y2 + origin.y });
+document.addEventListener('mousedown', e => {
+  if (e.button !== 0 || mode !== 'box') return;
+  const el = document.createElementNS(NS, 'rect'); el.setAttribute('class', 'stroke his'); el.setAttribute('rx', 6); svg.appendChild(el);
+  box = { el, a: [e.clientX, e.clientY] }; drawRect(el, boxRect(box.a, box.a));
+});
+document.addEventListener('mousemove', e => { if (box) drawRect(box.el, boxRect(box.a, [e.clientX, e.clientY])); });
+document.addEventListener('mouseup', e => {
+  if (!box) return;
+  const d = box; box = null; const r = boxRect(d.a, [e.clientX, e.clientY]);
+  if (r.x2 - r.x1 < 6 || r.y2 - r.y1 < 6) { d.el.remove(); return; }
+  const G = makeGroup('hunter', r); G.g.appendChild(d.el);
+  host.his({ op: 'pen', kind: 'box', id: G.id, box: toScreen(r) });
+});
+
+let stroke = null;
+document.addEventListener('mousedown', e => {
+  if (e.button !== 0 || mode === 'off' || mode === 'box') return;
+  if (mode === 'note') { host.noteAt(e.clientX + origin.x, e.clientY + origin.y); e.preventDefault(); return; }
+  if (mode === 'pen') stroke = { line: polyline('his'), pts: [[e.clientX, e.clientY]] };
+  if (mode === 'ask') {
+    const G = makeGroup('hunter', { x1: e.clientX - 17, y1: e.clientY - 17, x2: e.clientX + 17, y2: e.clientY + 17 }, around(e.clientX, e.clientY, 60, 40));
+    const q = document.createElement('div'); q.className = 'ask'; q.textContent = '?'; q.style.left = e.clientX + 'px'; q.style.top = e.clientY + 'px'; G.box.appendChild(q);
+    host.his({ op: 'ask', id: G.id, x: e.clientX + origin.x, y: e.clientY + origin.y });
+  }
+});
+document.addEventListener('mousemove', e => { if (stroke) { stroke.pts.push([e.clientX, e.clientY]); setPts(stroke.line, stroke.pts); } });
+document.addEventListener('mouseup', () => {
+  if (!stroke) return;
+  const s = stroke; stroke = null;
+  if (s.pts.length < 2) { s.line.remove(); return; }
+  const xs = s.pts.map(p => p[0]), ys = s.pts.map(p => p[1]);
+  const r = { x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
+  const G = makeGroup('hunter', r); G.g.appendChild(s.line);
+  host.his({ op: 'pen', id: G.id, box: toScreen(r), points: s.pts.filter((_, i) => i % 3 === 0).map(p => [Math.round(p[0] + origin.x), Math.round(p[1] + origin.y)]) });
+});
+</script>
+</body>
+</html>

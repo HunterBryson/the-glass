@@ -1,0 +1,10 @@
+{
+  "name": "the-glass-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "cd glass && npm install",
+    "start": "node tools/glass.js start",
+    "stop": "node tools/glass.js stop"
+  }
+}

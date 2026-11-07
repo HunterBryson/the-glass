@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Odie puck</title>
+<style>
+  :root { --off: #ff5a5a; --odie: #f5a524; --his: #6cc6ff; --card: #15171c; --edge: #2a2e36; --ink: #e9e6df; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; font-family: "Segoe UI", system-ui, sans-serif; user-select: none; }
+  #wrap { position: absolute; right: 6px; bottom: 6px; display: flex; flex-direction: column-reverse; align-items: center; gap: 8px; }
+  #face { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--odie); background: center/cover url(odie.png); cursor: pointer;
+          box-shadow: 0 4px 14px rgba(0,0,0,.6); opacity: .85; transition: transform .15s, opacity .15s; }
+  #face:hover { opacity: 1; transform: scale(1.06); }
+  body.drawing #face { border-color: var(--his); box-shadow: 0 0 0 4px rgba(108,198,255,.22), 0 4px 14px rgba(0,0,0,.6); opacity: 1; }
+  #tools { display: none; flex-direction: column; gap: 6px; padding: 6px; border-radius: 14px; background: var(--card); border: 1px solid var(--edge); }
+  body.open #tools { display: flex; }
+  .sep { height: 1px; background: var(--edge); margin: 2px 4px; }
+  button { position: relative; width: 38px; height: 38px; border-radius: 10px; border: 1px solid transparent; background: #1d2027; color: var(--ink); font: 18px/1 "Segoe UI Symbol", "Segoe UI"; cursor: pointer; }
+  button:hover { border-color: var(--edge); background: #252932; }
+  button.on { border-color: var(--his); color: var(--his); background: #17222b; }
+  button:disabled { opacity: .3; cursor: default; }
+  #t-send:not(:disabled) { background: var(--odie); color: #15171c; font-weight: 700; }
+  #t-send:not(:disabled):hover { filter: brightness(1.1); }
+  #count { position: absolute; top: -6px; left: -6px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: var(--his); color: #0d1116; font: 700 11px/18px "Segoe UI"; display: none; }
+  /* Connected or not, readable at a glance: amber ring = I'm listening, pulsing amber = I'm on it, grey face + red ring + a label = nobody's listening. */
+  body.link-busy #face { animation: busy 1.6s ease-in-out infinite; }
+  @keyframes busy { 50% { box-shadow: 0 0 0 6px rgba(245,165,36,.28), 0 4px 14px rgba(0,0,0,.6); } }
+  body.link-off #face { border-color: var(--off); filter: grayscale(1) brightness(.75); opacity: 1; box-shadow: 0 0 0 4px rgba(255,90,90,.25), 0 4px 14px rgba(0,0,0,.6); }
+  #link { position: absolute; right: 62px; bottom: 16px; padding: 6px 10px; border-radius: 8px; background: var(--card); color: var(--ink);
+          font: 600 13px/1 "Segoe UI", system-ui; white-space: nowrap; display: none; box-shadow: 0 4px 14px rgba(0,0,0,.6); }
+  body.link-off #link { display: block; border: 1px solid var(--off); }
+  body.link-off #link b { color: var(--off); }
+  body.link-waiting #link { display: block; border: 1px solid var(--odie); }
+  body.link-waiting #link b { color: var(--odie); }
+  body.open #link { display: none; }
+  #tip { position: absolute; right: 64px; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--edge); color: var(--ink); font-size: 12px; white-space: nowrap; display: none; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="face"></div>
+  <div id="tools">
+    <button id="t-pen" data-tip="Your pen (right-click to stop)">✎</button>
+    <button id="t-box" data-tip="Draw a box">▭</button>
+    <button id="t-note" data-tip="Write a note where you click">T</button>
+    <button id="t-undo" data-tip="Undo your last mark" disabled>↶</button>
+    <div class="sep"></div>
+    <button id="t-send" data-tip="Send your marks to Odie" disabled>➤<span id="count"></span></button>
+    <button id="t-den" data-tip="Send this screen to the Den">⤓</button>
+    <button id="t-clear" data-tip="Clear the glass">⌫</button>
+  </div>
+</div>
+<div id="link"></div>
+<div id="tip"></div>
+<script>
+// The puck is its own little window, so it takes clicks the ordinary way.
+const tip = document.getElementById('tip'), $ = id => document.getElementById(id);
+let mode = 'off', pending = 0, closeT;
+const stayOpen = () => mode !== 'off' || pending > 0;
+function open(on) { clearTimeout(closeT); document.body.classList.toggle('open', on); host.puckOpen(on); }
+$('wrap').addEventListener('mouseenter', () => open(true));
+$('wrap').addEventListener('mouseleave', () => { if (!stayOpen()) closeT = setTimeout(() => open(false), 500); tip.style.display = 'none'; });
+document.querySelectorAll('button').forEach(b => {
+  b.addEventListener('mouseenter', () => { const r = b.getBoundingClientRect(); tip.textContent = b.dataset.tip; tip.style.display = 'block'; tip.style.top = (r.top + 9) + 'px'; });
+  b.addEventListener('mouseleave', () => tip.style.display = 'none');
+});
+function show(m) {
+  mode = m; document.body.classList.toggle('drawing', m !== 'off');
+  ['pen', 'box', 'note'].forEach(k => $('t-' + k).classList.toggle('on', m === k));
+  if (stayOpen()) open(true); else closeT = setTimeout(() => open(false), 800);
+}
+const pick = m => host.mode(mode === m ? 'off' : m);
+$('face').addEventListener('click', () => pick('pen'));
+$('t-pen').addEventListener('click', () => pick('pen'));
+$('t-box').addEventListener('click', () => pick('box'));
+$('t-note').addEventListener('click', () => pick('note'));
+$('t-undo').addEventListener('click', () => host.undo());
+$('t-send').addEventListener('click', () => host.send());
+$('t-den').addEventListener('click', () => host.drop('From the glass'));
+$('t-clear').addEventListener('click', () => host.clear());
+host.onMode(show);
+host.onPending(n => {
+  pending = n; $('t-undo').disabled = n === 0; $('t-send').disabled = n === 0;
+  $('count').textContent = n; $('count').style.display = n ? 'block' : 'none';
+  if (stayOpen()) open(true);
+});
+host.onLink(({ state, unread }) => {
+  const b = document.body;
+  b.classList.toggle('link-off', state === 'off');
+  b.classList.toggle('link-busy', state === 'busy');
+  b.classList.toggle('link-waiting', state !== 'off' && unread > 0);
+  const many = unread === 1 ? '1 send' : `${unread} sends`;
+  $('link').innerHTML = state === 'off'
+    ? (unread ? `<b>●</b> Odie's not connected · ${many} waiting` : `<b>●</b> Odie's not connected`)
+    : unread ? `<b>●</b> ${many} waiting for Odie` : '';
+  $('face').title = state === 'on' ? "Odie's listening" : state === 'busy' ? "Odie's on it" : "Odie's not connected: open a chat and he'll pick up what you sent";
+});
+</script>
+</body>
+</html>
