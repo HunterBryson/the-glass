@@ -151,7 +151,7 @@ function describe(e) {
 try {
   switch (cmd) {
     case 'start': await start(); break;
-    case 'stop': if (await up()) await call('/quit', {}); console.log('the glass is down'); break;
+    case 'stop': if (await up()) { await call('/quit', {}); for (let i = 0; i < 40 && await up(); i++) await new Promise(r => setTimeout(r, 150)); } console.log('the glass is down'); break;
     case 'state': {
       if (!(await up())) { console.log('the glass is down'); break; }
       const s = await call('/state');
