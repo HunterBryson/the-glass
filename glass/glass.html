@@ -6,7 +6,7 @@
 <style>
   :root {
     --odie: #f5a524; --his: #6cc6ff;
-    --card: #15171c; --edge: #2a2e36; --ink: #eceae6; --dim: #9aa0a8;
+    --card: #1b1f27; --edge: #2a2e36; --ink: #f4f4f2; --dim: #aab0b8;
   }
   html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; font-family: "Segoe UI", system-ui, sans-serif; user-select: none; }
   svg#marks { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
@@ -22,22 +22,25 @@
   .stroke { fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .odie { stroke: var(--odie); stroke-width: 4; filter: drop-shadow(0 0 6px rgba(245,165,36,.55)) drop-shadow(0 1px 1px rgba(0,0,0,.8)); }
   .his  { stroke: var(--his);  stroke-width: 4; filter: drop-shadow(0 0 6px rgba(108,198,255,.5)) drop-shadow(0 1px 1px rgba(0,0,0,.8)); }
-  .tie { fill: none; stroke-width: 1.7; stroke-dasharray: 5 4; filter: drop-shadow(0 1px 1px rgba(0,0,0,.9)); }
+  .tie { fill: none; stroke-width: 2.6; stroke-dasharray: 8 5; filter: drop-shadow(0 0 2px rgba(0,0,0,1)) drop-shadow(0 0 5px rgba(0,0,0,.7)); }
   .tie.hunter { stroke: var(--his); } .tie.odie { stroke: var(--odie); }
   .dot.hunter { fill: var(--his); } .dot.odie { fill: var(--odie); }
 
   .card { position: absolute; width: max-content; max-width: 300px; box-sizing: border-box; padding: 8px 12px 10px;
           background: var(--card); color: var(--ink); font-size: 15px; line-height: 1.4; white-space: pre-wrap;
-          border: 1px solid var(--edge); border-left: 3px solid var(--odie); border-radius: 9px; box-shadow: 0 8px 28px rgba(0,0,0,.55);
+          border: 2px solid var(--odie); border-radius: 10px;
+          /* A card has to stand off any screen, dark or light: a black halo cuts it out, its own color glows around it (his catch, Nov 7: "These boxes get lost instantly"). */
+          box-shadow: 0 0 0 3px rgba(0,0,0,.7), 0 0 22px rgba(245,165,36,.38), 0 10px 30px rgba(0,0,0,.6);
           cursor: grab; opacity: 0; transition: opacity .25s, box-shadow .15s; }
   .card.show { opacity: 1; }
-  .card.hunter { border-left-color: var(--his); }
-  .card .who { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; color: var(--odie); margin-bottom: 2px; }
-  .card.hunter .who { color: var(--his); }
+  .card.hunter { border-color: var(--his); box-shadow: 0 0 0 3px rgba(0,0,0,.7), 0 0 22px rgba(108,198,255,.38), 0 10px 30px rgba(0,0,0,.6); }
+  .card .who { display: inline-block; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; font-weight: 700; color: #15171c; background: var(--odie);
+              border-radius: 5px; padding: 1px 7px; margin: 0 0 6px -3px; }
+  .card.hunter .who { color: #0d1116; background: var(--his); }
   .card.folded .txt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
   .card .more { display: none; margin-top: 3px; font-size: 12px; color: var(--dim); }
   .card.long .more { display: block; }
-  .card.dragging { cursor: grabbing; box-shadow: 0 14px 40px rgba(0,0,0,.75); }
+  .card.dragging { cursor: grabbing; }
   /* Where I am with his mark, right on it: on it (amber, breathing), done (green), needs you (blue). */
   .badge { position: absolute; padding: 2px 9px 2px 4px; border-radius: 999px; font: 600 12px/18px "Segoe UI"; white-space: nowrap; pointer-events: none;
            display: flex; align-items: center; gap: 5px; background: var(--card); border: 1px solid var(--odie); color: var(--ink); box-shadow: 0 3px 10px rgba(0,0,0,.6); }
@@ -54,8 +57,8 @@
   /* Before and after, right over the page: my version, with what changed. */
   .card.proposal { max-width: none; white-space: normal; border-left-width: 4px; }
   .proposal .txt ins { color: #ffc65c; text-decoration: none; background: rgba(245,165,36,.16); border-radius: 3px; padding: 0 2px; }
-  .proposal.keptcard { border-color: #3fb950 !important; }
-  .proposal.keptcard .who { color: #3fb950 !important; }
+  .proposal.keptcard { border-color: #3fb950 !important; box-shadow: 0 0 0 3px rgba(0,0,0,.7), 0 0 22px rgba(63,185,80,.4), 0 10px 30px rgba(0,0,0,.6) !important; }
+  .proposal.keptcard .who { color: #0d1116 !important; background: #3fb950 !important; }
   .proposal .txt del { color: #7d838c; text-decoration: line-through; }
   .proposal.plain .txt del { display: none; }
   .proposal .acts { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
