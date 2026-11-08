@@ -154,7 +154,9 @@ const paneOf = wc => panes.find(p => p.win.webContents === wc);
 
 // His marks gather here and reach me only when he presses send.
 let pending = [];
-const puckSay = () => { if (puck && !puck.isDestroyed()) puck.webContents.send('pending', pending.length); };
+// A Keep counts as something waiting for ➤ too, so ➤ lights up after a Keep even when no new mark is up (Nov 7: "I cant submit a turn").
+let keptWaiting = 0;
+const puckSay = () => { if (puck && !puck.isDestroyed()) puck.webContents.send('pending', pending.length + keptWaiting); };
 
 // His pen's color and size. A color is a meaning, so his mark says what he thinks before his words do.
 let style = { color: 'blue', size: 1, step: 1 };
@@ -391,7 +393,7 @@ ipcMain.on('send', async () => {
     const marks = pending.map(({ pane, ...m }) => m);
     // What he just sent stays bright on the glass; older rounds step back.
     for (const [i, p] of panes.entries()) run(p, { op: 'sent', ids: pending.filter(m => m.pane === i).map(m => m.id) }).catch(() => {});
-    pending = []; puckSay(); style.step = 1; sayStyle();
+    pending = []; keptWaiting = 0; puckSay(); style.step = 1; sayStyle();
     log({ who: 'hunter', op: 'send', marks, shots: shots.map(s => s.file), clean: clean.map(s => ({ file: s.file, screen: s.screen, bounds: s.bounds })) });
   } catch (err) { log({ who: 'hunter', op: 'send', error: String(err) }); }
   finally { if (puck && !puck.isDestroyed()) { puck.showInactive(); puck.moveTop(); } }
@@ -703,6 +705,7 @@ ipcMain.on('proposal', async (e, localId, choice) => {
   } else if (choice === 'keep') text = "kept ✓ I'll make the change";
   await run(p, { op: 'proposed', id: localId, choice, ok, text }).catch(() => {});
   if (choice === 'drop') proposals.delete(gid);
+  if (choice === 'keep') { keptWaiting++; puckSay(); }
   log({ who: 'hunter', op: 'proposal', id: gid, choice, written, file: meta.file || null, note: text });
 });
 
