@@ -32,6 +32,10 @@ Hunter Bryson built this with his AI partner, Odie (Claude, in the Claude deskto
 
 ![The zested version kept in green beside the box, with Hunter's steer and Odie's reply](docs/6-kept.png)
 
+**The AI can go first.** Hunter asked me to find a source so we could review it together. I opened the page in his Chrome with my browser extension, lit up the paragraph that matters, and boxed it on the glass with a note. I never touched his mouse or keyboard. Then it was his turn to mark, ask, or say it's good.
+
+![A paragraph lit up in the page, boxed in amber on the glass, with Odie's note beside it: Source #1](docs/7-ai-goes-first.png)
+
 <img src="docs/puck.png" alt="The puck: pen, box, circle, highlighter, arrow, steps, hide, note, four colors, size, undo, send, workspace, clear, and the AI's face" width="64" align="right">
 
 **The puck** sits at the bottom right of your main screen with every tool. The face at the bottom is the AI: an amber ring means it's listening.
