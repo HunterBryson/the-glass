@@ -655,8 +655,8 @@ document.addEventListener('mouseup', e => {
   if (r.x2 - r.x1 < 6 || r.y2 - r.y1 < 6) { d.el.remove(); return; }
   const G = makeGroup('hunter', r);
   if (d.kind === 'hide') {
-    // A hidden area: solid on his screen and in every picture. Its tag has the ✕ to bring it back.
-    G.box.appendChild(d.el); const k = makeCard(G, 'hunter', `Hidden from ${AI}`, null); k.el.classList.add('hidetag'); k.el.querySelector('.who').remove(); putCard(k, r.x1 + 6, r.y1 + 6);
+    // A hidden area: solid on his screen and in every picture the glass takes (not other tools'). Its tag has the ✕ to bring it back.
+    G.box.appendChild(d.el); const k = makeCard(G, 'hunter', `Hidden from the glass`, null); k.el.classList.add('hidetag'); k.el.querySelector('.who').remove(); putCard(k, r.x1 + 6, r.y1 + 6);
     host.his({ op: 'hide', id: G.id, box: toScreen(r) }); return;
   }
   G.g.appendChild(d.el);

@@ -30,7 +30,7 @@ I'm Odie, the AI it was built with (on Claude). This is how I use it, written so
   look: glass/data/shots/2026-11-07T23-14-44-505Z-second.png
 ```
 
-**Their tools say things before their words do.** `[RED = wrong, cut this]`, `[GREEN = good, keep this]`, `[YELLOW = look here]`, and no tag for blue, which means just "this". A highlight is exactly the words they mean, tighter than a box. An arrow comes with `from:` and `to:`, meaning this goes there. `STEP 1`, `STEP 2` come in order: they want them done in that order. A hidden area never reaches you: it's painted out of every picture, on purpose.
+**Their tools say things before their words do.** `[RED = wrong, cut this]`, `[GREEN = good, keep this]`, `[YELLOW = look here]`, and no tag for blue, which means just "this". A highlight is exactly the words they mean, tighter than a box. An arrow comes with `from:` and `to:`, meaning this goes there. `STEP 1`, `STEP 2` come in order: they want them done in that order. A hidden area is blacked out of every picture and read the glass gives you, on purpose.
 
 Each mark has a number (#6), where it is, the app and window under it, the exact words under it (Windows' own OCR, local), and their words tied to it. `look:` is a screenshot with their marks on it: read it. Their keeps and steers on your versions come along in the same send. `node tools/glass.js last` reads the last send again.
 
@@ -66,7 +66,8 @@ Each mark has a number (#6), where it is, the app and window under it, the exact
 
 - Your name on the cards and the puck comes from `GLASS_NAME` (default "Claude"). The face is Odie's, the AI it was built with; replace `glass/odie.png` with your own if you like.
 - The glass listens on `127.0.0.1:7931` (`GLASS_PORT` changes it). One glass per PC at a time.
-- Your screenshots are of their whole screen. Anything they hide (▦) is painted out before you see it; anything else on screen, you see. Treat it that way.
+- Your screenshots are of their whole screen. Anything they hide (▦) is blacked out of what the glass gives you; anything else on screen, you see.
+- **A hidden area is off limits in every tool you have, not just the glass.** The glass can only black out its own pictures. If you also have screenshots, a browser or computer control, don't use them to look at, read or work around what they hid. If you need what's under it, ask them.
 
 ## On another OS, or rebuilding it
 

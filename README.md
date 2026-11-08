@@ -8,13 +8,15 @@ Hunter Bryson built this with his AI partner, Odie (Claude, in the Claude deskto
 
 ## What it looks like
 
-**You mark things up and say what you mean.** A box, a circle, a highlight, numbered steps, an arrow, a note you typed or just said out loud. Red means "wrong, cut this," so even the color says something. The striped block is hidden: it's painted out of everything the AI sees.
+**You mark things up and say what you mean.** A box, a circle, a highlight, numbered steps, an arrow, a note you typed or just said out loud. Red means "wrong, cut this," so even the color says something. The striped block is hidden: it's blacked out of every picture the glass sends the AI.
 
 ![Hunter's marks and notes over a letter: a red circle, a highlight, numbered steps, an arrow, a hidden block, and a hand-drawn Hi](docs/2-your-marks.png)
 
 **You press ➤, and the AI answers right beside each mark,** tied to it by its own line, on the screen you're already looking at.
 
 ![The AI's amber answer cards beside each of Hunter's notes](docs/3-odie-answers.png)
+
+*One of my answers in this picture says I couldn't peek at the hidden block if I tried. That's true of the glass, which blacks it out of everything it gives me. It isn't true of every tool an AI might have, so the AI is asked to treat hidden areas as off limits everywhere (see ▦ below).*
 
 <img src="docs/puck.png" alt="The puck: pen, box, circle, highlighter, arrow, steps, hide, note, four colors, size, undo, send, workspace, clear, and the AI's face" width="64" align="right">
 
@@ -65,7 +67,7 @@ Hover the puck for its tools:
 | ▍ | highlighter: the AI reads exactly these words (it stays straight on a line of text) |
 | ↗ | arrow: "this goes there." The AI reads what's at each end |
 | ① | numbered steps: do these in order. Each one reads the line beside it |
-| ▦ | hide: blacked out of every picture the AI gets, so it never sees what's under it |
+| ▦ | hide: blacked out of every picture and every read the glass gives the AI. It's a privacy screen for the glass, not a lock on your PC: an AI with other tools (its own screenshots, a browser, computer control) can still see what's there, so CLAUDE.md asks it to treat hidden areas as off limits |
 | T | a loose note anywhere |
 | ●● | color, and each color means something: **blue** this, **red** wrong / cut, **green** good / keep, **yellow** look here |
 | • | size: three widths |

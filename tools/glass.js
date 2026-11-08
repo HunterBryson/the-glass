@@ -169,7 +169,7 @@ function describe(e) {
   if (e.op === 'ask') return `${t} he dropped a ? at ${e.x},${e.y} (#${e.id})`;
   if (e.op === 'drop') return `${t} he sent the screen to the Den: ${(e.results || []).map(r => r.out).join(' | ') || e.error}`;
   if (e.op === 'clear') return `${t} he cleared the glass`;
-  if (e.op === 'hide') return `${t} he hid an area from you (it's blacked out of every picture)`;
+  if (e.op === 'hide') return `${t} they hid an area (blacked out of every picture the glass gives you; treat it as off limits in your other tools too)`;
   if (e.op === 'proposal') return `${t} HE TAPPED ${e.choice === 'keep' ? 'KEEP' : 'DROP'} on my version #${e.id}${e.file ? ` (${e.file})` : ''}: ${e.note || ''}`;
   if (e.op === 'watch') return `${t} A SPOT I'M WATCHING CHANGED (#${e.id}${e.label ? ', ' + e.label : ''}): "${e.from}" → "${e.to}"`;
   if (e.op === 'mode') return `${t} his pen: ${e.mode}`;
