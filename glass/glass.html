@@ -22,7 +22,7 @@
   .stroke { fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .odie { stroke: var(--odie); stroke-width: 4; filter: drop-shadow(0 0 6px rgba(245,165,36,.55)) drop-shadow(0 1px 1px rgba(0,0,0,.8)); }
   .his  { stroke: var(--his);  stroke-width: 4; filter: drop-shadow(0 0 6px rgba(108,198,255,.5)) drop-shadow(0 1px 1px rgba(0,0,0,.8)); }
-  .tie { fill: none; stroke-width: 2.6; stroke-dasharray: 8 5; filter: drop-shadow(0 0 2px rgba(0,0,0,1)) drop-shadow(0 0 5px rgba(0,0,0,.7)); }
+  .tie { fill: none; stroke-width: 2; stroke-linecap: round; opacity: .9; filter: drop-shadow(0 0 2px rgba(0,0,0,1)); }
   .tie.hunter { stroke: var(--his); } .tie.odie { stroke: var(--odie); }
   .dot.hunter { fill: var(--his); } .dot.odie { fill: var(--odie); }
 
@@ -384,8 +384,9 @@ window.glass = {
         // My answer to one of his marks: beside it, tied to it, moving with it.
         const G = groups.get(c.id); if (!G) throw new Error(`no mark #${c.id} on this screen`);
         const his = G.cards.find(k => k.who === 'hunter');
-        const k = makeCard(G, 'odie', c.text, G.mark ? 'mark' : his || null);
-        if (!G.mark && his) k.to = his;
+        // My answer ties to his words (his steer when he just steered, else his note); my versions tie to his box.
+        // (Nov 7 night: "Your lines should connect to my comment if they are related.")
+        const k = makeCard(G, 'odie', c.text, G.steerCard || his || (G.mark ? 'mark' : null));
         setOld(G, false);
         const p = placeCard(k);
         await glide(p[0] - 30, p[1] + 10); stepOff(p, k);
@@ -522,12 +523,12 @@ window.glass = {
         // He chose. The card goes; the outline says what happened. Nothing is ever left lying over his page.
         const G = groups.get(c.id); if (!G) return 0;
         const k = G.cards.find(x => x.el.classList.contains('proposal'));
-        if (c.choice === 'drop') { if (k) removeCard(k); removeGroup(G); return 0; }
+        if (c.choice === 'drop') { if (k) removeCard(k); if (G.swap) { G.swap.remove(); G.swap = null; } return 0; }
         // Kept: the card STAYS where he was looking, says it's in, and holds my words until the page shows them
         // (his catch, Nov 7: "I clicked keep and everything disappeared... I need a confirmation"). I clear it after I rebuild.
         if (k && c.ok) {
           const a = k.el.querySelector('.acts'); if (a) a.remove();
-          k.el.querySelector('.who').textContent = 'Kept ✓ in the letter · the page shows it after your next ➤';
+          k.el.querySelector('.who').textContent = /written to/.test(c.text || '') ? `Kept ✓ ${c.text.replace(/^kept ✓ /, '')} · I update what shows it after your next ➤` : 'Kept ✓';
           k.el.classList.add('keptcard');
           if (G.swap) G.swap.classList.add('kept');
           if (G.badge) G.badge.remove();

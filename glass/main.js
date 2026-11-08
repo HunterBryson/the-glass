@@ -317,8 +317,23 @@ ipcMain.on('card-rects', (e, rects) => {
   const p = paneOf(e.sender); if (!p) return; const o = p.d.bounds;
   cardRects.set(panes.indexOf(p), rects.map(r => ({ x1: r.x1 + o.x, y1: r.y1 + o.y, x2: r.x2 + o.x, y2: r.y2 + o.y })));
 });
+// While his Snipping Tool is up, the glass lets go of the mouse everywhere, so a snip can be dragged across my cards
+// (Nov 7 night: "I hit keep and I cant screenshot it"). A small helper reports which app is in front.
+let snipping = false;
+const SNIP = /^(ScreenClippingHost|SnippingTool|ScreenSketch)$/i;
+function watchFront() {
+  const ps = require('child_process').spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, '..', 'tools', 'foreground.ps1')], { windowsHide: true });
+  let buf = '';
+  ps.stdout.on('data', d => { buf += d; const lines = buf.split(/\r?\n/); buf = lines.pop();
+    for (const name of lines) { const on = SNIP.test(name.trim()); if (on === snipping) continue; snipping = on;
+      if (on) { caught.clear(); for (const p of panes) if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(true, { forward: true }); }
+      else if (mode !== 'off') for (const p of panes) if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(false); } });
+  ps.on('exit', () => { snipping = false; setTimeout(watchFront, 5000); });
+  app.on('before-quit', () => { try { ps.kill(); } catch {} });
+}
+app.whenReady().then(watchFront);
 setInterval(() => {
-  if (mode !== 'off' || !panes.length) return;
+  if (snipping || mode !== 'off' || !panes.length) return;
   const c = screen.getCursorScreenPoint();
   panes.forEach((p, i) => {
     const over = (cardRects.get(i) || []).some(r => c.x >= r.x1 && c.x <= r.x2 && c.y >= r.y1 && c.y <= r.y2);

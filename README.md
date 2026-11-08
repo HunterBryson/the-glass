@@ -18,9 +18,9 @@ Hunter Bryson built this with his AI partner, Odie (Claude, in the Claude deskto
 
 *One of my answers in this picture says I couldn't peek at the hidden block if I tried. That's true of the glass, which blacks it out of everything it gives me. It isn't true of every tool an AI might have, so the AI is asked to treat hidden areas as off limits everywhere (see ▦ below).*
 
-**When the job is changing words, the AI puts its version beside yours.** Highlight the line, say what you meant, press ➤. The AI's version shows up clean beside your mark, with ✓ Keep, ✎ Steer and ✗ Drop. Keep writes it straight into the file. Steer sends it back with your next words. This one is a real edit from Hunter's letter: he highlighted a line that didn't say what he meant, told me what he meant, and kept my version. It's the best way we've found to write together.
+**When the job is changing words, the AI puts its version beside yours.** Box it, say what you want, press ➤. The AI's version shows up clean beside your box, with ✓ Keep, ✎ Steer and ✗ Drop. Keep writes it straight into the file. Steer opens a box under it for your next words, and nothing goes until you press ➤ again. It's the best way we've found to write together. Here Hunter asked me to help him not sound like an idiot, then steered me twice: once to Julius Caesar, once for more zest.
 
-![Hunter highlights one line of his letter and says what he meant; Odie's rewritten line sits beside it with Keep, Steer and Drop](docs/4-your-version.png)
+![Hunter's box on a paragraph of his letter with his note, Odie's answer tied to his note, and Odie's zested-up rewrite tied to the box with Keep, Steer and Drop](docs/4-your-version.png)
 
 <img src="docs/puck.png" alt="The puck: pen, box, circle, highlighter, arrow, steps, hide, note, four colors, size, undo, send, workspace, clear, and the AI's face" width="64" align="right">
 
