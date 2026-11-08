@@ -204,7 +204,7 @@ function setMode(m) {
 // His keys (Nov 7 night, after the mouse app wouldn't keep a bind: "give me a keybind I can use on my keyboard easily").
 // Left hand only: thumb on Alt, fingers on the keys beside it. Heard system-wide without the glass taking focus.
 // Pressing a tool's key again turns it off. Picked to dodge Firefox's Alt menus (F E V S B T H), Chrome's Alt+D
-// and NVIDIA's Alt+Z. Nothing destructive: clear stays on the puck.
+// and NVIDIA's Alt+Z.
 // Second layout, from his first real use: "alt+5 is impossible to it. alt +4 is unreliable. Alt + 1-3 is alright even
 // thoguht its a stretch." So the tools sit on the home row under his fingers. These take over Chrome's Alt+D and
 // Firefox's Alt+F/Alt+S menus everywhere; Ctrl+L still reaches the address bar. Alt+Z stays NVIDIA's.

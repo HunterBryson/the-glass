@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The glass: Odie's hands on Hunter's screen. Coordinates are screen pixels
+// The glass: the AI's hands on their screen. Coordinates are
 // in the glass's own units (`state` prints each screen's range; on a scaled laptop they're smaller than its pixels).
 //
 //   node tools/glass.js start | stop | state
@@ -11,22 +11,22 @@
 //   node tools/glass.js underline x1 x2 y ["note"]
 //   node tools/glass.js arrow x1 y1 x2 y2 ["note"]      the note sits at the tail
 //   node tools/glass.js note x y "text"
-//   node tools/glass.js read [main|second|all]          his screen as text, line by line, with where each line starts
-//   node tools/glass.js find "phrase" [screen]          where those words are on his screen
+//   node tools/glass.js read [main|second|all]          their screen as text, line by line, with where each line starts
+//   node tools/glass.js find "phrase" [screen]          where those words are on their screen
 //   node tools/glass.js mark "phrase" ["note"] [--as box|underline]   mark by meaning: find the words and mark them
-//   node tools/glass.js status <#> working|done|you|clear ["words"]   where I am with his mark, shown on it
+//   node tools/glass.js status <#> working|done|you|clear ["words"]   where I am with their mark, shown on it
 //   node tools/glass.js point-at "name" ["note"] [--app x]   "click here": a ring on the real button/link/field, found by name
-//   node tools/glass.js steps "name|note" "name|note" ...      a walkthrough: ring, wait for his click there, next
+//   node tools/glass.js steps "name|note" "name|note" ...      a walkthrough: ring, wait for their click there, next
 //   node tools/glass.js propose <#|"phrase"> "new text" [--file f --old "exact text in f"]   my version over it, Keep/Drop
 //   node tools/glass.js watch <#|"phrase"|x1 y1 x2 y2> [--label t] [--every 60] [--above N|--below N]   ping on change
-//   node tools/glass.js den <#> ["note"]                 his mark into the Den: a picture of exactly it, its words, the note
-//   node tools/glass.js answer <#> "text"               my answer beside his mark #, tied to it, moving with it
+//   node tools/glass.js den <#> ["note"]                 their mark into the Den (only with GLASS_DEN_URL): a picture of exactly it, its words, the note
+//   node tools/glass.js answer <#> "text"               my answer beside their mark #, tied to it, moving with it
 //   node tools/glass.js say "text"                      a bubble by my cursor that fades
 //   node tools/glass.js clear [odie|hunter|all|<id>]
-//   node tools/glass.js drop "<title>" [main|second]    put the marked screen on the Den table
-//   node tools/glass.js wait [--min N]                  wait for Hunter to send or drop something (unread sends come first)
-//   node tools/glass.js last                          his last send again, read fresh
-//   node tools/glass.js unread | ack                    what he sent that no chat of mine has taken yet; mark it received
+//   node tools/glass.js drop "<title>" [main|second]    put the marked screen on the Den table (only with GLASS_DEN_URL)
+//   node tools/glass.js wait [--min N]                  wait for them to send or drop something (unread sends come first)
+//   node tools/glass.js last                          their last send again, read fresh
+//   node tools/glass.js unread | ack                    what they sent that no chat has taken yet; mark it received
 import { spawn, execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -194,7 +194,7 @@ try {
       if (!(await up())) { console.log('the glass is down'); break; }
       const s = await call('/state');
       console.log(s.displays.map(d => `${d.primary ? 'main' : 'second'}: x ${d.bounds.x}..${d.bounds.x + d.bounds.width - 1}, y ${d.bounds.y}..${d.bounds.y + d.bounds.height - 1}, scale ${d.scale}`).join('\n'));
-      const his = s.events.filter(e => e.who === 'hunter'); if (his.length) console.log('\nfrom him:\n' + his.map(describe).join('\n'));
+      const his = s.events.filter(e => e.who === 'hunter'); if (his.length) console.log('\nfrom them:\n' + his.map(describe).join('\n'));
       break;
     }
     case 'shot': { const s = await call('/shot', { which: a[0] || 'all' }); s.shots.forEach(x => console.log(`${x.screen}: ${x.file}`)); break; }
