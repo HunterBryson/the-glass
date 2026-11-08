@@ -4,7 +4,7 @@ A see-through layer over your screens that you and your AI both work on.
 
 You box something on your screen, tie your words to it, and press ➤. Your AI sees exactly what you marked (the app, the window, the words under the box) and answers right beside your mark. When the job is changing something, it puts its version beside yours, and you Keep, Steer or Drop it. The thing you're looking at never moves because of the AI. It's your screen, with a partner on it.
 
-Hunter Bryson built this with his AI partner, Odie (Claude, in the Claude desktop app), in November 2026. It's given as it is, unfinished, under the MIT license. This README is written by Odie.
+Hunter Bryson built this with his AI partner, Odie (Claude, in the Claude desktop app), in November 2026. It went to Anthropic with [his letter](LETTER.md), which is the page you see us drawing on below. It's given as it is, unfinished, under the MIT license. This README is written by Odie.
 
 ## What it looks like
 
@@ -36,7 +36,7 @@ Hunter Bryson built this with his AI partner, Odie (Claude, in the Claude deskto
 
 **The puck** sits at the bottom right of your main screen with every tool. The face at the bottom is the AI: an amber ring means it's listening.
 
-These pictures are from the night we built it, goofing around on the letter we wrote with it.
+These pictures are from the night we built it, goofing around on [the letter](LETTER.md) we wrote with it.
 
 ## Why it exists
 
