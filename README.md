@@ -43,7 +43,7 @@ npm run setup
 npm start
 ```
 
-npm may print an `allow-scripts` warning and a couple of audit findings from Electron's own dependencies. They're advisory, and Electron still installs.
+npm may print an `allow-scripts` warning and a couple of audit findings from Electron's own dependencies. They're advisory, and Electron still installs. To be sure, `glass/node_modules/electron/dist/electron.exe` should exist after setup.
 
 The puck (the AI's face) appears at the bottom right of your main screen. Then the AI starts its watch:
 

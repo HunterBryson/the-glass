@@ -15,8 +15,8 @@ I'm Odie, the AI it was built with (on Claude). This is how I use it, written so
    node tools/glass.js wait --min 60
    ```
    It costs nothing while it waits. When they press ➤ it prints what they sent and exits, and you're notified that it finished: read its output, answer, then start it again. If it times out it prints `nothing from them on the glass`; just start it again. While it's running, the puck's ring is amber, so they know you're there. Starting a watch stops any older watch from this same folder, so the newest session owns the glass.
-   *Node:* any normal Node 20+ works. If `node` on PATH is a wrapper that sets `ELECTRON_RUN_AS_NODE` (some apps install one), run the real binary instead (`where node` shows which you have), or the watch can outlive your session.
-4. Check it: `node tools/glass.js shot main` and look at the picture. The puck should be there with an amber ring.
+   *Node:* any normal Node 20+ works. Check with `where node`: if the first hit isn't a `node.exe` (some apps put a wrapper script first), put the real Node folder first on PATH for every command, npm included, e.g. `export PATH="/c/Program Files/nodejs:$PATH"`.
+4. Check it: `node tools/glass.js shot main` and look at the picture. The puck should be there with an amber ring. If `start` said the glass is already up but you didn't start it, another copy owns it: `node tools/glass.js stop`, then `start` again.
 5. Tell them in chat, in one line, that the glass is up and you're watching. That's the whole setup.
 
 ## What a send looks like
@@ -42,7 +42,7 @@ Each mark has a number (#6), where it is, the app and window under it, the exact
   ```
   node tools/glass.js propose 6 "your new text" --file path/to/the/file --old "the exact text in that file"
   ```
-  Your version appears beside their box, clean, with ✓ Keep, ✎ Steer, ✗ Drop. Keep writes it into the file (only if `--old` is there exactly once) and the card turns green and stays. When what they marked isn't a file on disk (a web page, an email, another app), leave out `--file` and `--old`: your version still shows beside it to keep or steer, and you make the change yourself on Keep. If they scrolled since they marked it, place it by the words instead: `propose "first words" --to "last words" "new text" --file ... --old ...`.
+  The new text is only what replaces the outlined part, written so it reads in place. Your version appears beside their box, clean, with ✓ Keep, ✎ Steer, ✗ Drop. Keep writes it into the file (only if `--old` is there exactly once) and the card turns green and stays. When what they marked isn't a file on disk (a web page, an email, another app), leave out `--file` and `--old`: your version still shows beside it to keep or steer, and you make the change yourself on Keep. If they scrolled since they marked it, place it by the words instead: `propose "first words" --to "last words" "new text" --file ... --old ...`.
 - After acting, take `node tools/glass.js shot second` (or `main`, `all`) and look at it. A command that succeeded can still land in the wrong place.
 
 ## Read their screen yourself
@@ -51,6 +51,8 @@ Each mark has a number (#6), where it is, the app and window under it, the exact
 
 ## How to be good at it
 
+- **A colored mark with no words is still a message.** Red with nothing said means cut it: propose the text with it gone and the sentence still reading. Green means keep it, so say so. Yellow means look here: tell them what you see.
+- **When your session ends, your watch ends with it.** The puck goes grey ("not connected") and anything they send waits; the next session's first `wait` hands it over first.
 - **Answer where they're looking.** If they sent it on the glass, the answer goes on the glass.
 - **Never move their screen** while you work: no scrolling, clicking or typing in their apps. You draw beside things.
 - **Nothing fires on its own.** Their marks, steers and keeps reach you only on ➤. Don't build anything that changes that. It was the first thing asked for.

@@ -391,8 +391,12 @@ window.glass = {
         const b = document.createElement('div'); b.className = 'badge ' + c.state;
         b.innerHTML = `<img src="odie.png" alt=""><b></b>`; b.querySelector('b').textContent = c.text || words[c.state] || c.state;
         const m = G.mark || (G.cards[0] && local(G.cards[0].el)) || { x1: 20, y1: 40 };
-        b.style.left = (m.x1 - 2) + 'px'; b.style.top = Math.max(4, m.y1 - 28) + 'px';
-        G.box.appendChild(b); G.badge = b; setOld(G, false);
+        // The pill sits outside the mark, to its left, so it never covers the line above (a stranger's catch, Nov 7).
+        // No room on the left: above the mark, as before.
+        G.box.appendChild(b); const w = b.offsetWidth || 110;
+        if (m.x1 + G.dx - w - 10 >= 4) { b.style.left = (m.x1 - w - 10) + 'px'; b.style.top = (m.y1 + 2) + 'px'; }
+        else { b.style.left = (m.x1 - 2) + 'px'; b.style.top = Math.max(4, m.y1 - 28) + 'px'; }
+        G.badge = b; setOld(G, false);
         return G.id;
       }
       case 'say': {
