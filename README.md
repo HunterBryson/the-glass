@@ -67,7 +67,7 @@ Hover the puck for its tools:
 | ▍ | highlighter: the AI reads exactly these words (it stays straight on a line of text) |
 | ↗ | arrow: "this goes there." The AI reads what's at each end |
 | ① | numbered steps: do these in order. Each one reads the line beside it |
-| ▦ | hide: blacked out of every picture and every read the glass gives the AI. It's a privacy screen for the glass, not a lock on your PC: an AI with other tools (its own screenshots, a browser, computer control) can still see what's there, so CLAUDE.md asks it to treat hidden areas as off limits |
+| ▦ | hide: blacked out of every picture and every read the glass gives the AI, including pictures it saved before you drew it. A window with a hidden area doesn't give the AI its title, and the AI's button-finder skips anything inside it. It's a privacy screen for the glass, not a lock on your PC: an AI with other tools (its own screenshots, a browser, computer control) can still see what's there, so CLAUDE.md asks it to treat hidden areas as off limits |
 | T | a loose note anywhere |
 | ●● | color, and each color means something: **blue** this, **red** wrong / cut, **green** good / keep, **yellow** look here |
 | • | size: three widths |

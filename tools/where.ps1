@@ -7,7 +7,9 @@ public class Wh { [StructLayout(LayoutKind.Sequential)] public struct PT { publi
   [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(PT p);
   [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr h, uint f);
   [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
-  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid); }
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [StructLayout(LayoutKind.Sequential)] public struct RC { public int l; public int t; public int r; public int b; }
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RC rc); }
 "@
 $out = foreach ($pt in ($points -split ';' | Where-Object { $_ })) {
   $x, $y = $pt -split ','; $p = New-Object Wh+PT; $p.x = [int]$x; $p.y = [int]$y
@@ -15,6 +17,7 @@ $out = foreach ($pt in ($points -split ';' | Where-Object { $_ })) {
   $sb = New-Object System.Text.StringBuilder 512; [Wh]::GetWindowText($h, $sb, 512) | Out-Null
   $procId = 0; [Wh]::GetWindowThreadProcessId($h, [ref]$procId) | Out-Null
   $app = try { (Get-Process -Id $procId -ErrorAction Stop).ProcessName } catch { '' }
-  [pscustomobject]@{ x = [int]$x; y = [int]$y; app = $app; title = $sb.ToString() }
+  $rc = New-Object Wh+RC; [Wh]::GetWindowRect($h, [ref]$rc) | Out-Null
+  [pscustomobject]@{ x = [int]$x; y = [int]$y; app = $app; title = $sb.ToString(); x1 = $rc.l; y1 = $rc.t; x2 = $rc.r; y2 = $rc.b }
 }
 ConvertTo-Json -InputObject @($out) -Compress

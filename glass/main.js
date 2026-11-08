@@ -162,6 +162,31 @@ const sayStyle = () => { for (const p of panes) p.win.webContents.send('style', 
 ipcMain.on('style', (_e, s) => { style = { ...style, ...s }; sayStyle(); });
 // Areas he hid: painted out of every picture the glass takes, so they never reach me (screen pixels).
 let hides = [];
+const meets = (a, b) => a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+// Paint every hidden area that falls on this display into a picture of it (bounds = that picture's screen rectangle).
+function paintHides(img, bounds, list = hides) {
+  const W = img.getSize().width, H = img.getSize().height, sx = W / bounds.width, sy = H / bounds.height;
+  const mine = list.map(h => h.box || h).filter(b => meets(b, { x1: bounds.x, y1: bounds.y, x2: bounds.x + bounds.width, y2: bounds.y + bounds.height }));
+  if (!mine.length) return img;
+  const buf = img.toBitmap();
+  for (const b of mine) {
+    const x1 = Math.max(0, Math.floor((b.x1 - bounds.x) * sx)), x2 = Math.min(W, Math.ceil((b.x2 - bounds.x) * sx)), y1 = Math.max(0, Math.floor((b.y1 - bounds.y) * sy)), y2 = Math.min(H, Math.ceil((b.y2 - bounds.y) * sy));
+    for (let y = y1; y < y2; y++) for (let x = x1; x < x2; x++) { const k = (y * W + x) * 4; buf[k] = 0x18; buf[k + 1] = 0x14; buf[k + 2] = 0x12; buf[k + 3] = 255; }
+  }
+  return nativeImage.createFromBitmap(buf, { width: W, height: H });
+}
+// A new hidden area also goes into every picture already saved, so nothing from before it was drawn is left to open.
+function paintSaved(box) {
+  const ds = screen.getAllDisplays(), prim = screen.getPrimaryDisplay();
+  for (const f of fs.readdirSync(SHOTS)) {
+    if (!f.endsWith('.png')) continue;
+    const p = path.join(SHOTS, f), m = f.match(/-(main|second)(-clean)?\.png$/);
+    // Anything that isn't a whole-screen picture (crops, test frames) can't be mapped back to the screen, so it goes.
+    if (!m) { fs.unlink(p, () => {}); continue; }
+    const d = m[1] === 'main' ? prim : ds.find(x => x.id !== prim.id); if (!d || !meets(box, { x1: d.bounds.x, y1: d.bounds.y, x2: d.bounds.x + d.bounds.width, y2: d.bounds.y + d.bounds.height })) continue;
+    try { fs.writeFileSync(p, paintHides(nativeImage.createFromPath(p), d.bounds, [box]).toPNG()); } catch (e) { trail('paint saved failed: ' + e); }
+  }
+}
 function setMode(m) {
   mode = ['pen', 'box', 'ellipse', 'arrow', 'hl', 'step', 'hide', 'note'].includes(m) ? m : 'off'; caught.clear();
   for (const p of panes) {
@@ -321,7 +346,7 @@ ipcMain.on('his', async (e, ev) => {
   if (penNoteT) { clearTimeout(penNoteT); penNoteT = null; }
   await finishNote();
   const gid = paneIdx * 1000 + ev.id;
-  if (ev.op === 'hide') { hides.push({ pane: paneIdx, id: ev.id, box: ev.box }); log({ who: 'hunter', screen: screenName, ...ev, id: gid }); return; }
+  if (ev.op === 'hide') { hides.push({ pane: paneIdx, id: ev.id, box: ev.box }); setImmediate(() => paintSaved(ev.box)); log({ who: 'hunter', screen: screenName, ...ev, id: gid }); return; }
   if (ev.kind === 'step') { style.step = (ev.n || style.step) + 1; sayStyle(); }
   pending.push({ pane: paneIdx, screen: screenName, ...ev, gid }); puckSay();
   log({ who: 'hunter', screen: screenName, ...ev, id: gid });
@@ -359,7 +384,10 @@ ipcMain.on('send', async () => {
     // What he's looking at under each mark: the app and window, so I know what it is.
     const pts = pending.map(m => m.kind === 'arrow' ? m.to.map(Math.round) : m.box ? [Math.round((m.box.x1 + m.box.x2) / 2), Math.round((m.box.y1 + m.box.y2) / 2)] : [Math.round(m.x), Math.round(m.y)]);
     const wins = await whereIs(pts);
-    pending.forEach((m, i) => { if (wins[i]) { m.app = wins[i].app; m.title = wins[i].title; } });
+    // A window that holds a hidden area keeps its title to itself: titles can carry what he hid (an email subject, a file name).
+    pending.forEach((m, i) => { const w = wins[i]; if (!w) return; m.app = w.app;
+      const win = w.x2 > w.x1 ? { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 } : null;
+      m.title = (!win || hides.some(h => meets(h.box, win))) && hides.length ? '(withheld: a hidden area is in this window)' : w.title; });
     const marks = pending.map(({ pane, ...m }) => m);
     // What he just sent stays bright on the glass; older rounds step back.
     for (const [i, p] of panes.entries()) run(p, { op: 'sent', ids: pending.filter(m => m.pane === i).map(m => m.id) }).catch(() => {});
@@ -400,6 +428,7 @@ async function look() {
 }
 async function lookNow() {
   protect(true); let sources; try { sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: LOOK_W, height: Math.round(LOOK_W * 9 / 16) } }); } finally { protect(false); }
+  for (const src of sources) { const d = screen.getAllDisplays().find(x => String(x.id) === String(src.display_id)); if (d && hides.length) src.thumbnail = paintHides(src.thumbnail, d.bounds); }
   const out = new Map();
   screen.getAllDisplays().forEach((d, i) => {
     const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[i]; if (!src) return;
@@ -591,16 +620,8 @@ async function shotNowRaw(which = 'all', tag = '') {
     const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[i];
     if (!src) return;
     let img = src.thumbnail.resize({ width: d.bounds.width, height: d.bounds.height });
-    // Anything he hid is painted solid before the picture is saved, so it never reaches me, not even to read.
-    const mine = hides.map(h => h.box).filter(b => b.x2 > d.bounds.x && b.x1 < d.bounds.x + d.bounds.width && b.y2 > d.bounds.y && b.y1 < d.bounds.y + d.bounds.height);
-    if (mine.length) {
-      const W = d.bounds.width, H = d.bounds.height, buf = img.toBitmap();
-      for (const b of mine) {
-        const x1 = Math.max(0, Math.floor(b.x1 - d.bounds.x)), x2 = Math.min(W, Math.ceil(b.x2 - d.bounds.x)), y1 = Math.max(0, Math.floor(b.y1 - d.bounds.y)), y2 = Math.min(H, Math.ceil(b.y2 - d.bounds.y));
-        for (let y = y1; y < y2; y++) for (let x = x1; x < x2; x++) { const k = (y * W + x) * 4; buf[k] = 0x18; buf[k + 1] = 0x14; buf[k + 2] = 0x12; buf[k + 3] = 255; }
-      }
-      img = nativeImage.createFromBitmap(buf, { width: W, height: H });
-    }
+    // Anything he hid is painted solid before the picture is saved, so the glass never shows it to me, not even to read.
+    img = paintHides(img, d.bounds);
     const file = path.join(SHOTS, `${stamp}-${isMain ? 'main' : 'second'}${tag}.png`);
     fs.writeFileSync(file, img.toPNG());
     out.push({ file, screen: isMain ? 'main' : 'second', bounds: d.bounds });
@@ -809,6 +830,7 @@ http.createServer(async (req, res) => {
       const w = () => { if (has()) { clearTimeout(t); lastWaiting = Date.now(); done(); } else waiters.push(w); };
       waiters.push(w); linkSay(true); return;
     }
+    if (req.method === 'GET' && url.pathname === '/hides') return send(200, { ok: true, hides: hides.map(h => h.box) });
     if (req.method === 'GET' && url.pathname === '/unread') return send(200, { ok: true, delivered, link: link(), events: unread });
     if (req.method === 'POST' && url.pathname === '/ack') { const b = await body(req); ack(b.at); return send(200, { ok: true, delivered }); }
     if (req.method === 'POST' && url.pathname === '/do') {

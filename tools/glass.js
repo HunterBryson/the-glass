@@ -104,15 +104,18 @@ async function cleanWords(which = 'all') {
   return wordsOf(shots);
 }
 // Buttons, links and fields by name (UI Automation), else the words on screen (OCR). Screen pixels.
-function locate(name, app = '') {
+function locate(name, app = '', hides = []) {
   try {
-    const hits = JSON.parse(execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(here, 'uia.ps1'), name, '-app', app], { encoding: 'utf8', windowsHide: true, timeout: 20000 }) || '[]');
-    if (hits.length) { const h = hits[0]; return { x1: h.x, y1: h.y, x2: h.x + h.w, y2: h.y + h.h, how: `${h.type} "${h.name}" in ${h.window}` }; }
+    let hits = JSON.parse(execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(here, 'uia.ps1'), name, '-app', app], { encoding: 'utf8', windowsHide: true, timeout: 20000 }) || '[]');
+    // Nothing inside a hidden area counts, and with anything hidden I don't repeat window names (they can carry what he hid).
+    hits = hits.filter(h => !hides.some(b => h.x < b.x2 && h.x + h.w > b.x1 && h.y < b.y2 && h.y + h.h > b.y1));
+    if (hits.length) { const h = hits[0]; return { x1: h.x, y1: h.y, x2: h.x + h.w, y2: h.y + h.h, how: hides.length ? `${h.type} "${h.name}"` : `${h.type} "${h.name}" in ${h.window}` }; }
   } catch {}
   return null;
 }
 async function locateAny(name, app) {
-  const u = locate(name, app); if (u) return u;
+  const hides = (await call('/hides').catch(() => ({ hides: [] }))).hides || [];
+  const u = locate(name, app, hides); if (u) return u;
   const hits = findPhrase(await cleanWords(), name);
   return hits.length ? { ...hits[0], how: `the words "${hits[0].text}" on screen` } : null;
 }
