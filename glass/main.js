@@ -262,7 +262,10 @@ async function commitNote(text) {
   const o = panes[at.pane].d.bounds;
   if (at.steer != null) {
     // A steer is a note like any other: it stays on my card and waits with his marks until he presses ➤.
-    if (!text) return;
+    // Emptied while editing: the steer is taken back.
+    if (!text) { const had = pending.some(m => m.op === 'steer' && m.gid === at.steer);
+      if (had) { pending = pending.filter(m => !(m.op === 'steer' && m.gid === at.steer)); puckSay(); await run(panes[at.pane], { op: 'unsteer', id: at.steer % 1000 }).catch(() => {}); }
+      return; }
     const meta = proposals.get(at.steer) || {}, id = at.steer % 1000;
     pending = pending.filter(m => !(m.op === 'steer' && m.gid === at.steer)); // a new steer replaces his last one
     pending.push({ pane: at.pane, screen: at.screen, op: 'steer', id, gid: at.steer, text, file: meta.file || null }); puckSay();
@@ -682,14 +685,18 @@ async function markToDen(paneIdx, id, note) {
 // ---- My versions: he taps Keep and it's written into the real file, or Drop and it's gone ----
 const proposals = new Map(); // gid -> { file, old, new }
 // ✎ Steer on my version: a note box under it; his words come straight to me, no ➤ needed.
-ipcMain.on('steer', async (e, localId, at) => {
+// ✕ on his steer: just that steer is taken back, it won't go with ➤, and the thread stays.
+ipcMain.on('unsteer', (e, localId) => { const p = paneOf(e.sender); if (!p) return; const i = panes.indexOf(p);
+  pending = pending.filter(m => !(m.op === 'steer' && m.gid === i * 1000 + localId)); puckSay();
+  log({ who: 'hunter', op: 'unsteer', id: i * 1000 + localId }); });
+ipcMain.on('steer', async (e, localId, at, prev) => {
   const p = paneOf(e.sender); if (!p) return; await finishNote();
   const i = panes.indexOf(p), o = p.d.bounds;
   openNote(i, at.x + o.x, at.y + o.y, null);
   noteAt.steer = i * 1000 + localId; noteAt.x = at.x + o.x; noteAt.y = at.y + o.y;
   const wa = p.d.workArea || p.d.bounds; if (noteAt.y + NOTE.h > wa.y + wa.height - 8) noteAt.y = wa.y + wa.height - 8 - NOTE.h;
   if (noteWin) { noteWin.setBounds({ x: noteAt.x, y: noteAt.y, width: Math.max(280, at.w || 280), height: NOTE.h });
-    noteWin.webContents.once('did-finish-load', () => noteWin && noteWin.webContents.executeJavaScript("document.getElementById('t').placeholder='Steer my version: what should change? Type, or talk with Win+H. Enter keeps it; send with ➤ when you are ready'").catch(() => {})); }
+    noteWin.webContents.once('did-finish-load', () => noteWin && noteWin.webContents.executeJavaScript(`const t=document.getElementById('t'); t.placeholder='Steer my version: what should change? Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤'; t.value=${JSON.stringify(prev || '')};`).catch(() => {})); }
 });
 ipcMain.on('proposal', async (e, localId, choice) => {
   const p = paneOf(e.sender); if (!p) return;

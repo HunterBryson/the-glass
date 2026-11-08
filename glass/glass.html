@@ -218,7 +218,9 @@ function makeCard(G, who, text, to) {
   el.querySelector('.txt').textContent = text;
   const x = document.createElement('button'); x.className = 'x'; x.title = who === 'hunter' ? 'Remove this note and its answers' : 'Remove my note'; x.textContent = '✕';
   x.addEventListener('click', e => { e.stopPropagation(); const c = el._c; if (!c) return;
-    if (c.who === 'hunter') { host.removed(G.id); removeGroup(G); } else removeCard(c); });
+    // ✕ on a steer takes back just the steer; the rest of the thread stays (Nov 7: "I hit x and it deleted the entire chain").
+    if (G.steerCard && G.steerCard.el === el) { host.unsteer(G.id); removeCard(c); G.steerCard = null; }
+    else if (c.who === 'hunter') { host.removed(G.id); removeGroup(G); } else removeCard(c); });
   el.appendChild(x);
   G.box.appendChild(el);
   const line = document.createElementNS(NS, 'line'); line.setAttribute('class', 'tie ' + who);
@@ -499,7 +501,7 @@ window.glass = {
         const hint = acts.querySelector('.hint');
         acts.querySelector('.keep').onclick = () => { hint.textContent = 'writing it…'; host.proposal(G.id, 'keep'); };
         acts.querySelector('.drop').onclick = () => { host.proposal(G.id, 'drop'); };
-        acts.querySelector('.steer').onclick = () => { const b = k.el.getBoundingClientRect(); hint.textContent = ''; host.steer(G.id, { x: Math.round(b.left), y: Math.round(b.bottom + 8), w: Math.round(b.width) }); };
+        acts.querySelector('.steer').onclick = () => { const b = k.el.getBoundingClientRect(); hint.textContent = ''; host.steer(G.id, { x: Math.round(b.left), y: Math.round(b.bottom + 8), w: Math.round(b.width) }, G.steerCard ? G.steerCard.el.querySelector('.txt').textContent : ''); };
         k.el.style.width = '400px';
         const p = at ? (putCard(k, at.x, at.y), [at.x, at.y]) : placeCard(k);
         await glide(p[0] - 20, p[1] + 12); stepOff(p, k);
@@ -510,7 +512,8 @@ window.glass = {
         const G = groups.get(c.id); if (!G) return 0;
         if (G.steerCard) removeCard(G.steerCard);
         const mine = G.cards.find(x => x.el.classList.contains('proposal'));
-        const k = makeCard(G, 'hunter', c.text, mine || 'mark'); k.el.querySelector('.who').textContent = 'You · steer (waiting for ➤)';
+        const k = makeCard(G, 'hunter', c.text, mine || 'mark'); k.el.querySelector('.who').textContent = 'You · steer (waits for ➤ · ✎ Steer edits it · ✕ takes it back)';
+        k.el.querySelector('.x').title = 'Take back this steer (the rest stays)';
         k.el.style.width = '400px'; placeCard(k); G.steerCard = k;
         return G.id;
       }
