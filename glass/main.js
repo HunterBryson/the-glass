@@ -840,6 +840,11 @@ async function doCmd(cmd) {
 
 http.createServer(async (req, res) => {
   const send = (code, obj) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
+  // Only the AI's own commands get in. A web page in his browser can send requests to 127.0.0.1 too: browsers mark those
+  // with an Origin header, and a site pretending to be 127.0.0.1 (DNS rebinding) shows its own name in Host. Both are refused,
+  // so no page can draw fake notes on his screen, put up a version that writes a file on Keep, or read what he sent.
+  const host = String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '');
+  if (req.headers.origin || !['127.0.0.1', 'localhost', '[::1]'].includes(host)) { res.writeHead(403); return res.end(); }
   try {
     const url = new URL(req.url, 'http://x');
     if (req.method === 'GET' && url.pathname === '/state') return send(200, { ok: true, displays: displaysInfo(), seq, events: events.slice(-50) });
