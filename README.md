@@ -59,14 +59,23 @@ Hover the puck for its tools:
 
 | | |
 |---|---|
-| ✎ | pen: draw freely |
-| ▭ | box: a clean rectangle around what you mean |
+| ✎ | pen |
+| ▭ | box: the AI reads everything inside |
+| ◯ | circle: the same, rounder |
+| ▍ | highlighter: the AI reads exactly these words (it stays straight on a line of text) |
+| ↗ | arrow: "this goes there." The AI reads what's at each end |
+| ① | numbered steps: do these in order. Each one reads the line beside it |
+| ▦ | hide: blacked out of every picture the AI gets, so it never sees what's under it |
 | T | a loose note anywhere |
+| ●● | color, and each color means something: **blue** this, **red** wrong / cut, **green** good / keep, **yellow** look here |
+| • | size: three widths |
 | ↶ | undo your last mark |
 | ➤ | send everything you've marked, at once (a count shows what's waiting) |
 | ⌫ | clear the glass |
 
-When you finish a mark, a note box opens beside it. Type what you mean (or dictate with Win+H) and press Enter, and your words are tied to that mark. Esc skips it. Right-click turns your tool off. Any note can be grabbed and moved, and its line follows. Clicks pass through the glass to whatever is underneath, except on its own notes.
+**Why colors mean things.** In Paint a color is decoration. Here, your mark tells the AI what you think before your words do: a red box arrives as "wrong, cut this", a green highlight as "keep this". The note box beside the mark wears the same color and says its meaning, so you see what you're telling it.
+
+When you finish a mark, a note box opens beside it. Type what you mean (or dictate with Win+H) and press Enter, and your words are tied to that mark. Esc skips it. Right-click turns your tool off. Any note can be grabbed and moved, and the AI's answer moves with it. Hover a card for its ✕ to remove it. Clicks pass through the glass to whatever is underneath, except on its own notes.
 
 **Nothing reaches the AI until you press ➤.** You can mark five things, change your mind, undo, and send when you're ready.
 

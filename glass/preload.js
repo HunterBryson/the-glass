@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('host', {
   clear: () => ipcRenderer.send('clear'),
   undo: () => ipcRenderer.send('undo'),
   removed: id => ipcRenderer.send('removed', id),
+  style: s => ipcRenderer.send('style', s),
+  onStyle: fn => ipcRenderer.on('style', (_e, s) => fn(s)),
   send: () => ipcRenderer.send('send'),
   noteAt: (x, y) => ipcRenderer.send('note-at', x, y),
   noteDone: text => ipcRenderer.send('note-done', text),

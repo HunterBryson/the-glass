@@ -29,6 +29,7 @@ glass/data/        events.jsonl (every mark and answer), shots/ (screenshots, de
 ## The person's side
 
 - **Marks:** pen, box, loose note. Finishing a box or pen mark opens the note box beside it, outside the mark so nothing gets covered. Enter ties the words to the mark with a dashed line, and Esc skips. Mark, words and the AI's answer form one group that moves together when dragged.
+- **Tools that mean something.** Every tool is something the AI reads, not just ink. Colors carry meaning (blue this, red wrong / cut, green good / keep, yellow look here), and the mark arrives tagged with it. The highlighter reads exactly its words and stays straight on a line of text unless you clearly leave it. The arrow sends what's at each end (`from:` / `to:`). Steps send their number and the line beside the dot, in order. Hide paints its area solid in every screenshot before it's saved, so OCR never reads it and the AI never sees it; the tag on it has a ✕ to bring the area back.
 - **Send (➤):** everything marked since the last send goes at once, with a screenshot. Before this, each circle fired as it was drawn, and the person's first ask was to stop that: "What if I circled the wrong thing and you wasted a whole response?" Every later feature (steers, keeps) rides the same send.
 - **Is the AI there?** The puck's ring is amber while a watch is waiting, pulses while the AI works on a send, and goes grey with "not connected" when nobody is listening. A send made then is kept (`unread`) and handed to the next session, so nothing is lost.
 
@@ -57,7 +58,8 @@ glass/data/        events.jsonl (every mark and answer), shots/ (screenshots, de
 ## Not built yet
 
 - **Marks that follow the page when it scrolls.** We built it (find the patch under each mark in a small grey look at the screen, move the group with it; `GLASS_TRACK=1`) and parked it: full-size looks matched cleanly, but it wasn't the angle that mattered. The AI re-places a version by its words instead.
-- **Pen gestures the AI can read:** strike to cut, an arrow to move, a line between two marks to say "these connect."
+- **Pen gestures the AI can read:** a strike through text to cut it, a line between two marks to say "these connect." (The arrow tool and red ink cover some of this today.)
+- **Keyboard shortcuts.** The glass never takes the keyboard (a focused transparent window goes dark on Windows), so single-key shortcuts would need a global hotkey that doesn't steal typing.
 - **Keybinds** for the tools, and the glass on more than one OS.
 
 ## Rebuilding it elsewhere

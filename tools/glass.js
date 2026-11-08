@@ -25,6 +25,7 @@
 //   node tools/glass.js clear [odie|hunter|all|<id>]
 //   node tools/glass.js drop "<title>" [main|second]    put the marked screen on the Den table
 //   node tools/glass.js wait [--min N]                  wait for Hunter to send or drop something (unread sends come first)
+//   node tools/glass.js last                          his last send again, read fresh
 //   node tools/glass.js unread | ack                    what he sent that no chat of mine has taken yet; mark it received
 import { spawn, execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -112,6 +113,9 @@ function readSend(e) {
   let words = [];
   try { words = wordsOf(e.clean); } catch (err) { e.readError = String(err.message || err); return e; }
   for (const m of e.marks || []) {
+    // Each tool reads its own way: an arrow, what's at each end; a step, what's beside the dot; a highlight, exactly its words.
+    if (m.kind === 'arrow') { const near = ([x, y]) => ({ x1: x - 150, y1: y - 22, x2: x + 150, y2: y + 22 }); m.fromReads = textIn(words, near(m.from)); m.toReads = textIn(words, near(m.to)); continue; }
+    if (m.kind === 'step') { m.reads = textIn(words, { x1: m.x - 20, y1: m.y - 12, x2: m.x + 460, y2: m.y + 12 }); continue; }
     const b = m.box || (m.op === 'note' ? null : { x1: m.x - 60, y1: m.y - 30, x2: m.x + 60, y2: m.y + 30 });
     if (b) m.reads = textIn(words, b);
   }
@@ -128,11 +132,23 @@ async function start() {
   throw new Error('the glass did not come up');
 }
 
+// What his mark says before his words do: the tool, and the color's meaning.
+const MEANS = { red: 'RED = wrong, cut this', green: 'GREEN = good, keep this', yellow: 'YELLOW = look here' };
+function markLine(m) {
+  const at = m.box ? ` x ${m.box.x1}-${m.box.x2}, y ${m.box.y1}-${m.box.y2}` : '', c = MEANS[m.color] ? ` [${MEANS[m.color]}]` : '';
+  if (m.kind === 'arrow') return `arrow${c} from ${m.from.join(',')} to ${m.to.join(',')}: this goes there${m.fromReads ? `\n       from: "${m.fromReads.replace(/\n/g, ' / ')}"` : ''}${m.toReads ? `\n       to: "${m.toReads.replace(/\n/g, ' / ')}"` : ''}`;
+  if (m.kind === 'step') return `STEP ${m.n}${c} at ${m.x},${m.y}`;
+  if (m.kind === 'highlight') return `highlighted${c}${at} (read exactly these words)`;
+  if (m.kind === 'ellipse') return `circled${c}${at}`;
+  if (m.kind === 'pen') return `drew${c}${at}`;
+  return `boxed${c}${at}`;
+}
 function describe(e) {
   const t = e.at.slice(11, 19);
   if (e.op === 'send') {
     if (e.error) return `${t} he pressed send, but it failed: ${e.error}`;
-    const lines = (e.marks || []).map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? `STEER on my version (re-propose to #${m.gid}): "${m.text}"` : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : `${m.kind === "box" ? "boxed" : "circled"} x ${m.box.x1}-${m.box.x2}, y ${m.box.y1}-${m.box.y2}`}${m.screen === 'second' ? ' (second screen)' : ''}${m.app ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       his words on it: "${m.note}"` : ''}`);
+    const marks = [...(e.marks || [])].sort((p, q) => (p.kind === 'step' && q.kind === 'step') ? p.n - q.n : 0);
+    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? `STEER on my version (re-propose to #${m.gid}): "${m.text}"` : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       his words on it: "${m.note}"` : ''}`);
     return `${t} HE SENT YOU ${lines.length} mark(s), answer each beside it with: glass.js answer <#> "text"\n${lines.join('\n')}\n  look: ${(e.shots || []).join(' , ')}`;
   }
   if (e.op === 'tie') return `${t} he tied words to his ${e.of === 'ask' ? '?' : 'circle'} (#${e.id}): "${e.text}"`;
@@ -142,6 +158,7 @@ function describe(e) {
   if (e.op === 'ask') return `${t} he dropped a ? at ${e.x},${e.y} (#${e.id})`;
   if (e.op === 'drop') return `${t} he sent the screen to the Den: ${(e.results || []).map(r => r.out).join(' | ') || e.error}`;
   if (e.op === 'clear') return `${t} he cleared the glass`;
+  if (e.op === 'hide') return `${t} he hid an area from you (it's blacked out of every picture)`;
   if (e.op === 'proposal') return `${t} HE TAPPED ${e.choice === 'keep' ? 'KEEP' : 'DROP'} on my version #${e.id}${e.file ? ` (${e.file})` : ''}: ${e.note || ''}`;
   if (e.op === 'watch') return `${t} A SPOT I'M WATCHING CHANGED (#${e.id}${e.label ? ', ' + e.label : ''}): "${e.from}" → "${e.to}"`;
   if (e.op === 'mode') return `${t} his pen: ${e.mode}`;
@@ -317,6 +334,8 @@ try {
       if (lastSend) await call('/ack', { at: lastSend.at });
       break;
     }
+    // His last send again, read fresh (for when I need to look at it twice).
+    case 'last': { const st = await call('/state'); const e = st.events.filter(x => x.op === 'send' && x.who === 'hunter').at(-1); console.log(e ? describe(readSend(e)) : 'no send yet'); break; }
     case 'unread': { const u = await call('/unread'); console.log(`link: ${u.link}`); console.log(u.events.length ? u.events.map(describe).join('\n') : 'nothing waiting'); break; }
     case 'ack': { const u = await call('/unread'); const at = u.events.at(-1)?.at; if (at) await call('/ack', { at }); console.log(at ? `marked ${u.events.length} send(s) received` : 'nothing waiting'); break; }
     default: console.log('glass.js start|stop|state|shot|move|point|circle|box|underline|arrow|note|answer|status|den|point-at|steps|propose|watch|read|find|mark|say|clear|drop|wait|unread|ack');

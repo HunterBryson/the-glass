@@ -32,6 +32,11 @@
   body.link-waiting #link { display: block; border: 1px solid var(--odie); }
   body.link-waiting #link b { color: var(--odie); }
   body.open #link { display: none; }
+  /* The palette: four colors that each mean something, and a size. */
+  #sw { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 5px; width: 38px; height: 38px; box-sizing: border-box; border-radius: 10px; background: #1d2027; }
+  #sw i { display: block; border-radius: 50%; cursor: pointer; box-shadow: 0 0 0 1px rgba(0,0,0,.6); }
+  #sw i.on { box-shadow: 0 0 0 2px #fff; }
+  #t-size b { display: block; margin: auto; border-radius: 50%; background: var(--ink); }
   #tip { position: absolute; right: 64px; padding: 4px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--edge); color: var(--ink); font-size: 12px; white-space: nowrap; display: none; }
 </style>
 </head>
@@ -39,9 +44,17 @@
 <div id="wrap">
   <div id="face"></div>
   <div id="tools">
-    <button id="t-pen" data-tip="Your pen (right-click to stop)">✎</button>
-    <button id="t-box" data-tip="Draw a box">▭</button>
-    <button id="t-note" data-tip="Write a note where you click">T</button>
+    <button id="t-pen" data-tip="Pen (right-click to stop)">✎</button>
+    <button id="t-box" data-tip="Box: Odie reads everything inside">▭</button>
+    <button id="t-ellipse" data-tip="Circle: Odie reads everything inside">◯</button>
+    <button id="t-hl" data-tip="Highlighter: Odie reads exactly these words">▍</button>
+    <button id="t-arrow" data-tip="Arrow: this goes there">↗</button>
+    <button id="t-step" data-tip="Numbered steps: do these in order">①</button>
+    <button id="t-hide" data-tip="Hide: blacked out of everything Odie sees">▦</button>
+    <button id="t-note" data-tip="Note where you click">T</button>
+    <div class="sep"></div>
+    <div id="sw"><i data-c="blue" data-tip="Blue: this"></i><i data-c="red" data-tip="Red: wrong, cut this"></i><i data-c="green" data-tip="Green: good, keep this"></i><i data-c="yellow" data-tip="Yellow: look here"></i></div>
+    <button id="t-size" data-tip="Size"><b></b></button>
     <button id="t-undo" data-tip="Undo your last mark" disabled>↶</button>
     <div class="sep"></div>
     <button id="t-send" data-tip="Send your marks to Odie" disabled>➤<span id="count"></span></button>
@@ -59,13 +72,13 @@ const stayOpen = () => mode !== 'off' || pending > 0;
 function open(on) { clearTimeout(closeT); document.body.classList.toggle('open', on); host.puckOpen(on); }
 $('wrap').addEventListener('mouseenter', () => open(true));
 $('wrap').addEventListener('mouseleave', () => { if (!stayOpen()) closeT = setTimeout(() => open(false), 500); tip.style.display = 'none'; });
-document.querySelectorAll('button').forEach(b => {
+document.querySelectorAll('button, #sw i').forEach(b => {
   b.addEventListener('mouseenter', () => { const r = b.getBoundingClientRect(); tip.textContent = b.dataset.tip; tip.style.display = 'block'; tip.style.top = (r.top + 9) + 'px'; });
   b.addEventListener('mouseleave', () => tip.style.display = 'none');
 });
 function show(m) {
   mode = m; document.body.classList.toggle('drawing', m !== 'off');
-  ['pen', 'box', 'note'].forEach(k => $('t-' + k).classList.toggle('on', m === k));
+  ['pen', 'box', 'ellipse', 'hl', 'arrow', 'step', 'hide', 'note'].forEach(k => $('t-' + k).classList.toggle('on', m === k));
   if (stayOpen()) open(true); else closeT = setTimeout(() => open(false), 800);
 }
 const pick = m => host.mode(mode === m ? 'off' : m);
@@ -73,6 +86,19 @@ $('face').addEventListener('click', () => pick('pen'));
 $('t-pen').addEventListener('click', () => pick('pen'));
 $('t-box').addEventListener('click', () => pick('box'));
 $('t-note').addEventListener('click', () => pick('note'));
+['ellipse', 'hl', 'arrow', 'step', 'hide'].forEach(k => $('t-' + k).addEventListener('click', () => pick(k)));
+// Picking a color with no tool on starts the pen in it.
+const HEX = { blue: '#6cc6ff', red: '#ff5a5a', green: '#3fd37a', yellow: '#ffd23f' }, SIZES = [6, 10, 15];
+let sty = { color: 'blue', size: 1, step: 1 };
+document.querySelectorAll('#sw i').forEach(i => { i.style.background = HEX[i.dataset.c]; i.addEventListener('click', () => { host.style({ color: i.dataset.c }); if (mode === 'off') host.mode('pen'); }); });
+$('t-size').addEventListener('click', () => host.style({ size: (sty.size + 1) % 3 }));
+function paint() {
+  document.querySelectorAll('#sw i').forEach(i => i.classList.toggle('on', i.dataset.c === sty.color));
+  const b = $('t-size').querySelector('b'), d = SIZES[sty.size]; b.style.width = b.style.height = d + 'px'; b.style.background = HEX[sty.color];
+  $('t-step').textContent = '①②③④⑤⑥⑦⑧⑨'[Math.min(sty.step, 9) - 1];
+  document.documentElement.style.setProperty('--his', HEX[sty.color]);
+}
+host.onStyle(s => { sty = s; paint(); }); paint();
 $('t-undo').addEventListener('click', () => host.undo());
 $('t-send').addEventListener('click', () => host.send());
 $('t-den').addEventListener('click', () => host.drop('From the glass'));

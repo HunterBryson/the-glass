@@ -35,7 +35,7 @@ const LEVEL = process.env.GLASS_LEVEL || 'screen-saver'; // screen-saver | float
 const WITH_PUCK = process.env.GLASS_PUCK !== '0';
 const FOCUSABLE = process.env.GLASS_FOCUSABLE === '1';
 const top = w => { if (LEVEL === 'none') w.setAlwaysOnTop(false); else w.setAlwaysOnTop(true, LEVEL); };
-const PUCK = { w: 64, closed: 64, open: 466, right: 16, bottom: 70 };
+const PUCK = { w: 64, closed: 64, open: 760, right: 16, bottom: 70 };
 const events = [];
 let seq = 0;
 const waiters = [];
@@ -98,6 +98,7 @@ function build() {
     // (The day-one freeze was my waiter loop, proven Nov 7, not this.)
     win.setIgnoreMouseEvents(true, { forward: true });
     win.setContentProtection(true); // hidden from screen captures, so tracking only sees his screen
+    win.webContents.on('did-finish-load', () => win.webContents.send('style', style));
     win.loadFile(path.join(__dirname, 'glass.html'));
     const pane = { win, d, primary: d.id === prim.id };
     win.webContents.on('did-finish-load', () => {
@@ -134,6 +135,7 @@ function buildPuck(prim) {
   });
   top(puck);
   puck.setContentProtection(true);
+  puck.webContents.on('did-finish-load', () => puck && !puck.isDestroyed() && puck.webContents.send('style', style));
   puck.loadFile(path.join(__dirname, 'puck.html')).then(() => hideOff(puck));
   puck.webContents.on('did-finish-load', () => { puck.showInactive(); puck.moveTop(); linkSay(true); });
   watchWin(puck, 'puck');
@@ -145,8 +147,14 @@ const paneOf = wc => panes.find(p => p.win.webContents === wc);
 let pending = [];
 const puckSay = () => { if (puck && !puck.isDestroyed()) puck.webContents.send('pending', pending.length); };
 
+// His pen's color and size. A color is a meaning, so his mark says what he thinks before his words do.
+let style = { color: 'blue', size: 1, step: 1 };
+const sayStyle = () => { for (const p of panes) p.win.webContents.send('style', style); if (puck && !puck.isDestroyed()) puck.webContents.send('style', style); };
+ipcMain.on('style', (_e, s) => { style = { ...style, ...s }; sayStyle(); });
+// Areas he hid: painted out of every picture the glass takes, so they never reach me (screen pixels).
+let hides = [];
 function setMode(m) {
-  mode = ['pen', 'box', 'ask', 'note'].includes(m) ? m : 'off'; caught.clear();
+  mode = ['pen', 'box', 'ellipse', 'arrow', 'hl', 'step', 'hide', 'note'].includes(m) ? m : 'off'; caught.clear();
   for (const p of panes) {
     // Never make the glass focusable: on Windows that costs it its see-through (it went dark over his whole screen).
     p.win.setIgnoreMouseEvents(mode === 'off', { forward: true });
@@ -203,7 +211,8 @@ function openNote(paneIdx, x, y, tie) {
   noteWin.setAlwaysOnTop(true, 'screen-saver');
   if (tie) { const w = noteWin, line = () => draftLine(w); w.on('move', line); w.on('resize', line); w.once('show', line); }
   noteWin.setContentProtection(true);
-  const nw = noteWin; nw.loadFile(path.join(__dirname, 'note.html'), { query: { tie: tie ? '1' : '0' } }).then(() => hideOff(nw)).catch(() => {});
+  const nw = noteWin; nw.webContents.once('did-finish-load', () => hideOff(nw));
+  noteWin.loadFile(path.join(__dirname, 'note.html'), { query: { tie: tie ? '1' : '0', color: (tie && tie.color) || 'blue' } });
   noteWin.once('ready-to-show', () => { noteWin.show(); noteWin.focus(); });
   watchWin(noteWin, 'note');
 }
@@ -230,7 +239,7 @@ async function commitNote(text) {
     const mark = pending.find(m => m.pane === at.pane && m.id === at.tie.id);
     if (!mark) return;
     mark.note = text;
-    await run(panes[at.pane], { op: 'tienote', id: at.tie.id, text, card: { x: at.x - o.x, y: at.y - o.y } });
+    await run(panes[at.pane], { op: 'tienote', id: at.tie.id, text, color: mark.color, card: { x: at.x - o.x, y: at.y - o.y } });
     log({ who: 'hunter', screen: at.screen, op: 'tie', of: mark.op, id: mark.gid, text });
     return { pane: at.pane, id: at.tie.id };
   }
@@ -289,22 +298,27 @@ ipcMain.on('pass-wheel', () => {
 let puckOpen = false;
 const sizePuck = () => { if (puck && !puck.isDestroyed()) puck.setBounds(puckBounds(screen.getPrimaryDisplay(), puckOpen || mode !== 'off' || pending.length > 0)); };
 ipcMain.on('puck-open', (_e, on) => { puckOpen = on; sizePuck(); });
-ipcMain.on('clear', async () => { for (const p of panes) await run(p, { op: 'clear', who: 'all' }); tracked.clear(); pending = []; puckSay(); log({ who: 'hunter', op: 'clear' }); });
+ipcMain.on('clear', async () => { for (const p of panes) await run(p, { op: 'clear', who: 'all' }); tracked.clear(); pending = []; hides = []; style.step = 1; sayStyle(); puckSay(); log({ who: 'hunter', op: 'clear' }); });
 ipcMain.on('his', async (e, ev) => {
   const p = paneOf(e.sender), screenName = p && !p.primary ? 'second' : 'main', paneIdx = panes.indexOf(p);
   await finishNote();
   const gid = paneIdx * 1000 + ev.id;
+  if (ev.op === 'hide') { hides.push({ pane: paneIdx, id: ev.id, box: ev.box }); log({ who: 'hunter', screen: screenName, ...ev, id: gid }); return; }
+  if (ev.kind === 'step') { style.step = (ev.n || style.step) + 1; sayStyle(); }
   pending.push({ pane: paneIdx, screen: screenName, ...ev, gid }); puckSay();
   log({ who: 'hunter', screen: screenName, ...ev, id: gid });
   // Every circle or ? gets a note box beside it; Esc or simply drawing on skips it.
   if (ev.op === 'pen' || ev.op === 'ask') {
-    const box = ev.op === 'ask' ? { x1: ev.x - 17, y1: ev.y - 17, x2: ev.x + 17, y2: ev.y + 17 } : ev.box;
-    openNote(paneIdx, 0, 0, { id: ev.id, box });
+    // An arrow's words go by its point, where he's pointing to.
+    const box = ev.op === 'ask' ? { x1: ev.x - 17, y1: ev.y - 17, x2: ev.x + 17, y2: ev.y + 17 }
+      : ev.kind === 'arrow' ? { x1: ev.to[0] - 14, y1: ev.to[1] - 14, x2: ev.to[0] + 14, y2: ev.to[1] + 14 } : ev.box;
+    openNote(paneIdx, 0, 0, { id: ev.id, box, color: ev.color });
   }
 });
 // He removed a note with its ✕: if it was still waiting for ➤, it doesn't go.
 ipcMain.on('removed', (e, localId) => { const p = paneOf(e.sender); if (!p) return; const i = panes.indexOf(p);
-  pending = pending.filter(m => !(m.pane === i && (m.id === localId || m.gid === i * 1000 + localId))); puckSay(); log({ who: 'hunter', op: 'remove', id: i * 1000 + localId }); });
+  pending = pending.filter(m => !(m.pane === i && (m.id === localId || m.gid === i * 1000 + localId))); puckSay();
+  hides = hides.filter(h => !(h.pane === i && h.id === localId)); log({ who: 'hunter', op: 'remove', id: i * 1000 + localId }); });
 ipcMain.on('undo', async () => {
   if (noteWin) { const at = noteAt; noteAt = null; closeNote(); if (at && at.tie && panes[at.pane]) await run(panes[at.pane], { op: 'draft', id: at.tie.id, rect: null }); }
   const last = pending.pop(); puckSay();
@@ -323,13 +337,13 @@ ipcMain.on('send', async () => {
     const clean = await shot(which, true);
     const shots = await shot(which);
     // What he's looking at under each mark: the app and window, so I know what it is.
-    const pts = pending.map(m => m.box ? [Math.round((m.box.x1 + m.box.x2) / 2), Math.round((m.box.y1 + m.box.y2) / 2)] : [Math.round(m.x), Math.round(m.y)]);
+    const pts = pending.map(m => m.kind === 'arrow' ? m.to.map(Math.round) : m.box ? [Math.round((m.box.x1 + m.box.x2) / 2), Math.round((m.box.y1 + m.box.y2) / 2)] : [Math.round(m.x), Math.round(m.y)]);
     const wins = await whereIs(pts);
     pending.forEach((m, i) => { if (wins[i]) { m.app = wins[i].app; m.title = wins[i].title; } });
     const marks = pending.map(({ pane, ...m }) => m);
     // What he just sent stays bright on the glass; older rounds step back.
     for (const [i, p] of panes.entries()) run(p, { op: 'sent', ids: pending.filter(m => m.pane === i).map(m => m.id) }).catch(() => {});
-    pending = []; puckSay();
+    pending = []; puckSay(); style.step = 1; sayStyle();
     log({ who: 'hunter', op: 'send', marks, shots: shots.map(s => s.file), clean: clean.map(s => ({ file: s.file, screen: s.screen, bounds: s.bounds })) });
   } catch (err) { log({ who: 'hunter', op: 'send', error: String(err) }); }
   finally { if (puck && !puck.isDestroyed()) { puck.showInactive(); puck.moveTop(); } }
@@ -552,7 +566,17 @@ async function shotNow(which = 'all', tag = '') {
     else if (which === 'second') { if (isMain) return; }
     const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[i];
     if (!src) return;
-    const img = src.thumbnail.resize({ width: d.bounds.width, height: d.bounds.height });
+    let img = src.thumbnail.resize({ width: d.bounds.width, height: d.bounds.height });
+    // Anything he hid is painted solid before the picture is saved, so it never reaches me, not even to read.
+    const mine = hides.map(h => h.box).filter(b => b.x2 > d.bounds.x && b.x1 < d.bounds.x + d.bounds.width && b.y2 > d.bounds.y && b.y1 < d.bounds.y + d.bounds.height);
+    if (mine.length) {
+      const W = d.bounds.width, H = d.bounds.height, buf = img.toBitmap();
+      for (const b of mine) {
+        const x1 = Math.max(0, Math.floor(b.x1 - d.bounds.x)), x2 = Math.min(W, Math.ceil(b.x2 - d.bounds.x)), y1 = Math.max(0, Math.floor(b.y1 - d.bounds.y)), y2 = Math.min(H, Math.ceil(b.y2 - d.bounds.y));
+        for (let y = y1; y < y2; y++) for (let x = x1; x < x2; x++) { const k = (y * W + x) * 4; buf[k] = 0x18; buf[k + 1] = 0x14; buf[k + 2] = 0x12; buf[k + 3] = 255; }
+      }
+      img = nativeImage.createFromBitmap(buf, { width: W, height: H });
+    }
     const file = path.join(SHOTS, `${stamp}-${isMain ? 'main' : 'second'}${tag}.png`);
     fs.writeFileSync(file, img.toPNG());
     out.push({ file, screen: isMain ? 'main' : 'second', bounds: d.bounds });
@@ -723,7 +747,7 @@ async function doCmd(cmd) {
     return i * 1000 + id;
   }
   // Every pane hears clear/list; drawing goes to the screen the mark starts on.
-  if (cmd.op === 'clear') { let n = 0; for (const p of panes) n += await run(p, cmd); return n; }
+  if (cmd.op === 'clear') { if (!cmd.id && (cmd.who === 'all' || cmd.who === 'hunter')) hides = []; let n = 0; for (const p of panes) n += await run(p, cmd); return n; }
   if (cmd.op === 'list') { const all = []; for (const p of panes) all.push(...(await run(p, cmd))); return all; }
   if (cmd.op === 'say' || cmd.op === 'hide') return run(active, cmd);
   const ax = cmd.x ?? cmd.x1 ?? (cmd.points && cmd.points[0][0]), ay = cmd.y ?? cmd.y1 ?? (cmd.points && cmd.points[0][1]);

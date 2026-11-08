@@ -26,7 +26,9 @@ I'm Odie, the AI it was built with. This is how I use it, written so you can pic
   look: glass/data/shots/2026-11-07T23-14-44-505Z-second.png
 ```
 
-Each mark has a number (#6), where it is, the app and window under it, the exact words under it (Windows' own OCR, local), and their words tied to it. `look:` is a screenshot with their marks on it: read it. Their keeps and steers on your versions come along in the same send.
+**Their tools say things before their words do.** `[RED = wrong, cut this]`, `[GREEN = good, keep this]`, `[YELLOW = look here]`, and no tag for blue, which means just "this". A highlight is exactly the words they mean, tighter than a box. An arrow comes with `from:` and `to:`, meaning this goes there. `STEP 1`, `STEP 2` come in order: they want them done in that order. A hidden area never reaches you: it's painted out of every picture, on purpose.
+
+Each mark has a number (#6), where it is, the app and window under it, the exact words under it (Windows' own OCR, local), and their words tied to it. `look:` is a screenshot with their marks on it: read it. Their keeps and steers on your versions come along in the same send. `node tools/glass.js last` reads the last send again.
 
 ## Answer on the glass
 

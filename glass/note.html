@@ -32,6 +32,11 @@
   <button id="mic" title="Talk instead of typing (click again when you're done)">🎙</button><span id="state"></span></div>
 <script>
 const t = document.getElementById('t'), mic = document.getElementById('mic'), state = document.getElementById('state');
+// The note box wears his mark's color and says what that color means.
+{ const C = { blue: ['#6cc6ff', ''], red: ['#ff5a5a', 'wrong · cut'], green: ['#3fd37a', 'good · keep'], yellow: ['#ffd23f', 'look here'] };
+  const [hex, means] = C[new URLSearchParams(location.search).get('color')] || C.blue, card = document.querySelector('.card'), who = document.querySelector('.who');
+  card.style.borderColor = hex; card.style.boxShadow = `0 0 0 3px rgba(0,0,0,.7), 0 0 22px ${hex}61`;
+  if (who) { who.style.background = hex; if (means) who.textContent = 'You · ' + means; } }
 if (new URLSearchParams(location.search).get("tie") === "1") t.placeholder = "What is this about? Type, or talk with Win+H. Enter ties it, Esc skips";
 t.focus();
 let rec = null, busy = false;
