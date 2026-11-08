@@ -97,7 +97,8 @@ function build() {
     // Clicks pass through, but the glass feels the mouse go by, so it can catch it over a note he wants to grab.
     // (The day-one freeze was my waiter loop, proven Nov 7, not this.)
     win.setIgnoreMouseEvents(true, { forward: true });
-    win.setContentProtection(true); // hidden from screen captures, so tracking only sees his screen
+    // Visible to his own screenshots (Snipping Tool, Win+Shift+S): it hides only for the instant I take a clean read.
+    win.setContentProtection(false);
     win.webContents.on('did-finish-load', () => win.webContents.send('style', style));
     win.loadFile(path.join(__dirname, 'glass.html'));
     const pane = { win, d, primary: d.id === prim.id };
@@ -134,7 +135,7 @@ function buildPuck(prim) {
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
   top(puck);
-  puck.setContentProtection(true);
+  puck.setContentProtection(false);
   puck.webContents.on('did-finish-load', () => puck && !puck.isDestroyed() && puck.webContents.send('style', style));
   puck.loadFile(path.join(__dirname, 'puck.html')).then(() => hideOff(puck));
   puck.webContents.on('did-finish-load', () => { puck.showInactive(); puck.moveTop(); linkSay(true); });
@@ -210,7 +211,7 @@ function openNote(paneIdx, x, y, tie) {
   });
   noteWin.setAlwaysOnTop(true, 'screen-saver');
   if (tie) { const w = noteWin, line = () => draftLine(w); w.on('move', line); w.on('resize', line); w.once('show', line); }
-  noteWin.setContentProtection(true);
+  noteWin.setContentProtection(false);
   const nw = noteWin; nw.webContents.once('did-finish-load', () => hideOff(nw));
   noteWin.loadFile(path.join(__dirname, 'note.html'), { query: { tie: tie ? '1' : '0', color: (tie && tie.color) || 'blue' } });
   noteWin.once('ready-to-show', () => { noteWin.show(); noteWin.focus(); });
@@ -390,7 +391,7 @@ async function look() {
   const t0 = Date.now(); try { return await lookNow(); } finally { lookMs += Date.now() - t0; if (++lookN % 50 === 0) { trail(`look avg ${(lookMs / 50).toFixed(0)} ms`); lookMs = 0; } }
 }
 async function lookNow() {
-  const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: LOOK_W, height: Math.round(LOOK_W * 9 / 16) } });
+  protect(true); let sources; try { sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: LOOK_W, height: Math.round(LOOK_W * 9 / 16) } }); } finally { protect(false); }
   const out = new Map();
   screen.getAllDisplays().forEach((d, i) => {
     const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[i]; if (!src) return;
@@ -562,11 +563,15 @@ ipcMain.handle('note-audio', async (_e, buf) => {
 async function shot(which = 'all', clean = false) {
   // The glass is hidden from screen captures; a picture for me shows it again, unless I want his screen clean (to read it).
   if (clean) return shotNow(which, '-clean');
-  shooting = true; protect(false); await new Promise(r => setTimeout(r, 120));
-  try { return await shotNow(which); } finally { protect(true); shooting = false; }
+  return shotNow(which);
 }
 
 async function shotNow(which = 'all', tag = '') {
+  // A clean read of his screen: the glass steps out of the picture for that instant only (his catch, Nov 7: his snips came out with the glass missing).
+  if (tag === '-clean') { protect(true); await new Promise(r => setTimeout(r, 60)); try { return await shotNowRaw(which, tag); } finally { protect(false); } }
+  return shotNowRaw(which, tag);
+}
+async function shotNowRaw(which = 'all', tag = '') {
   const p = screen.getPrimaryDisplay();
   const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 3840, height: 2160 } });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');

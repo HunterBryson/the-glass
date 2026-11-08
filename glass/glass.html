@@ -421,6 +421,24 @@ window.glass = {
         return c.id;
       }
       case 'draft': { const G = groups.get(c.id); if (G) draft(G, c.rect); return 0; }
+      case 'hismark': {
+        // His kind of mark, drawn for him (to put a scene back after a restart, or to stage pictures). Same look as his own.
+        const L0 = q => q && [q[0] - origin.x, q[1] - origin.y]; if (c.from) { c.from = L0(c.from); c.to = L0(c.to); } if (c.card) c.card = { x: c.card.x - origin.x, y: c.card.y - origin.y };
+        const r = { x1: c.x1, y1: c.y1, x2: c.x2, y2: c.y2 }, hex = HEX[c.color] || HEX.blue, G = makeGroup('hunter', r);
+        const glow = el => { el.style.stroke = hex; el.style.filter = `drop-shadow(0 0 6px ${hex}88) drop-shadow(0 1px 1px rgba(0,0,0,.8))`; return el; };
+        if (c.kind === 'highlight') { const l = polyline('hl', G.g); l.style.stroke = hex; l.style.strokeWidth = r.y2 - r.y1; const y = (r.y1 + r.y2) / 2; setPts(l, [[r.x1, y], [r.x2, y]]); }
+        else if (c.kind === 'ellipse') { const el = glow(document.createElementNS(NS, 'ellipse')); el.setAttribute('class', 'stroke his'); el.setAttribute('cx', (r.x1 + r.x2) / 2); el.setAttribute('cy', (r.y1 + r.y2) / 2); el.setAttribute('rx', (r.x2 - r.x1) / 2); el.setAttribute('ry', (r.y2 - r.y1) / 2); G.g.appendChild(el); }
+        else if (c.kind === 'arrow') { const l = glow(document.createElementNS(NS, 'line')); l.setAttribute('class', 'stroke his'); l.setAttribute('x1', c.from[0]); l.setAttribute('y1', c.from[1]); l.setAttribute('x2', c.to[0]); l.setAttribute('y2', c.to[1]); G.g.appendChild(l);
+          const ang = Math.atan2(c.to[1] - c.from[1], c.to[0] - c.from[0]), L = 20, h = glow(polyline('his', G.g)); setPts(h, [[c.to[0] - L * Math.cos(ang - .45), c.to[1] - L * Math.sin(ang - .45)], c.to, [c.to[0] - L * Math.cos(ang + .45), c.to[1] - L * Math.sin(ang + .45)]]); }
+        else if (c.kind === 'step') { const d = document.createElement('div'); d.className = 'step'; d.textContent = c.n; d.style.left = (r.x1 + r.x2) / 2 + 'px'; d.style.top = (r.y1 + r.y2) / 2 + 'px'; d.style.background = hex; G.box.appendChild(d); }
+        else { const el = glow(document.createElementNS(NS, 'rect')); el.setAttribute('class', 'stroke his'); el.setAttribute('rx', 6); drawRect(el, r); G.g.appendChild(el); }
+        if (c.text) {
+          const k = makeCard(G, 'hunter', c.text, 'mark');
+          if (c.color && c.color !== 'blue') { k.el.style.borderColor = hex; k.el.style.boxShadow = `0 0 0 3px rgba(0,0,0,.7), 0 0 22px ${hex}61, 0 10px 30px rgba(0,0,0,.6)`; const w = k.el.querySelector('.who'); w.style.background = hex; w.textContent = 'You · ' + MEANS[c.color]; k.line.style.stroke = hex; k.dot.style.fill = hex; }
+          if (c.card) putCard(k, c.card.x, c.card.y); else placeCard(k);
+        }
+        return G.id;
+      }
       case 'hisnote': {
         const G = makeGroup('hunter', null, around(c.x + 140, c.y + 50, 140, 60));
         const k = makeCard(G, 'hunter', c.text, null);

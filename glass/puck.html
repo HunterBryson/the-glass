@@ -72,6 +72,9 @@ const stayOpen = () => mode !== 'off' || pending > 0;
 function open(on) { clearTimeout(closeT); document.body.classList.toggle('open', on); host.puckOpen(on); }
 $('wrap').addEventListener('mouseenter', () => open(true));
 $('wrap').addEventListener('mouseleave', () => { if (!stayOpen()) closeT = setTimeout(() => open(false), 500); tip.style.display = 'none'; });
+// The face says whether I'm listening in the puck's own label, to its left, so nothing covers the face.
+$('face').addEventListener('mouseenter', () => { const f = $('face'), r = f.getBoundingClientRect(); if (!f.dataset.tip) return; tip.textContent = f.dataset.tip; tip.style.display = 'block'; tip.style.top = (r.top + 14) + 'px'; });
+$('face').addEventListener('mouseleave', () => tip.style.display = 'none');
 document.querySelectorAll('button, #sw i').forEach(b => {
   b.addEventListener('mouseenter', () => { const r = b.getBoundingClientRect(); tip.textContent = b.dataset.tip; tip.style.display = 'block'; tip.style.top = (r.top + 9) + 'px'; });
   b.addEventListener('mouseleave', () => tip.style.display = 'none');
@@ -118,7 +121,7 @@ host.onLink(({ state, unread }) => {
   $('link').innerHTML = state === 'off'
     ? (unread ? `<b>●</b> Odie's not connected · ${many} waiting` : `<b>●</b> Odie's not connected`)
     : unread ? `<b>●</b> ${many} waiting for Odie` : '';
-  $('face').title = state === 'on' ? "Odie's listening" : state === 'busy' ? "Odie's on it" : "Odie's not connected: open a chat and he'll pick up what you sent";
+  $('face').dataset.tip = state === 'on' ? "Odie's listening" : state === 'busy' ? "Odie's on it" : "Odie's not connected: open a chat and he'll pick up what you sent";
 });
 </script>
 </body>

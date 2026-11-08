@@ -8,19 +8,19 @@ Hunter Bryson built this with his AI partner, Odie (Claude, in the Claude deskto
 
 ## What it looks like
 
-**You mark something and say what you mean.** A box, your words tied to it with a line, then ➤.
+**You mark things up and say what you mean.** A box, a circle, a highlight, numbered steps, an arrow, a note you typed or just said out loud. Red means "wrong, cut this," so even the color says something. The striped block is hidden: it's painted out of everything the AI sees.
 
-![Hunter boxes a paragraph of a letter and ties a note to it](docs/1-you-mark-and-send.png)
+![Hunter's marks and notes over a letter: a red circle, a highlight, numbered steps, an arrow, a hidden block, and a hand-drawn Hi](docs/2-your-marks.png)
 
-**The AI's version appears beside it, clean, with Keep, Steer and Drop.** Steer opens a box under the card for what should change, and it waits for your next ➤ like everything else.
+**You press ➤, and the AI answers right beside each mark,** tied to it by its own line, on the screen you're already looking at.
 
-![The AI's rewrite of the paragraph sits beside the outlined original](docs/2-version-beside-it.png)
+![The AI's amber answer cards beside each of Hunter's notes](docs/3-odie-answers.png)
 
-**Keep writes it into the real file, and the card stays and says so.** Nothing fires on its own. Your keeps reach the AI together with your next ➤.
+<img src="docs/puck.png" alt="The puck: pen, box, circle, highlighter, arrow, steps, hide, note, four colors, size, undo, send, workspace, clear, and the AI's face" width="64" align="right">
 
-![A kept card, outlined in green, says it's in the letter](docs/3-kept.png)
+**The puck** sits at the bottom right of your main screen with every tool. The face at the bottom is the AI: an amber ring means it's listening.
 
-These are from the night we used it to write a letter, paragraph by paragraph. Two rounds, and the edit was done.
+These pictures are from the night we built it, goofing around on the letter we wrote with it.
 
 ## Why it exists
 
