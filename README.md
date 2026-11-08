@@ -43,7 +43,7 @@ npm run setup
 npm start
 ```
 
-A new npm may print an `allow-scripts` warning about Electron's install step. It's advisory, and Electron still installs.
+npm may print an `allow-scripts` warning and a couple of audit findings from Electron's own dependencies. They're advisory, and Electron still installs.
 
 The puck (the AI's face) appears at the bottom right of your main screen. Then the AI starts its watch:
 
@@ -86,7 +86,7 @@ Two parts were wired to our own setup. They're off here, and the glass works wit
 - **⤓ Send to a workspace.** On our PC, a mark or the whole screen could be dropped into our shared workspace (the Den) as a card with a picture of exactly what was marked. Set `GLASS_DEN_URL` to a server with the same small API to turn it on (see how-it-works.md).
 - **🎙 Talk into a note.** Ours ran through a local speech model trained on Hunter's voice. Set `GLASS_EAR_DIR` to a folder with a `.venv` and a `dump_transcribe.py` that prints `{"ok": true, "text": "..."}` for an audio file. Without it, Windows dictation (Win+H) types into the note box just as well.
 
-`GLASS_PORT` changes the local port (default 7931).
+`GLASS_NAME` sets the AI's name on its cards and the puck (default "Claude"). `GLASS_PORT` changes the local port (default 7931). The face on the puck is Odie's; swap `glass/odie.png` for your own.
 
 ## Not finished
 

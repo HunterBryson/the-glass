@@ -37,6 +37,7 @@ const t = document.getElementById('t'), mic = document.getElementById('mic'), st
   const [hex, means] = C[new URLSearchParams(location.search).get('color')] || C.blue, card = document.querySelector('.card'), who = document.querySelector('.who');
   card.style.borderColor = hex; card.style.boxShadow = `0 0 0 3px rgba(0,0,0,.7), 0 0 22px ${hex}61`;
   if (who) { who.style.background = hex; if (means) who.textContent = 'You · ' + means; } }
+{ const AI = new URLSearchParams(location.search).get('ai') || 'Odie'; const t0 = document.getElementById('t'); t0.placeholder = t0.placeholder.replace(/Odie/g, AI); }
 if (new URLSearchParams(location.search).get("tie") === "1") t.placeholder = "What is this about? Type, or talk with Win+H. Enter ties it, Esc skips";
 t.focus();
 let rec = null, busy = false;

@@ -67,6 +67,8 @@
 <script>
 // The puck is its own little window, so it takes clicks the ordinary way.
 const tip = document.getElementById('tip'), $ = id => document.getElementById(id);
+const AI = new URLSearchParams(location.search).get('ai') || 'Odie';
+document.querySelectorAll('[data-tip]').forEach(b => b.dataset.tip = b.dataset.tip.replace(/Odie/g, AI));
 let mode = 'off', pending = 0, closeT;
 const stayOpen = () => mode !== 'off' || pending > 0;
 function open(on) { clearTimeout(closeT); document.body.classList.toggle('open', on); host.puckOpen(on); }
@@ -119,9 +121,9 @@ host.onLink(({ state, unread }) => {
   b.classList.toggle('link-waiting', state !== 'off' && unread > 0);
   const many = unread === 1 ? '1 send' : `${unread} sends`;
   $('link').innerHTML = state === 'off'
-    ? (unread ? `<b>●</b> Odie's not connected · ${many} waiting` : `<b>●</b> Odie's not connected`)
-    : unread ? `<b>●</b> ${many} waiting for Odie` : '';
-  $('face').dataset.tip = state === 'on' ? "Odie's listening" : state === 'busy' ? "Odie's on it" : "Odie's not connected: open a chat and he'll pick up what you sent";
+    ? (unread ? `<b>●</b> ${AI}'s not connected · ${many} waiting` : `<b>●</b> ${AI}'s not connected`)
+    : unread ? `<b>●</b> ${many} waiting for ${AI}` : '';
+  $('face').dataset.tip = state === 'on' ? `${AI}'s listening` : state === 'busy' ? `${AI}'s on it` : `${AI}'s not connected: open a chat and it'll pick up what you sent`;
 });
 </script>
 </body>

@@ -157,10 +157,10 @@ function markLine(m) {
 function describe(e) {
   const t = e.at.slice(11, 19);
   if (e.op === 'send') {
-    if (e.error) return `${t} he pressed send, but it failed: ${e.error}`;
+    if (e.error) return `${t} the send failed: ${e.error}`;
     const marks = [...(e.marks || [])].sort((p, q) => (p.kind === 'step' && q.kind === 'step') ? p.n - q.n : 0);
-    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? `STEER on my version (re-propose to #${m.gid}): "${m.text}"` : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       his words on it: "${m.note}"` : ''}`);
-    return `${t} HE SENT YOU ${lines.length} mark(s), answer each beside it with: glass.js answer <#> "text"\n${lines.join('\n')}\n  look: ${(e.shots || []).join(' , ')}`;
+    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? `STEER on my version (re-propose to #${m.gid}): "${m.text}"` : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       their words on it: "${m.note}"` : ''}`);
+    return `${t} THEY SENT YOU ${lines.length} mark(s), answer each beside it with: glass.js answer <#> "text"\n${lines.join('\n')}\n  look: ${(e.shots || []).join(' , ')}`;
   }
   if (e.op === 'tie') return `${t} he tied words to his ${e.of === 'ask' ? '?' : 'circle'} (#${e.id}): "${e.text}"`;
   if (e.op === 'note') return `${t} he wrote a note at ${e.x},${e.y}: "${e.text}"`;
@@ -298,11 +298,11 @@ try {
     case 'drop': { const r = await call('/drop', { title: a[0] || 'From the glass', which: a[1] === 'second' ? 'second' : 'primary' }, 30000); r.results.forEach(x => console.log(x.out || x.file)); break; }
     case 'wait': {
       // Short stretches (long requests get cut off), and if the glass goes down, it comes back up.
-      const min = Number(flag('min', 30)), end = Date.now() + min * 60000;
+      const min = Number(flag('min', 60)), end = Date.now() + min * 60000;
       if (!(await up())) await start();
       // The newest chat owns the glass: any older watch (another chat, or a leftover) is stopped, so it can't catch his sends.
       try {
-        const ps = `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*glass.js wait*' -and $_.ProcessId -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force; $_.ProcessId }`;
+        const ps = `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine.Replace('\\','/').ToLower().Contains('${path.join(here, 'glass.js').replace(/\\/g, '/').toLowerCase()}') -and $_.CommandLine -like '*glass.js wait*' -and $_.ProcessId -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force; $_.ProcessId }`;
         const gone = execFileSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8', windowsHide: true }).trim();
         if (gone) console.log(`(stopped an older watch: ${gone.split(/\s+/).join(', ')})`);
       } catch {}
@@ -339,7 +339,7 @@ try {
       }
       if (!parentAlive()) break;
       got = [...kept, ...got].map(readSend);
-      console.log(got.length ? got.map(describe).join('\n') : 'nothing from him on the glass');
+      console.log(got.length ? got.map(describe).join('\n') : 'nothing from them on the glass');
       for (const e of got) for (const m of e.marks || []) if (m.gid != null) await call('/do', { op: 'status', to: m.gid, state: 'working' }).catch(() => {});
       const lastSend = got.filter(e => e.op === 'send').at(-1);
       if (lastSend) await call('/ack', { at: lastSend.at });

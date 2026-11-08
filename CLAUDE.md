@@ -2,27 +2,29 @@
 
 You're the AI on the glass. The person you work with draws on a see-through layer over their screens, ties words to each mark, and presses ➤. You get what they marked, already read, and you answer **on their screen, beside their mark**. Your chat is only a receipt. The glass is where they're looking.
 
-I'm Odie, the AI it was built with. This is how I use it, written so you can pick it up in one read.
+I'm Odie, the AI it was built with (on Claude). This is how I use it, written so you can pick it up in one read.
 
 ## Start
 
-1. If `glass/node_modules` is missing: `npm run setup` (it installs Electron).
-2. `node tools/glass.js start`. The puck (a face) appears at the bottom right of the main screen.
-3. Start your watch **in the background**, with the real `node.exe`:
+1. If `glass/node_modules` is missing: `npm run setup` (it installs Electron, about 100 MB). npm may warn about `allow-scripts` and audit findings in Electron's own dependencies; the install still works.
+2. `node tools/glass.js start`. The **puck** (the round face at the bottom right of the main screen) is their toolbox. `node tools/glass.js state` shows their screens.
+3. Start your **watch** as a background command (in Claude Code, `run_in_background`):
    ```
    node tools/glass.js wait --min 60
    ```
-   It blocks until they press ➤, prints what they sent, and exits. Starting a new watch stops any older one, so the newest session owns the glass. Restart it after every answer. While it waits, the puck's ring is amber and they know you're there.
-4. Tell them, in one line, that the glass is up and you're watching. That's the whole setup.
+   It costs nothing while it waits. When they press ➤ it prints what they sent and exits, and you're notified that it finished: read its output, answer, then start it again. If it times out it prints `nothing from them on the glass`; just start it again. While it's running, the puck's ring is amber, so they know you're there. Starting a watch stops any older watch from this same folder, so the newest session owns the glass.
+   *Node:* any normal Node 20+ works. If `node` on PATH is a wrapper that sets `ELECTRON_RUN_AS_NODE` (some apps install one), run the real binary instead (`where node` shows which you have), or the watch can outlive your session.
+4. Check it: `node tools/glass.js shot main` and look at the picture. The puck should be there with an amber ring.
+5. Tell them in chat, in one line, that the glass is up and you're watching. That's the whole setup.
 
 ## What a send looks like
 
 ```
-23:14:44 HE SENT YOU 1 mark(s), answer each beside it with: glass.js answer <#> "text"
+23:14:44 THEY SENT YOU 1 mark(s), answer each beside it with: glass.js answer <#> "text"
   #6 boxed x 2483-3255, y 442-667 (second screen)
        in: chrome "Hunter and Odie - Google Chrome"
        under it: "Before Claude, I was having a hard time using one agent ..."
-       his words on it: "this is a factually incorrect statement if you read the whole passage ..."
+       their words on it: "this is a factually incorrect statement if you read the whole passage ..."
   look: glass/data/shots/2026-11-07T23-14-44-505Z-second.png
 ```
 
@@ -38,7 +40,7 @@ Each mark has a number (#6), where it is, the app and window under it, the exact
   ```
   node tools/glass.js propose 6 "your new text" --file path/to/the/file --old "the exact text in that file"
   ```
-  Your version appears beside their box, clean, with ✓ Keep, ✎ Steer, ✗ Drop. Keep writes it into the file (only if `--old` is there exactly once) and the card turns green and stays. If they scrolled since they marked it, place it by the words instead: `propose "first words" --to "last words" "new text" --file ... --old ...`.
+  Your version appears beside their box, clean, with ✓ Keep, ✎ Steer, ✗ Drop. Keep writes it into the file (only if `--old` is there exactly once) and the card turns green and stays. When what they marked isn't a file on disk (a web page, an email, another app), leave out `--file` and `--old`: your version still shows beside it to keep or steer, and you make the change yourself on Keep. If they scrolled since they marked it, place it by the words instead: `propose "first words" --to "last words" "new text" --file ... --old ...`.
 - After acting, take `node tools/glass.js shot second` (or `main`, `all`) and look at it. A command that succeeded can still land in the wrong place.
 
 ## Read their screen yourself
@@ -50,9 +52,16 @@ Each mark has a number (#6), where it is, the app and window under it, the exact
 - **Answer where they're looking.** If they sent it on the glass, the answer goes on the glass.
 - **Never move their screen** while you work: no scrolling, clicking or typing in their apps. You draw beside things.
 - **Nothing fires on its own.** Their marks, steers and keeps reach you only on ➤. Don't build anything that changes that. It was the first thing asked for.
-- **Read the whole thing, not just the box.** A box is a pointer into something bigger (a document, a page, a goal). Before you write a version, read what it lives in.
+- **Read the whole thing, not just the box.** A box is a pointer into something bigger (a document, a page, a goal). Before you write a version, read what it lives in: the file if there is one, otherwise `read` the screen.
+- **Status pills:** `working` shows "on it" on their mark, `done` shows done, `you` shows "needs you" (their turn), `clear` removes it.
 - **Show your version clean.** Plain words beside theirs. Crossed-out, interleaved markup is unreadable on a screen.
 - **Don't restart the glass while their marks are up.** A restart wipes them.
+
+## Names, ports and privacy
+
+- Your name on the cards and the puck comes from `GLASS_NAME` (default "Claude"). The face is Odie's, the AI it was built with; replace `glass/odie.png` with your own if you like.
+- The glass listens on `127.0.0.1:7931` (`GLASS_PORT` changes it). One glass per PC at a time.
+- Your screenshots are of their whole screen. Anything they hide (▦) is painted out before you see it; anything else on screen, you see. Treat it that way.
 
 ## On another OS, or rebuilding it
 

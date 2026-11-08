@@ -14,6 +14,8 @@ const PORT = Number(process.env.GLASS_PORT) || 7931;
 // GLASS_EAR_DIR: a local speech-to-text folder with .venv and dump_transcribe.py (ours was the Ear). Windows dictation (Win+H) works in the note box without it.
 const DEN_ON = !!process.env.GLASS_DEN_URL, EAR_ON = !!process.env.GLASS_EAR_DIR;
 const hideOff = w => w && !w.isDestroyed() && w.webContents.executeJavaScript(`for (const id of [${[!DEN_ON && "'den'", !DEN_ON && "'t-den'", !EAR_ON && "'mic'"].filter(Boolean).join(',')}]) document.getElementById(id)?.remove();`).catch(() => {});
+// The AI's name on its cards, the puck and the note box (GLASS_NAME). Ours is Odie.
+const AI_NAME = process.env.GLASS_NAME || 'Claude';
 const DATA = path.join(__dirname, 'data');
 const SHOTS = path.join(DATA, 'shots');
 fs.mkdirSync(SHOTS, { recursive: true });
@@ -100,7 +102,7 @@ function build() {
     // Visible to his own screenshots (Snipping Tool, Win+Shift+S): it hides only for the instant I take a clean read.
     win.setContentProtection(false);
     win.webContents.on('did-finish-load', () => win.webContents.send('style', style));
-    win.loadFile(path.join(__dirname, 'glass.html'));
+    win.loadFile(path.join(__dirname, 'glass.html'), { query: { ai: AI_NAME } });
     const pane = { win, d, primary: d.id === prim.id };
     win.webContents.on('did-finish-load', () => {
       win.setBounds(d.bounds); win.showInactive();
@@ -137,7 +139,7 @@ function buildPuck(prim) {
   top(puck);
   puck.setContentProtection(false);
   puck.webContents.on('did-finish-load', () => puck && !puck.isDestroyed() && puck.webContents.send('style', style));
-  puck.loadFile(path.join(__dirname, 'puck.html')).then(() => hideOff(puck));
+  puck.loadFile(path.join(__dirname, 'puck.html'), { query: { ai: AI_NAME } }).then(() => hideOff(puck));
   puck.webContents.on('did-finish-load', () => { puck.showInactive(); puck.moveTop(); linkSay(true); });
   watchWin(puck, 'puck');
 }
@@ -213,7 +215,7 @@ function openNote(paneIdx, x, y, tie) {
   if (tie) { const w = noteWin, line = () => draftLine(w); w.on('move', line); w.on('resize', line); w.once('show', line); }
   noteWin.setContentProtection(false);
   const nw = noteWin; nw.webContents.once('did-finish-load', () => hideOff(nw));
-  noteWin.loadFile(path.join(__dirname, 'note.html'), { query: { tie: tie ? '1' : '0', color: (tie && tie.color) || 'blue' } });
+  noteWin.loadFile(path.join(__dirname, 'note.html'), { query: { tie: tie ? '1' : '0', color: (tie && tie.color) || 'blue', ai: AI_NAME } });
   noteWin.once('ready-to-show', () => { noteWin.show(); noteWin.focus(); });
   watchWin(noteWin, 'note');
 }
