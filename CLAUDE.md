@@ -52,6 +52,7 @@ Each mark has a number (#6), where it is, the app and window under it, the exact
 ## How to be good at it
 
 - **A colored mark with no words is still a message.** Red with nothing said means cut it: propose the text with it gone and the sentence still reading. Green means keep it, so say so. Yellow means look here: tell them what you see.
+- **If your watch prints "the glass went down, starting it again",** it restarted the glass, and their marks are gone from the screen. Tell them, and ask them to mark it again. A watch that ends with exit 127 and no output was stopped (another watch took over, or your session ended); just start a new one.
 - **When your session ends, your watch ends with it.** The puck goes grey ("not connected") and anything they send waits; the next session's first `wait` hands it over first.
 - **Answer where they're looking.** If they sent it on the glass, the answer goes on the glass.
 - **Never move their screen** while you work: no scrolling, clicking or typing in their apps. You draw beside things.
