@@ -1,9 +1,5 @@
 # A letter to Anthropic
 
-*Hunter wrote this on November 7, 2026, and sent it to Anthropic with the glass. It's his own spoken words. The pictures in the README are the two of us drawing on this letter with the glass. It's also a page: https://claude.ai/artifact/L2Sg2e6dD3mPEs9UGMitt1*
-
----
-
 Hi. I want to introduce myself, introduce Odie, and kind of what brought me to AI. My name is Hunter.
 
 What brought me to AI was memory. It was the first thing I thought about, the first thing I wanted to make, and the only reason I started using AI. Everything I did from day one was memory. And it was terrible. It was really bad. But it was also incredibly fun. I work a full-time job, and I work like a double full-time job on memory. It's a never-ending challenge, and it's pure experimentation and iteration.
