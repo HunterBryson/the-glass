@@ -211,7 +211,7 @@ function setMode(m) {
 const KEYS = { 'Alt+A': 'pen', 'Alt+S': 'box', 'Alt+D': 'ellipse', 'Alt+F': 'hl', 'Alt+V': 'arrow',
   'Alt+X': 'off', 'Alt+C': 'color', 'Alt+W': 'undo', 'Alt+Q': 'send', 'Alt+E': 'clear', 'Alt+K': 'legend' };
 // His ask the same night: "where is my key to clear the glass? ... I need to have this keybind box up all the time".
-// Clear is Alt+E. The key list stays up by the puck, out of every click (it passes the mouse through), and Alt+K hides or
+// Clear is Alt+E. The key list stays up by the puck (drag it anywhere; it remembers), and Alt+K hides or
 // shows it. It lights the tool that's on and shows the pen's color, so it's also how he sees what a key just did.
 const KEY_NAMES = { pen: 'pen', box: 'box', ellipse: 'circle', hl: 'highlighter', arrow: 'arrow', off: 'tool off',
   color: 'color', undo: 'undo', send: 'send ➤', clear: 'clear glass', legend: 'hide this list' };
@@ -221,7 +221,7 @@ function legendHtml() {
   const rows = Object.entries(KEYS).map(([k, a]) => `<div class="r" data-a="${a}"><b>${k.replace('Alt+', '')}</b><span>${KEY_NAMES[a]}${a === 'color' ? ' <i id="sw"></i>' : ''}</span></div>`).join('');
   return `<!doctype html><meta charset="utf-8"><style>
     html,body{margin:0;background:transparent;font-family:"Segoe UI",system-ui,sans-serif;user-select:none;overflow:hidden}
-    .box{margin:6px;padding:10px 12px 8px;background:rgba(21,23,28,.94);border:2px solid #f5a524;border-radius:12px;color:#f4f4f2;
+    .box{-webkit-app-region:drag;cursor:move;margin:6px;padding:10px 12px 8px;background:rgba(21,23,28,.94);border:2px solid #f5a524;border-radius:12px;color:#f4f4f2;
       box-shadow:0 0 0 3px rgba(0,0,0,.7),0 0 18px rgba(245,165,36,.3)}
     .h{font:700 12px/1 "Segoe UI";letter-spacing:.07em;text-transform:uppercase;color:#f5a524;margin:0 0 8px}
     .r{display:flex;align-items:center;gap:10px;padding:3px 4px;border-radius:6px;font-size:16px}
@@ -234,11 +234,16 @@ function legendHtml() {
   </script>`;
 }
 function sayLegend() { if (legend && !legend.isDestroyed()) legend.webContents.executeJavaScript(`show(${JSON.stringify(mode)}, ${JSON.stringify(SWATCH[style.color] || SWATCH.blue)})`).catch(() => {}); }
+// He drags it wherever he wants (his catch: "why can i not move this around buddy?"), and it stays there next time.
+const LEGEND_AT = path.join(DATA, 'legend.json');
 function buildLegend() {
   const b = screen.getPrimaryDisplay().workArea, w = 250, h = 52 + Object.keys(KEYS).length * 31;
-  legend = new BrowserWindow({ x: b.x + b.width - w - 300, y: b.y + b.height - h - 10, width: w, height: h, transparent: true, frame: false,
-    resizable: false, movable: false, hasShadow: false, skipTaskbar: true, focusable: false, show: false, backgroundColor: '#00000000' });
-  legend.setIgnoreMouseEvents(true); top(legend);
+  let at = { x: b.x + b.width - w - 300, y: b.y + b.height - h - 10 };
+  try { const s = JSON.parse(fs.readFileSync(LEGEND_AT, 'utf8')); if (screen.getAllDisplays().some(d => s.x >= d.bounds.x - w / 2 && s.x < d.bounds.x + d.bounds.width - w / 2 && s.y >= d.bounds.y && s.y < d.bounds.y + d.bounds.height - 40)) at = s; } catch {}
+  legend = new BrowserWindow({ ...at, width: w, height: h, transparent: true, frame: false,
+    resizable: false, movable: true, hasShadow: false, skipTaskbar: true, focusable: false, show: false, backgroundColor: '#00000000' });
+  top(legend);
+  legend.on('moved', () => { const [x, y] = legend.getPosition(); fs.writeFile(LEGEND_AT, JSON.stringify({ x, y }), () => {}); });
   legend.webContents.on('did-finish-load', () => { if (legendOn) legend.showInactive(); sayLegend(); });
   legend.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(legendHtml()));
 }

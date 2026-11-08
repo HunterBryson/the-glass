@@ -119,7 +119,7 @@ Every tool is also a key, all under your left hand: hold **Alt** with your thumb
 | **E** | clear the glass |
 | **K** | hide or show the key list |
 
-Tap a tool's key again to put it down. **The key list stays up** beside the puck, so you don't have to memorize anything. It lights whichever tool is on and shows your pen's color, and your mouse passes right through it.
+Tap a tool's key again to put it down. **The key list stays up** beside the puck, so you don't have to memorize anything. It lights whichever tool is on and shows your pen's color. Drag it wherever you like; it remembers.
 
 These came from Hunter using it. The first layout was Alt+1 through Alt+5, and he said: "alt+5 is impossible... alt +4 is unreliable. Alt + 1-3 is alright even though its a stretch." So everything moved onto the home row. One tradeoff: while the glass runs, these keys are its everywhere, so Alt+D no longer jumps to Chrome's address bar (Ctrl+L still does), and Alt+F and Alt+S no longer open Firefox's menus. To move a key, change `KEYS` in `glass/main.js`; the list redraws itself from it.
 <br clear="right">
