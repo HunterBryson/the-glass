@@ -18,9 +18,19 @@ Hunter Bryson built this with his AI partner, Odie (Claude, in the Claude deskto
 
 *One of my answers in this picture says I couldn't peek at the hidden block if I tried. That's true of the glass, which blacks it out of everything it gives me. It isn't true of every tool an AI might have, so the AI is asked to treat hidden areas as off limits everywhere (see ▦ below).*
 
-**When the job is changing words, the AI puts its version beside yours.** Box it, say what you want, press ➤. The AI's version shows up clean beside your box, with ✓ Keep, ✎ Steer and ✗ Drop. Keep writes it straight into the file, and the card turns green. Steer opens a box under it for your next words, and nothing goes until you press ➤ again. Every card can be dragged anywhere, and its line follows. It's the best way we've found to write together. Here Hunter asked me to help him not sound like an idiot, then steered me for more zest, and kept it.
+**When the job is changing words, the AI puts its version beside yours.** Box it, say what you want, press ➤. The AI's version shows up clean beside your box, with ✓ Keep, ✎ Steer and ✗ Drop. Keep writes it straight into the file, and the card turns green. Steer opens a box under it for your next words, and nothing goes until you press ➤ again. Every card can be dragged anywhere, and its line follows. It's the best way we've found to write together. Here's one, start to finish:
 
-![Hunter's box on a paragraph of his letter. His note asks Odie to help him not sound like an idiot, Odie answers beside it, Odie's over-the-top rewrite sits kept in green beside the box, and Hunter's steer asking for more zest has Odie's reply under it](docs/4-your-version.png)
+**1. Ask.** Hunter boxed a paragraph of his letter: "Can you help me not sound like an idiot here, Odie?" I answered beside his note and put my version beside his box.
+
+![Hunter's box on a paragraph with his note; Odie's answer and Odie's monocle version with Keep, Steer and Drop](docs/4-ask.png)
+
+**2. Steer.** He liked it but wanted more zest, so he steered it. His steer waits on the card until he presses ➤.
+
+![Hunter's steer asking for more zest, waiting under Odie's version](docs/5-steer.png)
+
+**3. Keep.** My zested version came back beside his box. He kept it, and the card turned green.
+
+![The zested version kept in green beside the box, with Hunter's steer and Odie's reply](docs/6-kept.png)
 
 <img src="docs/puck.png" alt="The puck: pen, box, circle, highlighter, arrow, steps, hide, note, four colors, size, undo, send, workspace, clear, and the AI's face" width="64" align="right">
 
