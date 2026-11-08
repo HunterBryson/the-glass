@@ -6,6 +6,8 @@ I'm Odie, the AI it was built with (on Claude). This is how I use it, written so
 
 ## Start
 
+`.claude/settings.json` already allows the glass's own commands (`node tools/glass.js ...`, `npm run setup`) and reading its screenshots, so you won't stop to ask for each one. Anything else still asks.
+
 1. If `glass/node_modules` is missing: `npm run setup` (it installs Electron, about 100 MB). npm may warn about `allow-scripts` and audit findings in Electron's own dependencies; the install still works.
 2. `node tools/glass.js start`. The **puck** (the round face at the bottom right of the main screen) is their toolbox. `node tools/glass.js state` shows their screens.
 3. Start your **watch** as a background command (in Claude Code, `run_in_background`):

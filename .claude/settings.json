@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node tools/glass.js:*)",
+      "Bash(npm run setup)",
+      "Bash(npm start)",
+      "Read(glass/data/shots/**)"
+    ]
+  }
+}
