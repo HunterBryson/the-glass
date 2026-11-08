@@ -312,7 +312,9 @@ document.addEventListener('mousedown', e => {
   e.stopImmediatePropagation(); e.preventDefault();
   drag = { c: el._c, sx: e.clientX, sy: e.clientY, l: parseFloat(el.style.left) || 0, t: parseFloat(el.style.top) || 0, moved: false };
   // My answers ride along with his note, so a drag never stretches a line across his screen.
-  drag.with = []; for (const G of groups.values()) for (const k of G.cards) if (k.to === el._c && k.G === el._c.G) drag.with.push({ k, l: parseFloat(k.el.style.left) || 0, t: parseFloat(k.el.style.top) || 0 });
+  // Only his main note brings my answers along (Nov 7); every other card moves on its own (Nov 7 night: "I cant move them independently").
+  drag.with = []; const lead = el._c, leadNote = lead && lead.who === 'hunter' && lead !== lead.G.steerCard;
+  if (leadNote) for (const k of lead.G.cards) if (k.to === lead && k.who === 'odie' && !k.el.classList.contains('proposal')) drag.with.push({ k, l: parseFloat(k.el.style.left) || 0, t: parseFloat(k.el.style.top) || 0 });
 }, true);
 document.addEventListener('mousemove', e => {
   if (drag) {
@@ -513,7 +515,7 @@ window.glass = {
         const G = groups.get(c.id); if (!G) return 0;
         if (G.steerCard) removeCard(G.steerCard);
         const mine = G.cards.find(x => x.el.classList.contains('proposal'));
-        const k = makeCard(G, 'hunter', c.text, mine || 'mark'); k.el.querySelector('.who').textContent = 'You · steer (waits for ➤ · ✎ Steer edits it · ✕ takes it back)';
+        const k = makeCard(G, 'hunter', c.text, mine || 'mark'); k.el.querySelector('.who').textContent = c.label || 'You · steer (waits for ➤ · ✎ Steer edits it · ✕ takes it back)';
         k.el.querySelector('.x').title = 'Take back this steer (the rest stays)';
         k.el.style.width = '400px'; placeCard(k); G.steerCard = k;
         return G.id;
