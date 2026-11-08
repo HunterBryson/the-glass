@@ -707,13 +707,18 @@ async function shotNowRaw(which = 'all', tag = '') {
   return out;
 }
 
+// The glass draws in Windows' scaled units (DIPs). The PowerShell helpers work in real pixels. These convert,
+// so a laptop at 125-150% lines up the same as a desktop at 100%.
+const toScreen = ([x, y]) => { try { const p = screen.dipToScreenPoint({ x, y }); return [Math.round(p.x), Math.round(p.y)]; } catch { return [x, y]; } };
+const toDip = ([x, y]) => { try { const p = screen.screenToDipPoint({ x, y }); return [Math.round(p.x), Math.round(p.y)]; } catch { return [x, y]; } };
 function whereIs(pts) {
   if (!pts.length) return Promise.resolve([]);
+  pts = pts.map(toScreen);
   return new Promise(resolve => {
     const ps = spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, '..', 'tools', 'where.ps1'), pts.map(p => p.join(',')).join(';')], { windowsHide: true });
     let o = ''; ps.stdout.on('data', d => o += d);
     const t = setTimeout(() => { ps.kill(); resolve([]); }, 4000);
-    ps.on('close', () => { clearTimeout(t); try { resolve(JSON.parse(o)); } catch { resolve([]); } });
+    ps.on('close', () => { clearTimeout(t); try { resolve(JSON.parse(o).map(w => { const [x1, y1] = toDip([w.x1, w.y1]), [x2, y2] = toDip([w.x2, w.y2]); return { ...w, x1, y1, x2, y2 }; })); } catch { resolve([]); } });
     ps.on('error', () => { clearTimeout(t); resolve([]); });
   });
 }
@@ -918,6 +923,7 @@ http.createServer(async (req, res) => {
       const w = () => { if (has()) { clearTimeout(t); lastWaiting = Date.now(); done(); } else waiters.push(w); };
       waiters.push(w); linkSay(true); return;
     }
+    if (req.method === 'POST' && url.pathname === '/convert') { const b = await body(req); const f = b.to === 'screen' ? toScreen : toDip; return send(200, { ok: true, points: (b.points || []).map(f) }); }
     if (req.method === 'GET' && url.pathname === '/hides') return send(200, { ok: true, hides: hides.map(h => h.box) });
     if (req.method === 'GET' && url.pathname === '/unread') return send(200, { ok: true, delivered, link: link(), events: unread });
     if (req.method === 'POST' && url.pathname === '/ack') { const b = await body(req); ack(b.at); return send(200, { ok: true, delivered }); }

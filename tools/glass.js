@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The glass: Odie's hands on Hunter's screen. Coordinates are screen pixels
-// (main screen is 0..1919 across, the second screen sits to its right at 1920..3839).
+// in the glass's own units (`state` prints each screen's range; on a scaled laptop they're smaller than its pixels).
 //
 //   node tools/glass.js start | stop | state
 //   node tools/glass.js shot [main|second|all]          screenshot(s) with the glass in them; prints the files to Read
@@ -55,7 +55,7 @@ function ocr(file) {
 function wordsOf(shots) {
   const all = [];
   for (const s of shots) {
-    const o = s.bounds || { x: s.screen === 'second' ? 1920 : 0, y: 0 };
+    const o = s.bounds || { x: 0, y: 0 };
     ocr(s.file).forEach((l, li) => l.words.forEach(w => all.push({ text: w.text, x1: w.x + o.x, y1: w.y + o.y, x2: w.x + w.w + o.x, y2: w.y + w.h + o.y, line: `${s.screen}:${li}` })));
   }
   return all;
@@ -63,7 +63,7 @@ function wordsOf(shots) {
 // The words inside a box, as text, in reading order.
 // A second, sharper look at one spot when the plain pass found nothing there (selected text, small or faint type).
 function readCrop(shots, b) {
-  const s = shots.find(x => { const o = x.bounds || { x: 0, y: 0, width: 1920, height: 1080 }; return b.x1 >= o.x && b.x1 < o.x + (o.width || 1920); }); if (!s) return '';
+  const s = shots.find(x => { const o = x.bounds; return o ? b.x1 >= o.x && b.x1 < o.x + o.width : true; }); if (!s) return '';
   const o = s.bounds || { x: 0, y: 0 }, x = Math.max(0, Math.round(b.x1 - o.x - 6)), y = Math.max(0, Math.round(b.y1 - o.y - 6)), w = Math.round(b.x2 - b.x1 + 12), h = Math.round(b.y2 - b.y1 + 12);
   if (w < 8 || h < 8 || w * h > 1200 * 700) return '';
   try {
@@ -113,9 +113,16 @@ function locate(name, app = '', hides = []) {
   } catch {}
   return null;
 }
+// Between real pixels and the glass's units; an older glass without /convert means 100%, so points pass through.
+const convert = async (to, points) => (await call('/convert', { to, points }).catch(() => ({ points }))).points;
 async function locateAny(name, app) {
   const hides = (await call('/hides').catch(() => ({ hides: [] }))).hides || [];
-  const u = locate(name, app, hides); if (u) return u;
+  let u = locate(name, app, []);
+  if (u) { // real pixels -> the glass's units, then drop anything inside a hidden area
+    const [[x1, y1], [x2, y2]] = await convert('dip', [[u.x1, u.y1], [u.x2, u.y2]]);
+    u = { ...u, x1, y1, x2, y2 };
+    if (!hides.some(b => u.x1 < b.x2 && u.x2 > b.x1 && u.y1 < b.y2 && u.y2 > b.y1)) return hides.length ? { ...u, how: u.how.replace(/ in .*$/, '') } : u;
+  }
   const hits = findPhrase(await cleanWords(), name);
   return hits.length ? { ...hits[0], how: `the words "${hits[0].text}" on screen` } : null;
 }
@@ -239,7 +246,8 @@ try {
         const j = await call('/do', { op: 'ring', x1: r.x1, y1: r.y1, x2: r.x2, y2: r.y2, n: k + 1, note: steps[k].note || `Step ${k + 1} of ${steps.length}: click here` });
         console.log(`step ${k + 1}: ringed ${r.how}`);
         let clicked = true;
-        try { execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(here, 'clickwait.ps1'), r.x1 - 6, r.y1 - 6, r.x2 + 6, r.y2 + 6, secs].map(String), { windowsHide: true, timeout: (secs + 5) * 1000 }); }
+        const [[cx1, cy1], [cx2, cy2]] = await convert('screen', [[r.x1 - 6, r.y1 - 6], [r.x2 + 6, r.y2 + 6]]);
+        try { execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(here, 'clickwait.ps1'), cx1, cy1, cx2, cy2, secs].map(String), { windowsHide: true, timeout: (secs + 5) * 1000 }); }
         catch { clicked = false; }
         await call('/do', { op: 'clear', id: j.id });
         if (!clicked) { console.log(`step ${k + 1}: he didn't click it`); process.exit(1); }

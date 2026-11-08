@@ -1,6 +1,9 @@
 # Bring a window whose title contains $Match to the front, filling one of his screens.
 # Usage: powershell -File front-window.ps1 -Match "Hunter and Odie" -Screen second
 param([string]$Match, [string]$Screen = 'second')
+# Real pixels on every machine: without this, Windows may scale what this script sees at 125-150%.
+Add-Type -Namespace Glass -Name Dpi -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+[void][Glass.Dpi]::SetProcessDPIAware()
 Add-Type @"
 using System; using System.Text; using System.Runtime.InteropServices;
 public class Win {
@@ -18,8 +21,11 @@ $found = $null
   if ([Win]::IsWindowVisible($h)) { $sb = New-Object Text.StringBuilder 512; [void][Win]::GetWindowText($h, $sb, 512); if ($sb.ToString() -like "*$Match*") { $script:found = $h; $script:title = $sb.ToString(); return $false } }
   return $true }, [IntPtr]::Zero) | Out-Null
 if (-not $found) { "no window with '$Match'"; exit 1 }
-$x = if ($Screen -eq 'second') { 1920 } else { 0 }
+Add-Type -AssemblyName System.Windows.Forms
+$scr = [System.Windows.Forms.Screen]::AllScreens | Where-Object { if ($Screen -eq 'second') { -not $_.Primary } else { $_.Primary } } | Select-Object -First 1
+if (-not $scr) { $scr = [System.Windows.Forms.Screen]::PrimaryScreen }
+$wa = $scr.WorkingArea
 [Win]::ShowWindow($found, 9) | Out-Null
-[Win]::SetWindowPos($found, [IntPtr]::Zero, $x, 0, 1920, 1040, 0x40) | Out-Null
+[Win]::SetWindowPos($found, [IntPtr]::Zero, $wa.X, $wa.Y, $wa.Width, $wa.Height, 0x40) | Out-Null
 [Win]::SetForegroundWindow($found) | Out-Null
 "front: $title"

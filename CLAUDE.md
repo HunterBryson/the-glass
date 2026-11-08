@@ -19,6 +19,18 @@ I'm Odie, the AI it was built with (on Claude). This is how I use it, written so
 4. Check it: `node tools/glass.js shot main` and look at the picture. The puck should be there with an amber ring. If `start` said the glass is already up but you didn't start it, another copy owns it: `node tools/glass.js stop`, then `start` again.
 5. Tell them in chat, in one line, that the glass is up and you're watching. That's the whole setup.
 
+## Fit it to this machine (first start on a new computer)
+
+The glass was built on two 1080p screens at 100%. Theirs may be one laptop screen at 125% or 150%, or three monitors. It adapts on its own, but you check it once, because a mark that lands a little off makes the whole thing feel broken on minute one.
+
+1. `node tools/glass.js state`. It prints each screen: `main`, plus `second` only if there is one, its range in the glass's units, and its `scale`. **Those ranges are your coordinates.** On a 1920×1080 laptop at 150%, main is `x 0..1279, y 0..719`, not 1920 wide. Use what `state` says, never a number from these docs.
+2. **One screen means `main` only.** Use `shot main`, `read main`. Anything that says `second` doesn't apply, and windows you open go on `main`, beside whatever they're looking at rather than over it.
+3. **Check that your hands land where you aim.** Pick a word you can see in `read main` and run `mark "<that word>" "check"`. Then pick a real button you can see (a taskbar name, a toolbar button) and run `point-at "<its name>" "check"`. Take `shot main` and look: both rings should sit on their targets. Then `clear odie`.
+4. **If a ring is off,** say so in a line and look at the gap. If it's off by the scale factor (1.25× or 1.5× too far right and down, or too far up and left), the converter between real pixels and the glass's units missed. `tools/*.ps1` work in real pixels, and `/convert` in `glass/main.js` turns them into the glass's units. Fix it there, check again, and tell them what you changed. If it's off only on one monitor of several, look at which display it's on in `state`.
+5. Tell them in one line that it's fitted to their screen.
+
+Small text reads worse on a scaled laptop, because pictures are taken at the glass's units. If `read` misses words they marked, the send's sharper second look (`ocr.ps1 -crop`) usually catches them.
+
 ## What a send looks like
 
 ```
@@ -47,7 +59,7 @@ Each mark has a number (#6), where it is, the app and window under it, the exact
 
 ## Read their screen yourself
 
-`read [main|second|all]` gives the screen as text, line by line, with positions. `find "phrase"` says where those words are. `mark "phrase" ["note"]` marks something by its words. `point-at "button name" ["note"]` puts a ring on a real button, found by its name. `steps "name|note" ...` walks them through clicks, waiting for each one. `watch <#> --every 60` tells your watch when a spot on screen changes. `point`, `circle`, `box`, `underline`, `arrow`, `note`, `say` and `clear` are your plain drawing hands. Coordinates are screen pixels across all screens.
+`read [main|second|all]` gives the screen as text, line by line, with positions. `find "phrase"` says where those words are. `mark "phrase" ["note"]` marks something by its words. `point-at "button name" ["note"]` puts a ring on a real button, found by its name. `steps "name|note" ...` walks them through clicks, waiting for each one. `watch <#> --every 60` tells your watch when a spot on screen changes. `point`, `circle`, `box`, `underline`, `arrow`, `note`, `say` and `clear` are your plain drawing hands. Coordinates are the glass's units across all screens, as `state` prints them (on a scaled screen, smaller than its real pixels).
 
 ## How to be good at it
 

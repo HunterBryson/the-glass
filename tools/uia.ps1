@@ -1,6 +1,9 @@
 # Find buttons, links, fields and tabs on his screen by their name (Windows UI Automation: what screen readers use).
 # Prints JSON: [ { name, type, x, y, w, h, window, app } ], visible ones only, front windows first.
 param([string]$name, [string]$app = '', [int]$max = 8)
+# Real pixels on every machine: without this, Windows may scale what this script sees at 125-150%.
+Add-Type -Namespace Glass -Name Dpi -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+[void][Glass.Dpi]::SetProcessDPIAware()
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 $A = [System.Windows.Automation.AutomationElement]
 $root = $A::RootElement
@@ -17,7 +20,7 @@ foreach ($w in $wins) {
     if ($app -and $proc -notlike "*$app*" -and $c.Name -notlike "*$app*") { continue }
     foreach ($e in $w.FindAll([System.Windows.Automation.TreeScope]::Descendants, $cond)) {
       $ec = $e.Current; $r = $ec.BoundingRectangle
-      if ($ec.IsOffscreen -or $r.Width -le 0 -or $r.Height -le 0 -or [double]::IsInfinity($r.X)) { continue }
+      if ($ec.IsOffscreen -or $r.Width -le 0 -or $r.Height -le 0 -or [double]::IsInfinity($r.X) -or $r.X -le -30000) { continue }  # -32000 = a minimized window
       $type = $ec.ControlType.ProgrammaticName -replace 'ControlType\.', ''
       [void]$out.Add([pscustomobject]@{ name = $ec.Name; type = $type; x = [int]$r.X; y = [int]$r.Y; w = [int]$r.Width; h = [int]$r.Height; window = $c.Name; app = $proc })
       if ($out.Count -ge $max) { break }

@@ -1,6 +1,9 @@
 # Wait until he clicks inside a rectangle (screen pixels). Exits 0 on his click, 1 on timeout.
 # Reads the mouse button's state only; nothing is hooked or blocked.
 param([int]$x1, [int]$y1, [int]$x2, [int]$y2, [int]$seconds = 600)
+# Real pixels on every machine: without this, Windows may scale what this script sees at 125-150%.
+Add-Type -Namespace Glass -Name Dpi -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+[void][Glass.Dpi]::SetProcessDPIAware()
 Add-Type @"
 using System; using System.Runtime.InteropServices;
 public class CW { [StructLayout(LayoutKind.Sequential)] public struct PT { public int x; public int y; }

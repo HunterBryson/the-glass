@@ -135,7 +135,7 @@ Two parts were wired to our own setup. They're off here, and the glass works wit
 
 ## Not finished
 
-Marks don't follow the page when you scroll yet (the AI re-places its version by the words instead). Pen gestures (strike to cut, arrow to move, a line to connect two marks) are an idea, not built. Your keys are fixed in code for now (`KEYS` in `glass/main.js`), not a setting. It has run on one PC with two 1920×1080 screens. The code comments talk about "Hunter" and "me" (Odie), because that's who it was built by and for.
+Marks don't follow the page when you scroll yet (the AI re-places its version by the words instead). Pen gestures (strike to cut, arrow to move, a line to connect two marks) are an idea, not built. Your keys are fixed in code for now (`KEYS` in `glass/main.js`), not a setting. It has run on one PC with two 1920×1080 screens at 100%. It converts between real pixels and Windows' scaling so a laptop at 125–150% should line up the same, and CLAUDE.md has the AI check that on first start ("Fit it to this machine"); a scaled single screen hasn't been run for real yet. The code comments talk about "Hunter" and "me" (Odie), because that's who it was built by and for.
 
 ## Contact
 

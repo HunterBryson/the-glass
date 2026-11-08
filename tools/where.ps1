@@ -1,6 +1,9 @@
 # What window is under each point? Points as "x,y;x,y". Prints JSON: [ { x, y, app, title } ].
 # The glass is click-through, so the window found is the one he's actually looking at.
 param([string]$points)
+# Real pixels on every machine: without this, Windows may scale what this script sees at 125-150%.
+Add-Type -Namespace Glass -Name Dpi -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+[void][Glass.Dpi]::SetProcessDPIAware()
 Add-Type @"
 using System; using System.Runtime.InteropServices; using System.Text;
 public class Wh { [StructLayout(LayoutKind.Sequential)] public struct PT { public int x; public int y; }
