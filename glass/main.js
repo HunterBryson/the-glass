@@ -3,6 +3,11 @@
 // Odie drives it over HTTP on 127.0.0.1:7931 (tools/glass.js is the friendly way in).
 // One window per screen: Windows keeps a window to one display, so one big window loses the second screen.
 const { app, BrowserWindow, screen, ipcMain, desktopCapturer, nativeImage } = require('electron');
+// The glass sits over everything and is never focused, so Windows can count it as covered and Chromium stops painting
+// and slows its timers (my cursor stayed parked on his words, Nov 7). Keep it live.
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -93,7 +98,8 @@ function build() {
     const win = new BrowserWindow({
       ...d.bounds, transparent: true, frame: false, resizable: false, movable: false, hasShadow: false, show: false,
       skipTaskbar: true, focusable: FOCUSABLE, alwaysOnTop: LEVEL !== 'none', fullscreenable: false, backgroundColor: '#00000000',
-      webPreferences: { preload: path.join(__dirname, 'preload.js') },
+      // The glass is never the focused window, so Chromium would slow its timers; it needs them on time (my cursor's fade).
+      webPreferences: { preload: path.join(__dirname, 'preload.js'), backgroundThrottling: false },
     });
     top(win);
     // Clicks pass through, but the glass feels the mouse go by, so it can catch it over a note he wants to grab.

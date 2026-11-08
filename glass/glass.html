@@ -137,11 +137,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 function place() { me.style.transform = `translate(${pos.x - 2}px, ${pos.y - 2}px)`; }
+// Hidden means gone: after the fade I also move off screen, because Windows can leave the last frame of a faded,
+// see-through window up (his catch, Nov 7: my cursor stayed parked on his words).
+function hideMe() { me.classList.remove('on'); setTimeout(() => { if (!me.classList.contains('on')) me.style.transform = 'translate(-300px, -300px)'; }, 700); }
 function wake() {
+  place();
   clearTimeout(idleT); clearTimeout(hideT);
   me.classList.add('on'); me.classList.remove('idle');
-  idleT = setTimeout(() => me.classList.add('idle'), 9000);
-  hideT = setTimeout(() => me.classList.remove('on'), 90000);
+  // My cursor is only there while I'm moving: it fades 2.5 s after I stop, so it never parks on his words (his catch, Nov 7).
+  hideT = setTimeout(hideMe, 2500);
 }
 async function glide(x, y, ms) {
   wake();
@@ -287,6 +291,8 @@ let catching = false, last = { x: -1, y: -1 }, drag = null;
 function overCard(x, y) { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('.card') : null; }
 function hover(x, y) {
   last = { x, y };
+  // His mouse coming near mine: mine gets out of the way.
+  if (me.classList.contains('on') && Math.hypot(x - pos.x, y - pos.y) < 90) hideMe();
   const on = !!drag || (mode === 'off' && !!overCard(x, y));
   if (on !== catching) { catching = on; host.catchMouse(on); }
 }
@@ -400,7 +406,8 @@ window.glass = {
         return G.id;
       }
       case 'say': {
-        wake(); sayEl.textContent = c.text; sayEl.style.display = c.text ? 'block' : 'none';
+        wake(); clearTimeout(hideT); hideT = setTimeout(hideMe, c.ms || 8000); // a bubble keeps me up while it's showing
+        sayEl.textContent = c.text; sayEl.style.display = c.text ? 'block' : 'none';
         if (c.text) setTimeout(() => { if (sayEl.textContent === c.text) sayEl.style.display = 'none'; }, c.ms || 8000);
         return 0;
       }
@@ -415,7 +422,7 @@ window.glass = {
         hover(last.x, last.y);
         return n;
       }
-      case 'hide': me.classList.remove('on'); return 0;
+      case 'hide': hideMe(); return 0;
       case 'tienote': {
         // His words, tied to his mark: the card lands where his note box was, a line back to the mark.
         const G = groups.get(c.id); if (!G) return 0;
