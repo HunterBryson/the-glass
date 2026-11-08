@@ -59,9 +59,14 @@ glass/data/        events.jsonl (every mark and answer), shots/ (screenshots, de
 
 - **Marks that follow the page when it scrolls.** We built it (find the patch under each mark in a small grey look at the screen, move the group with it; `GLASS_TRACK=1`) and parked it: full-size looks matched cleanly, but it wasn't the angle that mattered. The AI re-places a version by its words instead.
 - **Pen gestures the AI can read:** a strike through text to cut it, a line between two marks to say "these connect." (The arrow tool and red ink cover some of this today.)
-- **Keyboard shortcuts.** The glass never takes the keyboard (a focused transparent window goes dark on Windows), so single-key shortcuts would need a global hotkey that doesn't steal typing.
-- **Keybinds** for the tools, and the glass on more than one OS.
+- **The glass on more than one OS.**
 
 ## Rebuilding it elsewhere
 
 Only `tools/*.ps1` is Windows-specific. On macOS, the Vision framework does the OCR and the Accessibility API finds buttons by name. On Linux, Tesseract and AT-SPI do the same jobs. Electron's transparent, always-on-top, click-through windows work on all three, with platform quirks to test, and `setContentProtection` isn't available everywhere. Keep the two rules, and the rest is detail.
+
+## Keys
+
+The glass still never takes the keyboard. Its keys are Electron `globalShortcut`s (`KEYS` in `main.js`), which Windows delivers to the glass whatever app is in front, so the glass doesn't need focus. They're Alt plus left-hand home-row letters, because the first try (Alt+1-5) was too far a reach. While the glass runs, a registered combo belongs to it in every app; that's why Alt+Z is left alone (NVIDIA's overlay). The key list is a separate small window (`legendHtml`), non-focusable and click-through, drawn from the same `KEYS` map. `setMode` and the style messages tell it which tool is on and which color is set. If a key is already taken by another program, registration fails quietly and `glass.log` says `key taken: <key>`.
+
+We tried his MMO mouse's side buttons first. Its config app couldn't keep a binding (its key field records the moment a button is selected, so anything typed overwrote it), so the keyboard won.

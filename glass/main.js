@@ -2,7 +2,7 @@
 // Clicks pass through to whatever is underneath, except on the puck or while his pen is on.
 // Odie drives it over HTTP on 127.0.0.1:7931 (tools/glass.js is the friendly way in).
 // One window per screen: Windows keeps a window to one display, so one big window loses the second screen.
-const { app, BrowserWindow, screen, ipcMain, desktopCapturer, nativeImage } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, desktopCapturer, nativeImage, globalShortcut } = require('electron');
 // The glass sits over everything and is never focused, so Windows can count it as covered and Chromium stops painting
 // and slows its timers (my cursor stayed parked on his words, Nov 7). Keep it live.
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
@@ -161,7 +161,7 @@ const puckSay = () => { if (puck && !puck.isDestroyed()) puck.webContents.send('
 // His pen's color and size. A color is a meaning, so his mark says what he thinks before his words do.
 let style = { color: 'blue', size: 1, step: 1 };
 const sayStyle = () => { for (const p of panes) p.win.webContents.send('style', style); if (puck && !puck.isDestroyed()) puck.webContents.send('style', style); };
-ipcMain.on('style', (_e, s) => { style = { ...style, ...s }; sayStyle(); });
+ipcMain.on('style', (_e, s) => { style = { ...style, ...s }; sayStyle(); sayLegend(); });
 // Areas he hid: painted out of every picture the glass takes, so they never reach me (screen pixels).
 let hides = [];
 const meets = (a, b) => a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
@@ -197,8 +197,61 @@ function setMode(m) {
     p.win.webContents.send('mode', mode);
   }
   if (puck && !puck.isDestroyed()) { puck.webContents.send('mode', mode); puck.moveTop(); }
+  sayLegend();
   log({ who: 'hunter', op: 'mode', mode });
 }
+
+// His keys (Nov 7 night, after the mouse app wouldn't keep a bind: "give me a keybind I can use on my keyboard easily").
+// Left hand only: thumb on Alt, fingers on the keys beside it. Heard system-wide without the glass taking focus.
+// Pressing a tool's key again turns it off. Picked to dodge Firefox's Alt menus (F E V S B T H), Chrome's Alt+D
+// and NVIDIA's Alt+Z. Nothing destructive: clear stays on the puck.
+// Second layout, from his first real use: "alt+5 is impossible to it. alt +4 is unreliable. Alt + 1-3 is alright even
+// thoguht its a stretch." So the tools sit on the home row under his fingers. These take over Chrome's Alt+D and
+// Firefox's Alt+F/Alt+S menus everywhere; Ctrl+L still reaches the address bar. Alt+Z stays NVIDIA's.
+const KEYS = { 'Alt+A': 'pen', 'Alt+S': 'box', 'Alt+D': 'ellipse', 'Alt+F': 'hl', 'Alt+V': 'arrow',
+  'Alt+X': 'off', 'Alt+C': 'color', 'Alt+W': 'undo', 'Alt+Q': 'send', 'Alt+E': 'clear', 'Alt+K': 'legend' };
+// His ask the same night: "where is my key to clear the glass? ... I need to have this keybind box up all the time".
+// Clear is Alt+E. The key list stays up by the puck, out of every click (it passes the mouse through), and Alt+K hides or
+// shows it. It lights the tool that's on and shows the pen's color, so it's also how he sees what a key just did.
+const KEY_NAMES = { pen: 'pen', box: 'box', ellipse: 'circle', hl: 'highlighter', arrow: 'arrow', off: 'tool off',
+  color: 'color', undo: 'undo', send: 'send ➤', clear: 'clear glass', legend: 'hide this list' };
+const SWATCH = { blue: '#6cc6ff', red: '#ff5a5a', green: '#3fb950', yellow: '#ffe14d' };
+let legend = null, legendOn = true;
+function legendHtml() {
+  const rows = Object.entries(KEYS).map(([k, a]) => `<div class="r" data-a="${a}"><b>${k.replace('Alt+', '')}</b><span>${KEY_NAMES[a]}${a === 'color' ? ' <i id="sw"></i>' : ''}</span></div>`).join('');
+  return `<!doctype html><meta charset="utf-8"><style>
+    html,body{margin:0;background:transparent;font-family:"Segoe UI",system-ui,sans-serif;user-select:none;overflow:hidden}
+    .box{margin:6px;padding:10px 12px 8px;background:rgba(21,23,28,.94);border:2px solid #f5a524;border-radius:12px;color:#f4f4f2;
+      box-shadow:0 0 0 3px rgba(0,0,0,.7),0 0 18px rgba(245,165,36,.3)}
+    .h{font:700 12px/1 "Segoe UI";letter-spacing:.07em;text-transform:uppercase;color:#f5a524;margin:0 0 8px}
+    .r{display:flex;align-items:center;gap:10px;padding:3px 4px;border-radius:6px;font-size:16px}
+    .r b{display:inline-block;min-width:26px;text-align:center;padding:2px 0;border-radius:5px;background:#2a2e36;font-weight:700}
+    .r.on{background:rgba(245,165,36,.22)} .r.on b{background:#f5a524;color:#15171c}
+    #sw{display:inline-block;width:12px;height:12px;border-radius:50%;margin-left:4px;vertical-align:-1px}
+  </style><div class="box"><div class="h">Hold Alt +</div>${rows}</div><script>
+    window.show=(mode,color)=>{document.querySelectorAll('.r').forEach(r=>r.classList.toggle('on',r.dataset.a===mode));
+      const s=document.getElementById('sw'); if(s) s.style.background=color;};
+  </script>`;
+}
+function sayLegend() { if (legend && !legend.isDestroyed()) legend.webContents.executeJavaScript(`show(${JSON.stringify(mode)}, ${JSON.stringify(SWATCH[style.color] || SWATCH.blue)})`).catch(() => {}); }
+function buildLegend() {
+  const b = screen.getPrimaryDisplay().workArea, w = 250, h = 52 + Object.keys(KEYS).length * 31;
+  legend = new BrowserWindow({ x: b.x + b.width - w - 300, y: b.y + b.height - h - 10, width: w, height: h, transparent: true, frame: false,
+    resizable: false, movable: false, hasShadow: false, skipTaskbar: true, focusable: false, show: false, backgroundColor: '#00000000' });
+  legend.setIgnoreMouseEvents(true); top(legend);
+  legend.webContents.on('did-finish-load', () => { if (legendOn) legend.showInactive(); sayLegend(); });
+  legend.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(legendHtml()));
+}
+app.whenReady().then(buildLegend);
+function key(a) {
+  if (a === 'color') { const c = ['blue', 'red', 'green', 'yellow']; style = { ...style, color: c[(c.indexOf(style.color) + 1) % c.length] }; sayStyle(); }
+  else if (a === 'undo' || a === 'send' || a === 'clear') ipcMain.emit(a, {});
+  else if (a === 'legend') { legendOn = !legendOn; if (legend && !legend.isDestroyed()) legendOn ? legend.showInactive() : legend.hide(); }
+  else setMode(a === 'off' || mode === a ? 'off' : a);
+  sayLegend(); log({ who: 'hunter', op: 'key', does: a });
+}
+app.whenReady().then(() => { for (const [k, a] of Object.entries(KEYS)) if (!globalShortcut.register(k, () => key(a))) trail(`key taken: ${k}`); });
+app.on('will-quit', () => globalShortcut.unregisterAll());
 
 // A note gets its own small window at the click, so the keyboard never touches the glass.
 // A tied note opens beside his mark (outside it, so nothing gets covered) and travels with it.

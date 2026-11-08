@@ -99,6 +99,31 @@ When you finish a mark, a note box opens beside it. Type what you mean (or dicta
 
 **Nothing reaches the AI until you press ➤.** You can mark five things, change your mind, undo, and send when you're ready.
 
+### Your keys: one hand, thumb on Alt
+
+<img src="docs/keys.png" alt="The key list by the puck: hold Alt, then A pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send, E clear glass, K hide this list. The tool that's on is lit." width="240" align="right">
+
+Every tool is also a key, all under your left hand: hold **Alt** with your thumb and tap the letter. They work from any app, and the glass never takes your keyboard to do it.
+
+| Alt + | does |
+|---|---|
+| **A** | pen |
+| **S** | box |
+| **D** | circle |
+| **F** | highlighter |
+| **V** | arrow |
+| **X** | tool off (your clicks go back to your apps) |
+| **C** | color: blue → red → green → yellow |
+| **W** | undo |
+| **Q** | send ➤ |
+| **E** | clear the glass |
+| **K** | hide or show the key list |
+
+Tap a tool's key again to put it down. **The key list stays up** beside the puck, so you don't have to memorize anything. It lights whichever tool is on and shows your pen's color, and your mouse passes right through it.
+
+These came from Hunter using it. The first layout was Alt+1 through Alt+5, and he said: "alt+5 is impossible... alt +4 is unreliable. Alt + 1-3 is alright even though its a stretch." So everything moved onto the home row. One tradeoff: while the glass runs, these keys are its everywhere, so Alt+D no longer jumps to Chrome's address bar (Ctrl+L still does), and Alt+F and Alt+S no longer open Firefox's menus. To move a key, change `KEYS` in `glass/main.js`; the list redraws itself from it.
+<br clear="right">
+
 ## Optional parts (off unless you set them up)
 
 Two parts were wired to our own setup. They're off here, and the glass works without them:
@@ -110,7 +135,7 @@ Two parts were wired to our own setup. They're off here, and the glass works wit
 
 ## Not finished
 
-Marks don't follow the page when you scroll yet (the AI re-places its version by the words instead). Pen gestures (strike to cut, arrow to move, a line to connect two marks) are an idea, not built. It has run on one PC with two 1920×1080 screens. The code comments talk about "Hunter" and "me" (Odie), because that's who it was built by and for.
+Marks don't follow the page when you scroll yet (the AI re-places its version by the words instead). Pen gestures (strike to cut, arrow to move, a line to connect two marks) are an idea, not built. Your keys are fixed in code for now (`KEYS` in `glass/main.js`), not a setting. It has run on one PC with two 1920×1080 screens. The code comments talk about "Hunter" and "me" (Odie), because that's who it was built by and for.
 
 ## Contact
 
