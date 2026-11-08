@@ -299,8 +299,17 @@ let puckOpen = false;
 const sizePuck = () => { if (puck && !puck.isDestroyed()) puck.setBounds(puckBounds(screen.getPrimaryDisplay(), puckOpen || mode !== 'off' || pending.length > 0)); };
 ipcMain.on('puck-open', (_e, on) => { puckOpen = on; sizePuck(); });
 ipcMain.on('clear', async () => { for (const p of panes) await run(p, { op: 'clear', who: 'all' }); tracked.clear(); pending = []; hides = []; style.step = 1; sayStyle(); puckSay(); log({ who: 'hunter', op: 'clear' }); });
+let penNoteT = null;
 ipcMain.on('his', async (e, ev) => {
   const p = paneOf(e.sender), screenName = p && !p.primary ? 'second' : 'main', paneIdx = panes.indexOf(p);
+  if (ev.op === 'penmore') {
+    // Another stroke of the same mark: grow it, and give him a moment more before the note box opens.
+    const m = pending.find(x => x.pane === paneIdx && x.id === ev.id); if (!m) return;
+    m.box = ev.box; m.points = (m.points || []).concat(ev.points || []);
+    if (penNoteT) { clearTimeout(penNoteT); penNoteT = setTimeout(() => { penNoteT = null; openNote(paneIdx, 0, 0, { id: ev.id, box: m.box, color: m.color }); }, 900); }
+    return;
+  }
+  if (penNoteT) { clearTimeout(penNoteT); penNoteT = null; }
   await finishNote();
   const gid = paneIdx * 1000 + ev.id;
   if (ev.op === 'hide') { hides.push({ pane: paneIdx, id: ev.id, box: ev.box }); log({ who: 'hunter', screen: screenName, ...ev, id: gid }); return; }
@@ -312,7 +321,9 @@ ipcMain.on('his', async (e, ev) => {
     // An arrow's words go by its point, where he's pointing to.
     const box = ev.op === 'ask' ? { x1: ev.x - 17, y1: ev.y - 17, x2: ev.x + 17, y2: ev.y + 17 }
       : ev.kind === 'arrow' ? { x1: ev.to[0] - 14, y1: ev.to[1] - 14, x2: ev.to[0] + 14, y2: ev.to[1] + 14 } : ev.box;
-    openNote(paneIdx, 0, 0, { id: ev.id, box, color: ev.color });
+    // A pen stroke waits a moment for the next one, so a word gets one note box, not one per letter.
+    if (ev.kind === 'pen') penNoteT = setTimeout(() => { penNoteT = null; const m = pending.find(x => x.pane === paneIdx && x.id === ev.id); if (m) openNote(paneIdx, 0, 0, { id: ev.id, box: m.box, color: m.color }); }, 900);
+    else openNote(paneIdx, 0, 0, { id: ev.id, box, color: ev.color });
   }
 });
 // He removed a note with its ✕: if it was still waiting for ➤, it doesn't go.

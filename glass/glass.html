@@ -632,7 +632,7 @@ document.addEventListener('mouseup', e => {
   host.his({ op: 'pen', kind: d.kind, id: G.id, box: toScreen(r), color: sty.color });
 });
 
-let stroke = null;
+let stroke = null, lastPen = null;
 document.addEventListener('mousedown', e => {
   if (e.button !== 0 || mode === 'off' || SHAPES.includes(mode)) return;
   if (mode === 'note') { host.noteAt(e.clientX + origin.x, e.clientY + origin.y); e.preventDefault(); return; }
@@ -685,7 +685,16 @@ document.addEventListener('mouseup', () => {
   }
   const xs = s.pts.map(p => p[0]), ys = s.pts.map(p => p[1]);
   const r = { x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
-  const G = makeGroup('hunter', r); G.g.appendChild(s.line);
+  // Strokes drawn together (the letters of a word, a check and its tail) are one mark with one note.
+  const lp = lastPen, near = lp && groups.has(lp.G.id) && performance.now() - lp.t < 1600 &&
+    r.x1 < lp.r.x2 + 120 && r.x2 > lp.r.x1 - 120 && r.y1 < lp.r.y2 + 120 && r.y2 > lp.r.y1 - 120;
+  if (near) {
+    const G = lp.G, u = { x1: Math.min(lp.r.x1, r.x1), y1: Math.min(lp.r.y1, r.y1), x2: Math.max(lp.r.x2, r.x2), y2: Math.max(lp.r.y2, r.y2) };
+    G.g.appendChild(s.line); G.mark = u; lastPen = { G, r: u, t: performance.now() };
+    host.his({ op: 'penmore', id: G.id, box: toScreen(u), points: s.pts.filter((_, i) => i % 3 === 0).map(p => [Math.round(p[0] + origin.x), Math.round(p[1] + origin.y)]) });
+    return;
+  }
+  const G = makeGroup('hunter', r); G.g.appendChild(s.line); lastPen = { G, r, t: performance.now() };
   host.his({ op: 'pen', kind: 'pen', color: sty.color, id: G.id, box: toScreen(r), points: s.pts.filter((_, i) => i % 3 === 0).map(p => [Math.round(p[0] + origin.x), Math.round(p[1] + origin.y)]) });
 });
 </script>

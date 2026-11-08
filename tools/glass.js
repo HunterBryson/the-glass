@@ -61,6 +61,16 @@ function wordsOf(shots) {
   return all;
 }
 // The words inside a box, as text, in reading order.
+// A second, sharper look at one spot when the plain pass found nothing there (selected text, small or faint type).
+function readCrop(shots, b) {
+  const s = shots.find(x => { const o = x.bounds || { x: 0, y: 0, width: 1920, height: 1080 }; return b.x1 >= o.x && b.x1 < o.x + (o.width || 1920); }); if (!s) return '';
+  const o = s.bounds || { x: 0, y: 0 }, x = Math.max(0, Math.round(b.x1 - o.x - 6)), y = Math.max(0, Math.round(b.y1 - o.y - 6)), w = Math.round(b.x2 - b.x1 + 12), h = Math.round(b.y2 - b.y1 + 12);
+  if (w < 8 || h < 8 || w * h > 1200 * 700) return '';
+  try {
+    const out = execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(here, 'ocr.ps1'), s.file, '-crop', `${x},${y},${w},${h}`], { encoding: 'utf8', windowsHide: true, maxBuffer: 8 << 20 });
+    return (JSON.parse(out.replace(/[\u0000-\u001f]/g, ' ')).lines || []).map(l => l.words.map(w => w.text).join(' ')).join(' / ');
+  } catch { return ''; }
+}
 function textIn(words, b, pad = 6) {
   const inside = words.filter(w => { const cx = (w.x1 + w.x2) / 2, cy = (w.y1 + w.y2) / 2; return cx >= b.x1 - pad && cx <= b.x2 + pad && cy >= b.y1 - pad && cy <= b.y2 + pad; });
   let out = '', line = null;
@@ -118,6 +128,7 @@ function readSend(e) {
     if (m.kind === 'step') { m.reads = textIn(words, { x1: m.x - 20, y1: m.y - 12, x2: m.x + 460, y2: m.y + 12 }); continue; }
     const b = m.box || (m.op === 'note' ? null : { x1: m.x - 60, y1: m.y - 30, x2: m.x + 60, y2: m.y + 30 });
     if (b) m.reads = textIn(words, b);
+    if (b && !m.reads && m.op !== 'note') m.reads = readCrop(e.clean, b);
   }
   return e;
 }
