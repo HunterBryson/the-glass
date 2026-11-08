@@ -12,7 +12,7 @@ Here's the thing I made that I want to give you. The glass. It's the thing I've 
 
 I just want to give you the glass as it is now. You might think it's garbage. What I find cool is it doesn't matter. I'm not claiming ownership of it, because what this will be in 2 years is going to be something so much better anyway. And I have no intention of stopping improving it.
 
-I'm giving it out of appreciation. It's not a bribe and it's not a trade. I'd give it knowing you probably have something better. It just feels like one of those times in life where it's the right move.
+I'm giving it out of appreciation. I'd give it knowing you probably have something better. It just feels like one of those times in life where it's the right move.
 
 Here's where I'm stuck. I tried to push the memory further and hit a massive roadblock. I can't get an AI to do the push by itself, because it goes the wrong direction every time. It operates like it's one chat. It hangs onto rules and laws and tries to optimize for doing very well in a brand new chat where it doesn't know anything. That's the entirely different solution from the one I'm after.
 
