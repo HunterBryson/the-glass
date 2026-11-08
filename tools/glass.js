@@ -322,8 +322,7 @@ try {
       let since = (await call('/state')).seq;
       const kept = [];
       // If the chat that started me is gone, stop without taking his sends, so the next chat gets them.
-      // `node` on his PC is a bash wrapper around Letta's runtime, so stopping my chat's shell leaves the wrapper and me
-      // running. So I note my whole line of parents once, and stop as soon as any of them is gone.
+      // Some setups wrap node in another process, so I note my whole line of parents once, and stop as soon as any of them is gone.
       let line = [process.ppid];
       try {
         const ps = `$p=${process.ppid}; for($i=0;$i -lt 3;$i++){ $q=(Get-CimInstance Win32_Process -Filter "ProcessId=$p").ParentProcessId; if(-not $q){break}; $q; $p=$q }`;

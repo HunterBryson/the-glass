@@ -43,7 +43,7 @@ glass/data/        events.jsonl (every mark and answer), shots/ (screenshots, de
 
 ## The two parts that are off in this copy
 
-- **The workspace drop (⤓).** On our PC, a mark could go to our shared workspace (the Den, inside an app called Homebase) as a card: a picture of exactly the marked area (cut from a clean shot), its words as text, and the person's note attached. The API it called was `POST {GLASS_DEN_URL}/api/den/items` with `{ kind: "image"|"text", title, body, by, parent }`. Any small server that accepts that can stand in. The point of it: the glass is where you point, and a workspace is where the work gets kept and built on.
+- **The workspace drop (⤓).** A mark can go to a shared workspace as a card: a picture of exactly the marked area (cut from a clean shot), its words as text, and the person's note attached. The API it called was `POST {GLASS_DEN_URL}/api/den/items` with `{ kind: "image"|"text", title, body, by, parent }`. Any small server that accepts that can stand in. The point of it: the glass is where you point, and a workspace is where the work gets kept and built on.
 - **Talking into a note (🎙).** The note box recorded audio and sent it to a local speech model fine-tuned on the person's voice (`GLASS_EAR_DIR`). Transcription that knows your voice matters when you talk more than you type. Without it, Windows dictation (Win+H) works in the note box.
 
 ## What broke, and what it taught

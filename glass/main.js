@@ -15,7 +15,7 @@ const { spawn } = require('child_process');
 
 const PORT = Number(process.env.GLASS_PORT) || 7931;
 // Two parts are wired to our own setup and stay off unless you point them somewhere (see README, "Optional parts"):
-// GLASS_DEN_URL: a workspace that takes dropped marks (ours was the Den, inside Homebase).
+// GLASS_DEN_URL: a workspace that takes dropped marks (the buttons call it the Den).
 // GLASS_EAR_DIR: a local speech-to-text folder with .venv and dump_transcribe.py (ours was the Ear). Windows dictation (Win+H) works in the note box without it.
 const DEN_ON = !!process.env.GLASS_DEN_URL, EAR_ON = !!process.env.GLASS_EAR_DIR;
 const hideOff = w => w && !w.isDestroyed() && w.webContents.executeJavaScript(`for (const id of [${[!DEN_ON && "'den'", !DEN_ON && "'t-den'", !EAR_ON && "'mic'"].filter(Boolean).join(',')}]) document.getElementById(id)?.remove();`).catch(() => {});
@@ -724,7 +724,7 @@ function whereIs(pts) {
 }
 
 // ---- A mark into the Den: a picture of exactly what he marked, its words as text, and his note ----
-const HOMEBASE = process.env.GLASS_DEN_URL || 'http://127.0.0.1:7930';
+const HOMEBASE = process.env.GLASS_DEN_URL || '';
 async function denApi(url, body) {
   const r = await fetch(HOMEBASE + '/api/den' + url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(30000) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || `Den said ${r.status}`); return j;
