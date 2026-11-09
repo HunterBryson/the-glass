@@ -26,6 +26,7 @@
 //   node tools/glass.js drop "<title>" [main|second]    put the marked screen on the Den table (only with GLASS_DEN_URL)
 //   node tools/glass.js wait [--min N]                  wait for them to send or drop something (unread sends come first)
 //   node tools/glass.js last                          their last send again, read fresh
+//   node tools/glass.js here                          are they at the PC? (here / away, from Windows' last keyboard or mouse input)
 //   node tools/glass.js unread | ack                    what they sent that no chat has taken yet; mark it received
 import { spawn, execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -38,6 +39,22 @@ const glassDir = path.join(here, '..', 'glass');
 const [cmd, ...a] = process.argv.slice(2);
 const flag = (k, d) => { const i = a.indexOf('--' + k); if (i < 0) return d; const v = a[i + 1]; a.splice(i, 2); return v; };
 const num = v => { const n = Number(v); if (!Number.isFinite(n)) throw new Error(`not a number: ${v}`); return n; };
+
+// Here or away: seconds since their last keyboard or mouse input (Windows' GetLastInputInfo).
+// Drawing on their screen unasked only makes sense when they're there to see it; from their
+// phone, a mark on an empty desk is just a mess waiting for them.
+const AWAY_MIN = Number(process.env.GLASS_AWAY_MIN) || 10;
+function idleSeconds() {
+  const ps = `Add-Type @'
+using System; using System.Runtime.InteropServices;
+public static class Idle { [StructLayout(LayoutKind.Sequential)] struct L { public uint cb; public uint t; }
+  [DllImport("user32.dll")] static extern bool GetLastInputInfo(ref L l);
+  public static uint Ms() { L l = new L(); l.cb = 8; GetLastInputInfo(ref l); return (uint)Environment.TickCount - l.t; } }
+'@; [Idle]::Ms()`;
+  try { return Math.round(Number(execFileSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8', windowsHide: true, timeout: 15000 }).trim()) / 1000); }
+  catch { return 0; }
+}
+const ago = s => s < 90 ? `${s}s` : s < 5400 ? `${Math.round(s / 60)}m` : `${Math.round(s / 3600)}h`;
 
 async function call(p, body, timeout = 20000) {
   const r = await fetch(BASE + p, { method: body === undefined ? 'GET' : 'POST', headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(timeout) });
@@ -187,6 +204,14 @@ function describe(e) {
 }
 
 try {
+  // Going first needs them in the room. Answers, versions and status on their own marks are fine
+  // (they just sent them), but unasked drawing waits until they're back. --anyway overrides.
+  const UNASKED = ['move', 'point', 'circle', 'box', 'underline', 'arrow', 'note', 'mark', 'point-at', 'steps', 'say'];
+  if (UNASKED.includes(cmd) && !a.includes('--anyway')) {
+    const idle = idleSeconds();
+    if (idle >= AWAY_MIN * 60) { console.log(`they're away from the PC (no input for ${ago(idle)}), so nothing was drawn. Tell them in chat instead, or save it for when they're back (glass.js here). --anyway draws regardless.`); process.exit(0); }
+  }
+  const any = a.indexOf('--anyway'); if (any >= 0) a.splice(any, 1);
   switch (cmd) {
     case 'start': await start(); break;
     case 'stop': if (await up()) { await call('/quit', {}); for (let i = 0; i < 40 && await up(); i++) await new Promise(r => setTimeout(r, 150)); } console.log('the glass is down'); break;
@@ -357,8 +382,9 @@ try {
     }
     // His last send again, read fresh (for when I need to look at it twice).
     case 'last': { const st = await call('/state'); const e = st.events.filter(x => x.op === 'send' && x.who === 'hunter').at(-1); console.log(e ? describe(readSend(e)) : 'no send yet'); break; }
+    case 'here': { const idle = idleSeconds(); console.log(idle >= AWAY_MIN * 60 ? `away (no input for ${ago(idle)})` : `here (last input ${ago(idle)} ago)`); break; }
     case 'unread': { const u = await call('/unread'); console.log(`link: ${u.link}`); console.log(u.events.length ? u.events.map(describe).join('\n') : 'nothing waiting'); break; }
     case 'ack': { const u = await call('/unread'); const at = u.events.at(-1)?.at; if (at) await call('/ack', { at }); console.log(at ? `marked ${u.events.length} send(s) received` : 'nothing waiting'); break; }
-    default: console.log('glass.js start|stop|state|shot|move|point|circle|box|underline|arrow|note|answer|status|den|point-at|steps|propose|watch|read|find|mark|say|clear|drop|wait|unread|ack');
+    default: console.log('glass.js start|stop|state|shot|move|point|circle|box|underline|arrow|note|answer|status|den|point-at|steps|propose|watch|read|find|mark|say|clear|drop|wait|here|unread|ack');
   }
 } catch (err) { console.error('glass:', err.message); process.exit(1); }

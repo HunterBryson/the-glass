@@ -60,7 +60,7 @@ Your AI watches the glass in the background. Nothing reaches it until you press 
 
 When it proposes a change to a file, ✓ Keep writes the change straight into that file and the card turns green. ✎ Steer and ✎ Reply wait for your next ➤ like any note. ✕ on any card takes it back.
 
-Your AI has hands of its own: it can read your screen as text, mark something by its words, ring a real button by its name, walk you through clicks one at a time, and watch a spot for changes. It never touches your mouse or keyboard to do it. Every mechanic, and the lessons behind them, is in [docs/how-it-works.md](docs/how-it-works.md).
+Your AI has hands of its own: it can read your screen as text, mark something by its words, ring a real button by its name, walk you through clicks one at a time, and watch a spot for changes. It never touches your mouse or keyboard to do it. And it only goes first when you're at your PC: if you're away (talking to it from your phone, say), it holds its marks and tells you in chat instead. Every mechanic, and the lessons behind them, is in [docs/how-it-works.md](docs/how-it-works.md).
 
 <img src="docs/puck.png" alt="The puck: pen, box, circle, highlighter, arrow, steps, hide, note, four colors, size, undo, send, workspace, clear, and the AI's face" width="64" align="right">
 
