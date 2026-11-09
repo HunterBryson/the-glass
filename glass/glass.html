@@ -220,6 +220,7 @@ function makeCard(G, who, text, to) {
   x.addEventListener('click', e => { e.stopPropagation(); const c = el._c; if (!c) return;
     // ✕ on a steer takes back just the steer; the rest of the thread stays (Nov 7: "I hit x and it deleted the entire chain").
     if (G.steerCard && G.steerCard.el === el) { host.unsteer(G.id); removeCard(c); G.steerCard = null; }
+    else if (el.classList.contains('reply')) removeCard(c); // an older, sent reply: just that one (the thread stays)
     else if (c.who === 'hunter') { host.removed(G.id); removeGroup(G); } else removeCard(c); });
   el.appendChild(x);
   G.box.appendChild(el);
@@ -389,6 +390,11 @@ window.glass = {
         // My answer ties to his words (his steer when he just steered, else his note); my versions tie to his box.
         // (Nov 7 night: "Your lines should connect to my comment if they are related.")
         const k = makeCard(G, 'odie', c.text, G.steerCard || his || (G.mark ? 'mark' : null));
+        // ✎ Reply keeps the thread going on this mark (Nov 9: "I need to be able to click one of these blocks to keep a thread to it going").
+        const acts = document.createElement('div'); acts.className = 'acts';
+        acts.innerHTML = `<button class="steer">✎ Reply</button>`;
+        acts.querySelector('.steer').onclick = e => { e.stopPropagation(); const b = k.el.getBoundingClientRect(); host.steer(G.id, { x: Math.round(b.left), y: Math.round(b.bottom + 8), w: Math.round(b.width) }, G.steerCard && !G.steerCard.sent ? G.steerCard.el.querySelector('.txt').textContent : ''); };
+        k.el.appendChild(acts);
         setOld(G, false);
         const p = placeCard(k);
         await glide(p[0] - 30, p[1] + 10); stepOff(p, k);
@@ -466,7 +472,7 @@ window.glass = {
       case 'sent': {
         // What he just sent stays bright; everything from before steps back.
         for (const G of groups.values()) setOld(G, !c.ids.includes(G.id));
-        for (const G of groups.values()) if (G.steerCard && c.ids.includes(G.id)) G.steerCard.el.querySelector('.who').textContent = 'You · steer (sent)';
+        for (const G of groups.values()) if (G.steerCard && c.ids.includes(G.id)) { G.steerCard.sent = true; G.steerCard.el.querySelector('.who').textContent = G.cards.some(x => x.el.classList.contains('proposal')) ? 'You · steer (sent)' : 'You · reply (sent)'; }
         return 0;
       }
       case 'ring': {
@@ -513,9 +519,12 @@ window.glass = {
       case 'steercard': {
         // His steer stays on screen, under my version, so he sees it landed. A new steer replaces the last one.
         const G = groups.get(c.id); if (!G) return 0;
-        if (G.steerCard) removeCard(G.steerCard);
+        if (G.steerCard && !G.steerCard.sent) removeCard(G.steerCard);
+        G.steerCard = null;
         const mine = G.cards.find(x => x.el.classList.contains('proposal'));
-        const k = makeCard(G, 'hunter', c.text, mine || 'mark'); k.el.querySelector('.who').textContent = c.label || 'You · steer (waits for ➤ · ✎ Steer edits it · ✕ takes it back)';
+        const last = [...G.cards].reverse().find(x => x.who === 'odie');
+        const k = makeCard(G, 'hunter', c.text, mine || last || 'mark'); k.el.classList.add('reply');
+        k.el.querySelector('.who').textContent = c.label || (mine ? 'You · steer (waits for ➤ · ✎ Steer edits it · ✕ takes it back)' : 'You · reply (waits for ➤ · ✎ Reply edits it · ✕ takes it back)');
         k.el.querySelector('.x').title = 'Take back this steer (the rest stays)';
         k.el.style.width = '400px'; placeCard(k); G.steerCard = k;
         return G.id;

@@ -169,7 +169,7 @@ function describe(e) {
   if (e.op === 'send') {
     if (e.error) return `${t} the send failed: ${e.error}`;
     const marks = [...(e.marks || [])].sort((p, q) => (p.kind === 'step' && q.kind === 'step') ? p.n - q.n : 0);
-    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? `STEER on my version (re-propose to #${m.gid}): "${m.text}"` : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       their words on it: "${m.note}"` : ''}`);
+    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? (m.file ? `STEER on my version (re-propose to #${m.gid}): "${m.text}"` : `REPLY on the thread at #${m.gid} (answer #${m.gid} again): "${m.text}"`) : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       their words on it: "${m.note}"` : ''}`);
     return `${t} THEY SENT YOU ${lines.length} mark(s), answer each beside it with: glass.js answer <#> "text"\n${lines.join('\n')}\n  look: ${(e.shots || []).join(' , ')}`;
   }
   if (e.op === 'tie') return `${t} he tied words to his ${e.of === 'ask' ? '?' : 'circle'} (#${e.id}): "${e.text}"`;

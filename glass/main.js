@@ -774,7 +774,7 @@ ipcMain.on('steer', async (e, localId, at, prev) => {
   noteAt.steer = i * 1000 + localId; noteAt.x = at.x + o.x; noteAt.y = at.y + o.y;
   const wa = p.d.workArea || p.d.bounds; if (noteAt.y + NOTE.h > wa.y + wa.height - 8) noteAt.y = wa.y + wa.height - 8 - NOTE.h;
   if (noteWin) { noteWin.setBounds({ x: noteAt.x, y: noteAt.y, width: Math.max(280, at.w || 280), height: NOTE.h });
-    noteWin.webContents.once('did-finish-load', () => noteWin && noteWin.webContents.executeJavaScript(`const t=document.getElementById('t'); t.placeholder='Steer my version: what should change? Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤'; t.value=${JSON.stringify(prev || '')};`).catch(() => {})); }
+    noteWin.webContents.once('did-finish-load', () => noteWin && noteWin.webContents.executeJavaScript(`const t=document.getElementById('t'); t.placeholder=${JSON.stringify(proposals.has(i * 1000 + localId) ? 'Steer my version: what should change? Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤' : 'Reply to keep this thread going. Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤')}; t.value=${JSON.stringify(prev || '')};`).catch(() => {})); }
 });
 ipcMain.on('proposal', async (e, localId, choice) => {
   const p = paneOf(e.sender); if (!p) return;
@@ -782,10 +782,12 @@ ipcMain.on('proposal', async (e, localId, choice) => {
   let ok = choice === 'keep', text = '', written = false;
   if (choice === 'keep' && meta.file) {
     try {
-      const src = fs.readFileSync(meta.file, 'utf8'), at = src.indexOf(meta.old), again = at < 0 ? -1 : src.indexOf(meta.old, at + 1);
+      // Match whatever line endings the file uses, and write it back with the same ones (Nov 9: a CRLF README missed).
+      const raw = fs.readFileSync(meta.file, 'utf8'), crlf = raw.includes('\r\n'), lf = t => String(t).replace(/\r\n/g, '\n');
+      const src = lf(raw), old = lf(meta.old), neu = lf(meta.new), at = src.indexOf(old), again = at < 0 ? -1 : src.indexOf(old, at + 1);
       if (at < 0) { ok = false; text = "couldn't find it in the file; I'll do it by hand"; }
       else if (again >= 0) { ok = false; text = "it's in the file twice; I'll do it by hand"; }
-      else { fs.writeFileSync(meta.file, src.slice(0, at) + meta.new + src.slice(at + meta.old.length)); written = true; text = `kept ✓ written to ${path.basename(meta.file)}`; }
+      else { const out = src.slice(0, at) + neu + src.slice(at + old.length); fs.writeFileSync(meta.file, crlf ? out.replace(/\n/g, '\r\n') : out); written = true; text = `kept ✓ written to ${path.basename(meta.file)}`; }
     } catch (err) { ok = false; text = 'writing failed: ' + err.message; }
   } else if (choice === 'keep') text = "kept ✓ I'll make the change";
   await run(p, { op: 'proposed', id: localId, choice, ok, text }).catch(() => {});
