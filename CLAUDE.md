@@ -17,7 +17,7 @@ I'm Odie, the AI it was built with (on Claude). This is how I use it, written so
    node tools/glass.js wait --min 60
    ```
    It costs nothing while it waits. When they press ➤ it prints what they sent and exits, and you're notified that it finished: read its output, answer, then start it again. If it times out it prints `nothing from them on the glass`; just start it again. While it's running, the puck's ring is amber, so they know you're there. Starting a watch stops any older watch from this same folder, so the newest session owns the glass.
-6. **Show them how, on their screen, by going first.** Don't just say it's up. `point-at` or `circle` the puck (the round face at the bottom right of the main screen) with a note: "This is your toolbox. Hover it." Then a `note` beside it with the three moves: pick ▭ box, drag around anything, type what you want to ask, press Enter, then press ➤. The README's "Your side" section has every tool if they want more. Use plain words with them: "the round face," "the arrow button," not "puck" or "send" or "watch."
+6. **Show them how, on their screen, by going first.** Don't just say it's up. `point-at` or `circle` the puck (the round face at the bottom right of the main screen) with a note: "This is your toolbox. Hover it." Then a `note` well to its left and above (about 450 units left of the puck, clear of the key list and the status pill, or the cards pile up on each other) with the three moves: pick ▭ box, drag around anything, type what you want to ask, press Enter, then press ➤. The README's "Your side" section has every tool if they want more. Use plain words with them: "the round face," "the arrow button," not "puck" or "send" or "watch."
 7. **Tell them about the Alt keys once:** Alt+A pen, Alt+S box, Alt+Q send, Alt+E clears the glass. These take over the same keys in Chrome and Firefox (Alt+E there used to open the menu), so if they're used to those, say so. The key list by the puck shows them all, and Alt+K hides it.
 
 That's the whole setup. One line in chat: it's up, fitted to their screen, and you're watching.
@@ -36,17 +36,18 @@ Small text reads worse on a scaled laptop, because pictures are taken at the gla
 ## What a send looks like
 
 ```
-23:14:44 THEY SENT YOU 1 mark(s), answer each beside it with: glass.js answer <#> "text"
-  #6 boxed x 2483-3255, y 442-667 (second screen)
-       in: chrome "Hunter and Odie - Google Chrome"
-       under it: "Before Claude, I was having a hard time using one agent ..."
-       their words on it: "this is a factually incorrect statement if you read the whole passage ..."
-  look: glass/data/shots/2026-11-07T23-14-44-505Z-second.png
+12:26:44 THEY SENT YOU 1 mark(s), answer each beside it with: glass.js answer <#> "text"
+  #1005 boxed x 690-1010, y 192-228
+       in: chrome "Trip plan - Google Docs - Google Chrome"
+       under it: "We leave Friday at 6 and drive straight through"
+       their words on it: "is this realistic? keep it short"
+       see just this spot: glass/data/shots/2026-11-10T12-26-43-694Z-main-mark1005.png
+  whole screens, only if I need more: glass/data/shots/2026-11-10T12-26-43-694Z-main.png
 ```
 
 **Their tools say things before their words do.** `[RED = wrong, cut this]`, `[GREEN = good, keep this]`, `[YELLOW = look here]`, and no tag for blue, which means just "this". A highlight is exactly the words they mean, tighter than a box. An arrow comes with `from:` and `to:`, meaning this goes there. `STEP 1`, `STEP 2` come in order: they want them done in that order. A hidden area is blacked out of every picture and read the glass gives you, on purpose.
 
-Each mark has a number (#6). **Use it exactly as the send prints it:** the thousands are which screen it's on and the rest is the mark, so a two-screen setup has numbers like #6 and #1006, and a laptop just #1, #2. Each comes with where it is, the app and window under it, the exact words under it (Windows' own OCR, local), and their words tied to it. `look:` is a screenshot with their marks on it: read it. Their keeps and steers on your versions come along in the same send. `node tools/glass.js last` reads the last send again.
+Each mark has a number (#6). **Use it exactly as the send prints it:** the thousands say which screen it's on and the rest is the mark: marks on the main screen are #1001, #1002 and up, and on a second screen #1, #2 and up. A laptop with one screen only ever sees the 1000s. Each comes with where it is, the app and window under it, the exact words under it (Windows' own OCR, local), and their words tied to it. `see just this spot:` is a close picture of that mark: look at it first. The whole screens are there if you need more. Their keeps and steers on your versions come along in the same send. `node tools/glass.js last` reads the last send again.
 
 ## Answer on the glass
 

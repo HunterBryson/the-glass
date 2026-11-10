@@ -5,7 +5,9 @@
       "Bash(node tools/glass-edit.mjs:*)",
       "Bash(npm run setup)",
       "Bash(npm start)",
-      "Read(glass/data/shots/**)"
+      "Read(glass/data/shots/**)",
+      "Bash(where.exe node)",
+      "Bash(export PATH=*)"
     ]
   }
 }

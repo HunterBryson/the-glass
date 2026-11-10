@@ -219,7 +219,7 @@ async function restart() {
       back++;
     } catch (err) { console.log(`couldn't put one back: ${err.message}`); }
   }
-  console.log(`the glass restarted${scene.length ? `; put back ${back} of ${scene.length} thing(s)` : ''}. My watch rides through a restart, no need to start it again.`);
+  console.log(`the glass restarted${scene.length ? `; put back ${back} of ${scene.length} thing(s)` : ''}. A running watch rides through a restart; no need to start it again.`);
 }
 
 async function start() {
