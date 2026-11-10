@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(node tools/glass.js:*)",
+      "Bash(node tools/glass-edit.mjs:*)",
       "Bash(npm run setup)",
       "Bash(npm start)",
       "Read(glass/data/shots/**)"

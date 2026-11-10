@@ -145,7 +145,27 @@ async function locateAny(name, app) {
 }
 
 // A send, read: the window and the words under each of his marks.
+// A picture of just the spot around each mark (his box plus room), so I look at what he marked
+// instead of reading a whole screen to find it. The full screens stay in the send for when I need them.
+function cropMarks(e) {
+  const jobs = [];
+  for (const m of e.marks || []) {
+    const b = m.box || (m.from && m.to ? { x1: Math.min(m.from[0], m.to[0]), y1: Math.min(m.from[1], m.to[1]), x2: Math.max(m.from[0], m.to[0]), y2: Math.max(m.from[1], m.to[1]) } : m.x != null ? { x1: m.x, y1: m.y, x2: m.x, y2: m.y } : null);
+    if (!b || m.gid == null) continue;
+    const scr = (e.clean || []).find(s => s.screen === (m.screen || 'main')) || {}, o = scr.bounds || { x: m.screen === 'second' ? 1920 : 0, y: 0, width: 1920, height: 1080 };
+    const shot = (e.shots || []).find(f => f.includes(`-${m.screen === 'second' ? 'second' : 'main'}`)); if (!shot) continue;
+    const pad = 160, x = Math.max(0, Math.round(b.x1 - o.x - pad)), y = Math.max(0, Math.round(b.y1 - o.y - pad));
+    const w = Math.min((o.width || 1920) - x, Math.round(b.x2 - b.x1 + pad * 2)), h = Math.min((o.height || 1080) - y, Math.round(b.y2 - b.y1 + pad * 2));
+    if (w < 20 || h < 20) continue;
+    const out = shot.replace(/\.png$/i, `-mark${m.gid}.png`); jobs.push({ shot, out, x, y, w, h }); m.crop = out;
+  }
+  if (!jobs.length) return;
+  const ps = 'Add-Type -AssemblyName System.Drawing;' + jobs.map(j => `$i=[Drawing.Image]::FromFile('${j.shot}');$b=New-Object Drawing.Bitmap ${j.w},${j.h};$g=[Drawing.Graphics]::FromImage($b);$g.DrawImage($i,(New-Object Drawing.Rectangle 0,0,${j.w},${j.h}),(New-Object Drawing.Rectangle ${j.x},${j.y},${j.w},${j.h}),[Drawing.GraphicsUnit]::Pixel);$b.Save('${j.out}');$g.Dispose();$b.Dispose();$i.Dispose();`).join('');
+  try { execFileSync('powershell', ['-NoProfile', '-Command', ps], { windowsHide: true, timeout: 20000 }); } catch { for (const m of e.marks || []) delete m.crop; }
+}
+
 function readSend(e) {
+  if (e.op === 'send') cropMarks(e);
   if (e.op !== 'send' || !e.clean || !e.clean.length) return e;
   let words = [];
   try { words = wordsOf(e.clean); } catch (err) { e.readError = String(err.message || err); return e; }
@@ -160,7 +180,50 @@ function readSend(e) {
   return e;
 }
 
+// A stop I meant: my watch sees it and waits for the glass to come back instead of starting it again
+// (it used to restart the glass the instant I stopped it, which made every restart a fight).
+import fs from 'node:fs';
+const STOPPING = path.join(glassDir, 'data', '.stopping');
+const stoppedOnPurpose = () => { try { return Date.now() - Number(fs.readFileSync(STOPPING, 'utf8')) < 90000; } catch { return false; } };
+async function stopGlass() {
+  try { fs.writeFileSync(STOPPING, String(Date.now())); } catch {}
+  if (await up()) { await call('/quit', {}); for (let i = 0; i < 40 && await up(); i++) await new Promise(r => setTimeout(r, 150)); }
+}
+async function comeBack() {
+  // While a stop I meant is fresh, wait for it to come back; otherwise start it.
+  for (let i = 0; i < 120 && stoppedOnPurpose(); i++) { if (await up()) return; await new Promise(r => setTimeout(r, 500)); }
+  if (!(await up())) await start();
+}
+
+// Restart the glass and put back what was on it: his marks and notes, my answers, the status pills.
+async function restart() {
+  let scene = [];
+  if (await up()) {
+    scene = (await call('/do', { op: 'scene' }).catch(() => ({ id: [] }))).id || [];
+    fs.writeFileSync(path.join(glassDir, 'data', 'scene.json'), JSON.stringify(scene, null, 1));
+    if (idleSeconds() < AWAY_MIN * 60) { await call('/do', { op: 'say', text: 'Restarting the glass for a few seconds. Everything on it comes back.' }).catch(() => {}); await new Promise(r => setTimeout(r, 1800)); }
+  }
+  await stopGlass();
+  try { fs.unlinkSync(STOPPING); } catch {}
+  await start();
+  await new Promise(r => setTimeout(r, 1500));
+  let back = 0;
+  for (const g of scene) {
+    try {
+      let id = 0; const his = g.his[0];
+      if (g.who === 'hunter' && g.mark) id = (await call('/do', { op: 'hismark', ...g.mark, kind: g.kind, color: g.color, text: his ? his.text : '', card: his ? his.at : undefined })).id;
+      else if (g.who === 'hunter' && his) id = (await call('/do', { op: 'hisnote', x: his.at.x, y: his.at.y, text: his.text })).id;
+      if (!id) continue;
+      for (const t of g.mine) await call('/do', { op: 'answer', to: id, text: t });
+      if (g.badge) await call('/do', { op: 'status', to: id, state: g.badge });
+      back++;
+    } catch (err) { console.log(`couldn't put one back: ${err.message}`); }
+  }
+  console.log(`the glass restarted${scene.length ? `; put back ${back} of ${scene.length} thing(s)` : ''}. My watch rides through a restart, no need to start it again.`);
+}
+
 async function start() {
+  try { fs.unlinkSync(STOPPING); } catch {}
   if (await up()) return console.log('the glass is already up');
   const electron = createRequire(path.join(glassDir, 'package.json'))('electron');
   // A chat's shell can carry ELECTRON_RUN_AS_NODE (the Claude app is Electron too); with it, the glass starts as plain node and dies.
@@ -186,8 +249,8 @@ function describe(e) {
   if (e.op === 'send') {
     if (e.error) return `${t} the send failed: ${e.error}`;
     const marks = [...(e.marks || [])].sort((p, q) => (p.kind === 'step' && q.kind === 'step') ? p.n - q.n : 0);
-    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? (m.file ? `STEER on my version (re-propose to #${m.gid}): "${m.text}"` : `REPLY on the thread at #${m.gid} (answer #${m.gid} again): "${m.text}"`) : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       their words on it: "${m.note}"` : ''}`);
-    return `${t} THEY SENT YOU ${lines.length} mark(s), answer each beside it with: glass.js answer <#> "text"\n${lines.join('\n')}\n  look: ${(e.shots || []).join(' , ')}`;
+    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? (m.file ? `STEER on my version (re-propose to #${m.gid}): "${m.text}"` : `REPLY on the thread at #${m.gid} (answer #${m.gid} again): "${m.text}"`) : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       their words on it: "${m.note}"` : ''}${m.crop ? `\n       see just this spot: ${m.crop}` : ''}`);
+    return `${t} THEY SENT YOU ${lines.length} mark(s), answer each beside it with: glass.js answer <#> "text"\n${lines.join('\n')}\n  whole screens, only if I need more: ${(e.shots || []).join(' , ')}`;
   }
   if (e.op === 'tie') return `${t} he tied words to his ${e.of === 'ask' ? '?' : 'circle'} (#${e.id}): "${e.text}"`;
   if (e.op === 'note') return `${t} he wrote a note at ${e.x},${e.y}: "${e.text}"`;
@@ -214,7 +277,8 @@ try {
   const any = a.indexOf('--anyway'); if (any >= 0) a.splice(any, 1);
   switch (cmd) {
     case 'start': await start(); break;
-    case 'stop': if (await up()) { await call('/quit', {}); for (let i = 0; i < 40 && await up(); i++) await new Promise(r => setTimeout(r, 150)); } console.log('the glass is down'); break;
+    case 'stop': await stopGlass(); console.log('the glass is down (my watch waits for it to come back)'); break;
+    case 'restart': await restart(); break;
     case 'state': {
       if (!(await up())) { console.log('the glass is down'); break; }
       const s = await call('/state');
@@ -335,7 +399,7 @@ try {
     case 'wait': {
       // Short stretches (long requests get cut off), and if the glass goes down, it comes back up.
       const min = Number(flag('min', 60)), end = Date.now() + min * 60000;
-      if (!(await up())) await start();
+      if (!(await up())) await comeBack();
       // The newest chat owns the glass: any older watch (another chat, or a leftover) is stopped, so it can't catch his sends.
       try {
         const ps = `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine.Replace('\\','/').ToLower().Contains('${path.join(here, 'glass.js').replace(/\\/g, '/').toLowerCase()}') -and $_.CommandLine -like '*glass.js wait*' -and $_.ProcessId -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force; $_.ProcessId }`;
@@ -361,7 +425,7 @@ try {
           // 15-second stretches: a watch whose chat closed notices within seconds, so his puck never says "connected" falsely for long.
           const ms = Math.min(15000, end - Date.now());
           const r = await call(`/wait?since=${since}&ms=${ms}`, undefined, ms + 10000);
-          // A stretch that times out comes back with whatever happened; only his ➤ (or a Den drop, or a watched spot) wakes me.
+          // A stretch that times out comes back with whatever happened; only their ➤ (or a Den drop, or a watched spot) wakes me.
           // His Keep/Drop on my versions never wakes me (Nov 7: "I'd like to not have things just auto-fire"): they're
           // written already, and they come to me together with his next ➤, so he can keep several in a row.
           kept.push(...r.events.filter(e => e.op === 'proposal'));
@@ -369,12 +433,13 @@ try {
           if (r.events.some(wakes)) got = r.events.filter(wakes);
           since = r.seq;
         } catch {
-          if (!(await up())) { console.log('the glass went down, starting it again'); await start(); since = 0; }
+          if (!(await up())) { await comeBack(); since = (await call('/state').catch(() => ({ seq: 0 }))).seq; }
         }
       }
       if (!parentAlive()) break;
       got = [...kept, ...got].map(readSend);
       console.log(got.length ? got.map(describe).join('\n') : 'nothing from them on the glass');
+      console.log(`Start the watch again: node tools/glass.js wait --min ${min}`);
       for (const e of got) for (const m of e.marks || []) if (m.gid != null) await call('/do', { op: 'status', to: m.gid, state: 'working' }).catch(() => {});
       const lastSend = got.filter(e => e.op === 'send').at(-1);
       if (lastSend) await call('/ack', { at: lastSend.at });

@@ -129,11 +129,35 @@ function watchWin(win, name) {
   win.webContents.on('console-message', (_e, level, msg) => { if (level >= 2) trail(`${name} console: ${msg}`); });
 }
 
+// He drags the puck to where he's working (his ask, Nov 9: "Sometimes I dont wanna click the keybinds so i want to
+// drag the puck over to where im working"). The face sits in the window's bottom-right corner, so the drag moves that
+// corner; the window still grows up and left from it when the tools open. The spot is kept in data/puck.json.
+const PUCK_AT = path.join(DATA, 'puck.json');
+let puckOff = { dx: 0, dy: 0 };
+try { const s = JSON.parse(fs.readFileSync(PUCK_AT, 'utf8')); if (Number.isFinite(s.dx) && Number.isFinite(s.dy)) puckOff = s; } catch {}
 function puckBounds(prim, open) {
   const h = open ? PUCK.open : PUCK.closed, b = prim.workArea;
   const wide = lastLink && JSON.parse(lastLink).state !== 'on' || unread.length > 0;
-  const w = open ? 260 : wide ? 340 : PUCK.w; return { x: b.x + b.width - w - PUCK.right, y: b.y + b.height - h - PUCK.bottom + 40, width: w, height: h };
+  const w = open ? 260 : wide ? 340 : PUCK.w;
+  let ax = b.x + b.width - PUCK.right + puckOff.dx, ay = b.y + b.height - PUCK.bottom + 40 + puckOff.dy;
+  // Keep the face on a screen. The face never moves when the tools open: with no room above, they open below it;
+  // with no room to the left, they open to its right (the puck page flips to match).
+  const d = screen.getDisplayNearestPoint({ x: Math.round(ax - 30), y: Math.round(ay - 30) }).bounds;
+  ax = Math.min(Math.max(ax, d.x + PUCK.w), d.x + d.width); ay = Math.min(Math.max(ay, d.y + PUCK.closed), d.y + d.height);
+  const below = ay - h < d.y, lefty = ax - w < d.x;
+  const flip = (below ? 'below ' : '') + (lefty ? 'lefty' : '');
+  if (flip !== puckFlip) { puckFlip = flip; if (puck && !puck.isDestroyed()) puck.webContents.send('flip', flip); }
+  return { x: Math.round(lefty ? ax - PUCK.w : ax - w), y: Math.round(below ? ay - PUCK.closed : ay - h), width: w, height: h };
 }
+let puckFlip = '';
+// The page's own mouse numbers lag while its window moves under them (the puck drifted up and away on Nov 9),
+// so the drag follows the real cursor from Windows, 60 times a second, until he lets go.
+let puckGrab = null, puckTick = null;
+ipcMain.on('puck-drag', (_e, k, px, py) => {
+  const follow = () => { if (!puckGrab) return; const c = screen.getCursorScreenPoint(); puckOff = { dx: puckGrab.dx + c.x - puckGrab.x, dy: puckGrab.dy + c.y - puckGrab.y }; sizePuck(); };
+  if (k === 'start') { const c = Number.isFinite(px) ? { x: Math.round(px), y: Math.round(py) } : screen.getCursorScreenPoint(); puckGrab = { x: c.x, y: c.y, dx: puckOff.dx, dy: puckOff.dy }; clearInterval(puckTick); puckTick = setInterval(follow, 16); sizePuck(); return; }
+  if (k === 'end' && puckGrab) { follow(); clearInterval(puckTick); puckGrab = null; fs.writeFile(PUCK_AT, JSON.stringify(puckOff), () => {}); sizePuck(); }
+});
 
 function buildPuck(prim) {
   if (puck && !puck.isDestroyed()) puck.destroy();
@@ -146,7 +170,7 @@ function buildPuck(prim) {
   puck.setContentProtection(false);
   puck.webContents.on('did-finish-load', () => puck && !puck.isDestroyed() && puck.webContents.send('style', style));
   puck.loadFile(path.join(__dirname, 'puck.html'), { query: { ai: AI_NAME } }).then(() => hideOff(puck));
-  puck.webContents.on('did-finish-load', () => { puck.showInactive(); puck.moveTop(); linkSay(true); });
+  puck.webContents.on('did-finish-load', () => { puck.webContents.send('flip', puckFlip); puck.showInactive(); puck.moveTop(); linkSay(true); });
   watchWin(puck, 'puck');
 }
 
@@ -408,7 +432,8 @@ ipcMain.on('pass-wheel', () => {
   wheelT = setTimeout(() => { if (mode !== 'off') for (const p of panes) p.win.setIgnoreMouseEvents(false); }, 700);
 });
 let puckOpen = false;
-const sizePuck = () => { if (puck && !puck.isDestroyed()) puck.setBounds(puckBounds(screen.getPrimaryDisplay(), puckOpen || mode !== 'off' || pending.length > 0)); };
+// While he drags, the puck is just the face, so it stays under his cursor.
+const sizePuck = () => { if (puck && !puck.isDestroyed()) puck.setBounds(puckBounds(screen.getPrimaryDisplay(), !puckGrab && (puckOpen || mode !== 'off' || pending.length > 0))); };
 ipcMain.on('puck-open', (_e, on) => { puckOpen = on; sizePuck(); });
 ipcMain.on('clear', async () => { for (const p of panes) await run(p, { op: 'clear', who: 'all' }); tracked.clear(); pending = []; hides = []; style.step = 1; sayStyle(); puckSay(); log({ who: 'hunter', op: 'clear' }); });
 let penNoteT = null;
@@ -883,7 +908,7 @@ async function doCmd(cmd) {
   }
   // Every pane hears clear/list; drawing goes to the screen the mark starts on.
   if (cmd.op === 'clear') { if (!cmd.id && (cmd.who === 'all' || cmd.who === 'hunter')) hides = []; let n = 0; for (const p of panes) n += await run(p, cmd); return n; }
-  if (cmd.op === 'list') { const all = []; for (const p of panes) all.push(...(await run(p, cmd))); return all; }
+  if (cmd.op === 'list' || cmd.op === 'scene') { const all = []; for (const p of panes) all.push(...(await run(p, cmd))); return all; }
   if (cmd.op === 'say' || cmd.op === 'hide') return run(active, cmd);
   const ax = cmd.x ?? cmd.x1 ?? (cmd.points && cmd.points[0][0]), ay = cmd.y ?? cmd.y1 ?? (cmd.points && cmd.points[0][1]);
   const target = panes.find(p => ax >= p.d.bounds.x && ax < p.d.bounds.x + p.d.bounds.width && ay >= p.d.bounds.y && ay < p.d.bounds.y + p.d.bounds.height) || active;

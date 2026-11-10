@@ -64,7 +64,7 @@ Your AI has hands of its own: it can read your screen as text, mark something by
 
 <img src="docs/puck.png" alt="The puck: pen, box, circle, highlighter, arrow, steps, hide, note, four colors, size, undo, send, workspace, clear, and the AI's face" width="64" align="right">
 
-**The puck** sits at the bottom right of your main screen with every tool. The face is your AI: an amber ring means it's listening, grey means nobody's connected (anything you send waits for the next session).
+**The puck** sits at the bottom right of your main screen with every tool. The face is your AI: an amber ring means it's listening, grey means nobody's connected (anything you send waits for the next session). **Drag the face** to move the puck to wherever you're working; a plain click still picks up the pen, and it remembers the spot.
 
 ## Your side: the puck
 
@@ -88,7 +88,7 @@ Hover the puck for its tools:
 
 **Why colors mean things.** In Paint a color is decoration. Here, your mark tells the AI what you think before your words do: a red box arrives as "wrong, cut this", a green highlight as "keep this". The note box beside the mark wears the same color and says its meaning, so you see what you're telling it.
 
-When you finish a mark, a note box opens beside it. Type what you mean (or dictate with Win+H) and press Enter, and your words are tied to that mark. Esc skips it. Right-click turns your tool off. Any note can be grabbed and moved, and the AI's answer moves with it. Hover a card for its ✕ to remove it. Clicks pass through the glass to whatever is underneath, except on its own notes.
+When you finish a mark, a note box opens beside it. Type what you mean (or dictate with Win+H) and press Enter, and your words are tied to that mark. Esc skips it. Right-click turns your tool off. Any note can be grabbed and moved, and the AI's answer moves with it. Hover a card for its ✕ to remove it. When the AI marks a thread done, it folds down to a small tag after 20 seconds so it stops covering your work; click the tag to open it again. Clicks pass through the glass to whatever is underneath, except on its own notes.
 
 **Nothing reaches the AI until you press ➤.** You can mark five things, change your mind, undo, and send when you're ready.
 

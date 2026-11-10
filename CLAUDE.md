@@ -57,6 +57,8 @@ Each mark has a number (#6). **Use it exactly as the send prints it:** the thous
   node tools/glass.js propose 6 "your new text" --file path/to/the/file --old "the exact text in that file"
   ```
   The new text is only what replaces the outlined part, written so it reads in place. Your version appears beside their box, clean, with ✓ Keep, ✎ Steer, ✗ Drop. Keep writes it into the file (only if `--old` is there exactly once) and the card turns green and stays. When what they marked isn't a file on disk (a web page, an email, another app), leave out `--file` and `--old`: your version still shows beside it to keep or steer, and you make the change yourself on Keep. If they scrolled since they marked it, place it by the words instead: `propose "first words" --to "last words" "new text" --file ... --old ...`.
+- **Each send comes with `see just this spot:`** for every mark, a picture of just that area with room around it. Look at that first, and the whole screen (`look:`) only if you need more.
+- `status <#> done` also folds the thread to a small tag after 20 seconds, so finished answers stop covering their work. A click opens it again.
 - After acting, take `node tools/glass.js shot main` (or `second`, `all`: the screen the mark is on) and look at it. A command that succeeded can still land in the wrong place.
 
 ## Read their screen yourself
@@ -75,7 +77,9 @@ Each mark has a number (#6). **Use it exactly as the send prints it:** the thous
 - **Read the whole thing, not just the box.** A box is a pointer into something bigger (a document, a page, a goal). Before you write a version, read what it lives in: the file if there is one, otherwise `read` the screen.
 - **Status pills:** `working` shows "on it" on their mark, `done` shows done, `you` shows "needs you" (their turn), `clear` removes it.
 - **Show your version clean.** Plain words beside theirs. Crossed-out, interleaved markup is unreadable on a screen.
-- **Don't restart the glass while their marks are up.** A restart wipes them.
+- **To restart the glass, use `node tools/glass.js restart`,** never stop-then-start. It says so on their screen, saves what's on the glass (their marks and notes, your answers, the status pills, in `glass/data/scene.json`), restarts, and puts it back. Your watch rides through it; no need to start a new one unless you changed `tools/glass.js` itself. (A pen drawing comes back as a box around where it was.)
+- **Changing the glass's own pages** (`glass.html`, `puck.html`, `note.html`): `node tools/glass-edit.mjs <file> "old" "new"` writes them in place without the app opening them over their screen. Then `restart`.
+- **To try a gesture from their side** before handing it over: `powershell -NoProfile -ExecutionPolicy Bypass -File tools/mouse.ps1 drag|click|hover|move|where ...` moves their real mouse and puts the cursor back after. Only while you're testing with them watching, never while they work.
 
 ## Names, ports and privacy
 

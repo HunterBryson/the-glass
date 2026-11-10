@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('host', {
   noteDrag: (k, x, y) => ipcRenderer.send('note-drag', k, x, y),
   noteSize: h => ipcRenderer.send('note-size', h),
   puckOpen: on => ipcRenderer.send('puck-open', on),
+  puckDrag: (k, x, y) => ipcRenderer.send('puck-drag', k, x, y),
+  onFlip: fn => ipcRenderer.on('flip', (_e, f) => fn(f)),
   cardRects: r => ipcRenderer.send('card-rects', r),
   catchMouse: on => ipcRenderer.send('catch', on),
   passWheel: () => ipcRenderer.send('pass-wheel'),

@@ -10,6 +10,11 @@
   #face { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--odie); background: center/cover url(odie.png); cursor: pointer;
           box-shadow: 0 4px 14px rgba(0,0,0,.6); opacity: .85; transition: transform .15s, opacity .15s; }
   #face:hover { opacity: 1; transform: scale(1.06); }
+  body.moving #face { cursor: grabbing; opacity: 1; transform: scale(1.1); }
+  /* No room above: tools open below the face. No room left: they open to its right. The face stays put. */
+  body.below #wrap { bottom: auto; top: 12px; flex-direction: column; }
+  body.lefty #wrap { right: auto; left: 12px; }
+  body.lefty #tip, body.lefty #link { right: auto; left: 64px; }
   body.drawing #face { border-color: var(--his); box-shadow: 0 0 0 4px rgba(108,198,255,.22), 0 4px 14px rgba(0,0,0,.6); opacity: 1; }
   #tools { display: none; flex-direction: column; gap: 6px; padding: 6px; border-radius: 14px; background: var(--card); border: 1px solid var(--edge); }
   body.open #tools { display: flex; }
@@ -72,7 +77,7 @@ document.querySelectorAll('[data-tip]').forEach(b => b.dataset.tip = b.dataset.t
 let mode = 'off', pending = 0, closeT;
 const stayOpen = () => mode !== 'off' || pending > 0;
 function open(on) { clearTimeout(closeT); document.body.classList.toggle('open', on); host.puckOpen(on); }
-$('wrap').addEventListener('mouseenter', () => open(true));
+$('wrap').addEventListener('mouseenter', () => { if (!grab) open(true); });
 $('wrap').addEventListener('mouseleave', () => { if (!stayOpen()) closeT = setTimeout(() => open(false), 500); tip.style.display = 'none'; });
 // The face says whether I'm listening in the puck's own label, to its left, so nothing covers the face.
 $('face').addEventListener('mouseenter', () => { const f = $('face'), r = f.getBoundingClientRect(); if (!f.dataset.tip) return; tip.textContent = f.dataset.tip; tip.style.display = 'block'; tip.style.top = (r.top + 14) + 'px'; });
@@ -87,7 +92,18 @@ function show(m) {
   if (stayOpen()) open(true); else closeT = setTimeout(() => open(false), 800);
 }
 const pick = m => host.mode(mode === m ? 'off' : m);
-$('face').addEventListener('click', () => pick('pen'));
+// Drag the face to move the puck where he's working; a plain click still starts the pen.
+let grab = null, dragged = false;
+$('face').addEventListener('pointerdown', e => { if (e.button !== 0) return; grab = { x: e.screenX, y: e.screenY }; dragged = false; $('face').setPointerCapture(e.pointerId); });
+$('face').addEventListener('pointermove', e => {
+  if (!grab) return;
+  if (!dragged && Math.hypot(e.screenX - grab.x, e.screenY - grab.y) > 5) { dragged = true; open(false); document.body.classList.add('moving'); tip.style.display = 'none'; host.puckDrag('start', grab.x, grab.y); }
+  if (dragged) host.puckDrag('move', e.screenX, e.screenY);
+});
+const letGo = e => { if (!grab) return; if (dragged) host.puckDrag('end', e.screenX, e.screenY); grab = null; document.body.classList.remove('moving'); };
+$('face').addEventListener('pointerup', letGo);
+$('face').addEventListener('pointercancel', letGo);
+$('face').addEventListener('click', () => { if (dragged) { dragged = false; return; } pick('pen'); });
 $('t-pen').addEventListener('click', () => pick('pen'));
 $('t-box').addEventListener('click', () => pick('box'));
 $('t-note').addEventListener('click', () => pick('note'));
@@ -109,6 +125,7 @@ $('t-send').addEventListener('click', () => host.send());
 $('t-den').addEventListener('click', () => host.drop('From the glass'));
 $('t-clear').addEventListener('click', () => host.clear());
 host.onMode(show);
+host.onFlip(f => { document.body.classList.toggle('below', f.includes('below')); document.body.classList.toggle('lefty', f.includes('lefty')); });
 host.onPending(n => {
   pending = n; $('t-undo').disabled = n === 0; $('t-send').disabled = n === 0;
   $('count').textContent = n; $('count').style.display = n ? 'block' : 'none';

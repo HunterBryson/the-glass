@@ -40,6 +40,10 @@
   .card.folded .txt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
   .card .more { display: none; margin-top: 3px; font-size: 12px; color: var(--dim); }
   .card.long .more { display: block; }
+  /* Tucked: a finished thread folds to its name tag; a click opens it again. */
+  .card.tucked > *:not(.who):not(.more) { display: none !important; }
+  .card.tucked .more { display: block; }
+  .card.tucked { opacity: .8; padding-bottom: 6px; }
   .card.dragging { cursor: grabbing; }
   /* ✕ on every card (his ask, Nov 7: "I can't get rid of the box... I can't delete it"): on his note it takes the whole thread, on mine just my card. */
   .card .x { position: absolute; top: -11px; right: -11px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--odie); background: #15171c; color: var(--ink);
@@ -331,6 +335,7 @@ document.addEventListener('mousemove', e => {
 document.addEventListener('mouseup', e => {
   if (!drag) return;
   const d = drag; drag = null; d.c.el.classList.remove('dragging');
+  if (!d.moved && d.c.el.classList.contains('tucked')) { for (const k of d.c.G.cards) { k.el.classList.remove('tucked'); const mo = k.el.querySelector('.more'); if (mo) mo.textContent = k.el.classList.contains('folded') ? 'click to open ▾' : 'click to fold ▴'; } clearTimeout(d.c.G.tuckT); for (const k of d.c.G.cards) aim(k); reaimTo(d.c); e.stopImmediatePropagation(); return; }
   if (!d.moved && d.c.el.classList.contains('long')) { d.c.el.classList.toggle('folded'); d.c.el.querySelector('.more').textContent = d.c.el.classList.contains('folded') ? 'click to open ▾' : 'click to fold ▴'; }
   reaimTo(d.c); e.stopImmediatePropagation(); hover(e.clientX, e.clientY);
 }, true);
@@ -344,10 +349,18 @@ window.glass = {
       pos = c.enter === 'left' ? { x: 0, y: ty } : c.enter === 'right' ? { x: scr.width - 1, y: ty } : c.enter === 'top' ? { x: tx, y: 0 } : { x: tx, y: scr.height - 1 };
       place();
     }
+    // ✎ Reply on any card of mine: my answers and the marks I make first alike
+    // (Nov 9 morning: "I need to be able to click one of these blocks to keep a thread to it going"; that evening: "I cannot respond to your blocks").
+    const addReply = (G, k) => {
+      const acts = document.createElement('div'); acts.className = 'acts';
+      acts.innerHTML = `<button class="steer">✎ Reply</button>`;
+      acts.querySelector('.steer').onclick = e => { e.stopPropagation(); const b = k.el.getBoundingClientRect(); host.steer(G.id, { x: Math.round(b.left), y: Math.round(b.bottom + 8), w: Math.round(b.width) }, G.steerCard && !G.steerCard.sent ? G.steerCard.el.querySelector('.txt').textContent : ''); };
+      k.el.appendChild(acts);
+    };
     const mine = async (mark, draw, text, anchor) => {
       const G = makeGroup('odie', mark, anchor);
       if (draw) await draw(G);
-      if (text) { const k = makeCard(G, 'odie', text, mark ? 'mark' : null); const p = mark ? placeCard(k) : placeCard(k, { x: c.x + 14, y: c.y - 20 }); stepOff(p, k); }
+      if (text) { const k = makeCard(G, 'odie', text, mark ? 'mark' : null); addReply(G, k); const p = mark ? placeCard(k) : placeCard(k, { x: c.x + 14, y: c.y - 20 }); stepOff(p, k); }
       return G.id;
     };
     switch (c.op) {
@@ -391,10 +404,7 @@ window.glass = {
         // (Nov 7 night: "Your lines should connect to my comment if they are related.")
         const k = makeCard(G, 'odie', c.text, G.steerCard || his || (G.mark ? 'mark' : null));
         // ✎ Reply keeps the thread going on this mark (Nov 9: "I need to be able to click one of these blocks to keep a thread to it going").
-        const acts = document.createElement('div'); acts.className = 'acts';
-        acts.innerHTML = `<button class="steer">✎ Reply</button>`;
-        acts.querySelector('.steer').onclick = e => { e.stopPropagation(); const b = k.el.getBoundingClientRect(); host.steer(G.id, { x: Math.round(b.left), y: Math.round(b.bottom + 8), w: Math.round(b.width) }, G.steerCard && !G.steerCard.sent ? G.steerCard.el.querySelector('.txt').textContent : ''); };
-        k.el.appendChild(acts);
+        addReply(G, k);
         setOld(G, false);
         const p = placeCard(k);
         await glide(p[0] - 30, p[1] + 10); stepOff(p, k);
@@ -404,6 +414,8 @@ window.glass = {
         const G = groups.get(c.id); if (!G) throw new Error(`no mark #${c.id} on this screen`);
         if (G.badge) G.badge.remove();
         if (c.state === 'clear') { G.badge = null; return G.id; }
+        clearTimeout(G.tuckT);
+        if (c.state === 'done') G.tuckT = setTimeout(() => { if (!groups.has(G.id)) return; for (const k of G.cards) { if (k.el.matches(':hover') || k.el.querySelector('textarea')) return; } for (const k of G.cards) { k.el.classList.add('tucked'); const mo = k.el.querySelector('.more'); if (mo) mo.textContent = 'done · click to open ▾'; aim(k); } }, 20000);
         const words = { working: `${AI}'s on it`, done: 'done', you: 'needs you' };
         const b = document.createElement('div'); b.className = 'badge ' + c.state;
         b.innerHTML = `<img src="odie.png" alt=""><b></b>`; b.querySelector('b').textContent = c.text || words[c.state] || c.state;
@@ -581,6 +593,16 @@ window.glass = {
         return { mark: true, x1: G.mark.x1 + G.dx, y1: G.mark.y1 + G.dy, x2: G.mark.x2 + G.dx, y2: G.mark.y2 + G.dy };
       }
       case 'list': return [...groups.values()].map(G => ({ id: G.id, who: G.who, cards: G.cards.map(k => k.who) }));
+      // Everything on this screen, in screen pixels, so a restart can put it back (glass.js restart).
+      case 'scene': return [...groups.values()].filter(G => G.who === 'hunter' || G.cards.some(k => k.who === 'odie')).map(G => {
+        const shape = G.g.querySelector('rect.stroke, ellipse.stroke, polyline.hl, line.stroke'), tag = shape ? shape.tagName.toLowerCase() : '';
+        const kind = tag === 'ellipse' ? 'ellipse' : tag === 'polyline' ? 'highlight' : 'box';
+        const color = Object.keys(HEX).find(k => shape && (shape.style.stroke || '').toLowerCase() === HEX[k].toLowerCase()) || 'blue';
+        const txt = k => k.el.querySelector('.txt').textContent, at = k => ({ x: (parseFloat(k.el.style.left) || 0) + origin.x, y: (parseFloat(k.el.style.top) || 0) + origin.y });
+        const his = G.cards.filter(k => k.who === 'hunter'), mine = G.cards.filter(k => k.who === 'odie' && !k.el.classList.contains('proposal'));
+        const m = G.mark ? { x1: G.mark.x1 + G.dx + origin.x, y1: G.mark.y1 + G.dy + origin.y, x2: G.mark.x2 + G.dx + origin.x, y2: G.mark.y2 + G.dy + origin.y } : null;
+        return { who: G.who, mark: m, kind, color, his: his.map(k => ({ text: txt(k), at: at(k) })), mine: mine.map(txt), badge: G.badge ? G.badge.className.replace('badge ', '') : null };
+      });
       default: throw new Error('unknown op ' + c.op);
     }
   },
