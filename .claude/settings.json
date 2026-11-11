@@ -10,7 +10,9 @@
       "Bash(export PATH=*)",
       "Bash(npm run skill)",
       "Bash(npm run skill:*)",
-      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File tools/show.ps1:*)"
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File tools/show.ps1:*)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" tools/glass.js:*)",
+      "Bash(\"C:/Program Files/nodejs/node.exe\" tools/glass.js:*)"
     ]
   }
 }

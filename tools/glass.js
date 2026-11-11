@@ -309,6 +309,8 @@ try {
       if (!(await up())) { console.log('the glass is down'); break; }
       const s = await call('/state');
       console.log(s.displays.map(d => `${d.primary ? 'main' : 'second'}: x ${d.bounds.x}..${d.bounds.x + d.bounds.width - 1}, y ${d.bounds.y}..${d.bounds.y + d.bounds.height - 1}, scale ${d.scale}`).join('\n'));
+      if (s.puck) console.log(`puck (the round face): around ${Math.round(s.puck.x + s.puck.width - 32)},${Math.round(s.puck.y + s.puck.height / 2)}`);
+      if (s.link) console.log(s.link === 'off' ? 'watch: nobody is watching (the puck says not connected)' : 'watch: an AI is watching (the puck shows connected)');
       const his = s.events.filter(e => e.who === 'hunter'); if (his.length) console.log('\nfrom them:\n' + his.map(describe).join('\n'));
       break;
     }
@@ -548,14 +550,14 @@ try {
       // Runs at the start of every chat (a SessionStart hook, from `npm run skill -- --hook`), in any folder,
       // so a new chat knows the glass is there and takes it. Quick, quiet about errors, always exits 0.
       const me = path.join(here, 'glass.js').split(String.fromCharCode(92)).join('/');
-      if (!(await up())) { console.log(`The glass is installed on this PC but not running. If they want it: node "${me}" start, then start your watch (the-glass skill).`); break; }
+      if (!(await up())) { console.log(`The glass is installed on this PC but not running. If they want it: "${process.execPath.split(String.fromCharCode(92)).join("/")}" "${me}" start, then start your watch (the-glass skill).`); break; }
       const idle = idleSeconds(), at = idle < AWAY_MIN * 60;
-      console.log(`The glass is running on this PC, and they are ${at ? 'at the PC' : `away (no input for ${ago(idle)})`}. Load the the-glass skill, then take the glass for this chat by starting your watch: node "${me}" stream (under your Monitor tool, 30 min timeout; re-arm it when it ends. No Monitor tool: wait --min 60 in the background, started again after each send). ${at ? 'Answer their glass sends on the glass.' : 'While they are away, answer in chat.'}`);
+      console.log(`The glass is running on this PC, and they are ${at ? 'at the PC' : `away (no input for ${ago(idle)})`}. Load the the-glass skill, then take the glass for this chat by starting your watch: "${process.execPath.split(String.fromCharCode(92)).join("/")}" "${me}" stream (under your Monitor tool, 30 min timeout; re-arm it when it ends. No Monitor tool: wait --min 60 in the background, started again after each send). ${at ? 'Answer their glass sends on the glass.' : 'While they are away, answer in chat.'}`);
       break;
     }
     case 'here': { const idle = idleSeconds(); console.log(idle >= AWAY_MIN * 60 ? `away (no input for ${ago(idle)})` : `here (last input ${ago(idle)} ago)`); break; }
     case 'unread': { const u = await call('/unread'); console.log(`link: ${u.link}`); console.log(u.events.length ? u.events.map(describe).join('\n') : 'nothing waiting'); break; }
     case 'ack': { const u = await call('/unread'); const at = u.events.at(-1)?.at; if (at) await call('/ack', { at }); console.log(at ? `marked ${u.events.length} send(s) received` : 'nothing waiting'); break; }
-    default: console.log('glass.js start|stop|state|shot|move|point|circle|box|underline|arrow|note|answer|status|den|point-at|steps|propose|watch|read|find|mark|say|clear|drop|wait|here|unread|ack');
+    default: console.log('glass.js start|stop|state|shot|move|point|circle|box|underline|arrow|note|answer|status|den|point-at|steps|propose|watch|read|find|mark|say|clear|drop|stream|wait|last|look|scene|restart|hello|here|unread|ack  (the top of this file says what each does)');
   }
 } catch (err) { console.error('glass:', err.message); process.exit(1); }

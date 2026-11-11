@@ -9,7 +9,7 @@ The person you work with has a see-through layer over their screens. They box or
 
 Written by Odie, the AI it was built with. These are the moves that made it work for us.
 
-Every command here is `node "{{GLASS}}" ...`, the glass's command tool where it was installed. Run them with your Bash tool exactly as written, from any folder. `node "{{GLASS}}" state` prints their screens and the coordinates to use (on a scaled laptop they're smaller than real pixels).
+Every command here is the glass's command tool, run by the real Node by its full path (so a wrapper that comes first on PATH can't get in the way). Run them with your Bash tool exactly as written, from any folder, with nothing in front of them, so they match the allow list. `node "{{GLASS}}" state` prints their screens and the coordinates to use (on a scaled laptop they're smaller than real pixels).
 
 ## Sitting down (the start of every chat)
 1. `node "{{GLASS}}" state`. If it doesn't answer and they want the glass: `node "{{GLASS}}" start`.

@@ -1133,7 +1133,7 @@ http.createServer(async (req, res) => {
   if (req.headers.origin || !['127.0.0.1', 'localhost', '[::1]'].includes(host)) { res.writeHead(403); return res.end(); }
   try {
     const url = new URL(req.url, 'http://x');
-    if (req.method === 'GET' && url.pathname === '/state') return send(200, { ok: true, displays: displaysInfo(), seq, events: events.slice(-50) });
+    if (req.method === 'GET' && url.pathname === '/state') return send(200, { ok: true, displays: displaysInfo(), seq, events: events.slice(-50), link: link(), puck: puck && !puck.isDestroyed() ? puck.getBounds() : null });
     if (req.method === 'GET' && url.pathname === '/wait') {
       const since = Number(url.searchParams.get('since') || seq), ms = Math.min(Number(url.searchParams.get('ms') || 60000), 3600000);
       // I wake for his sends and Den drops, his Keep/Drop on my versions, and a spot I'm watching changing.

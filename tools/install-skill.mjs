@@ -17,7 +17,8 @@ const NODE = slash(process.execPath);
 const args = process.argv.slice(2), has = f => args.includes(f);
 const claude = path.join(os.homedir(), '.claude'), skillDir = path.join(claude, 'skills', 'the-glass'), settingsFile = path.join(claude, 'settings.json');
 const hookCmd = `"${NODE}" "${GLASS}" hello`;
-const rules = [`Bash(node "${GLASS}":*)`, `Bash(node "${GLASS}" *)`, `Bash(powershell -NoProfile -ExecutionPolicy Bypass -File "${TOOLS}/show.ps1":*)`, `Read(${slash(path.join(here, '..', 'glass', 'data', 'shots'))}/**)`];
+const RUN = `"${NODE}" "${GLASS}"`; // the real node.exe by full path, so a wrapper first on PATH never gets in the way
+const rules = [`Bash(${RUN}:*)`, `Bash(${RUN} *)`, `Bash(node "${GLASS}":*)`, `Bash(powershell -NoProfile -ExecutionPolicy Bypass -File "${TOOLS}/show.ps1":*)`, `Read(${slash(path.join(here, '..', 'glass', 'data', 'shots'))}/**)`];
 
 const readSettings = () => { try { return JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return {}; throw new Error(`couldn't read ${settingsFile} (${e.message}); left it alone`); } };
 const writeSettings = s => {
@@ -31,6 +32,7 @@ if (has('--remove')) {
   const s = readSettings();
   if (s.hooks?.SessionStart) { s.hooks.SessionStart = s.hooks.SessionStart.filter(h => !isOurs(h)); if (!s.hooks.SessionStart.length) delete s.hooks.SessionStart; }
   if (s.permissions?.allow) s.permissions.allow = s.permissions.allow.filter(r => !rules.includes(r));
+  if (s.env?.GLASS_PORT) delete s.env.GLASS_PORT;
   writeSettings(s);
   console.log('Removed the glass skill, its start-of-chat note and its allow rules.');
   process.exit(0);
@@ -38,7 +40,7 @@ if (has('--remove')) {
 
 const tmpl = fs.readFileSync(path.join(here, '..', 'skill', 'SKILL.md'), 'utf8');
 fs.mkdirSync(skillDir, { recursive: true });
-fs.writeFileSync(path.join(skillDir, 'SKILL.md'), tmpl.replaceAll('{{GLASS}}', GLASS).replaceAll('{{TOOLS}}', TOOLS));
+fs.writeFileSync(path.join(skillDir, 'SKILL.md'), tmpl.replaceAll('node "{{GLASS}}"', RUN).replaceAll('{{GLASS}}', GLASS).replaceAll('{{TOOLS}}', TOOLS));
 console.log(`The glass skill is in ${slash(skillDir)}. Claude Code loads it in any folder.`);
 
 if (has('--hook') || has('--allow')) {
@@ -48,6 +50,7 @@ if (has('--hook') || has('--allow')) {
     s.hooks.SessionStart.push({ hooks: [{ type: 'command', command: hookCmd, timeout: 15 }] });
     console.log('Every new chat now starts with a note saying whether the glass is running, so the AI starts its watch.');
   }
+  if (process.env.GLASS_PORT) { s.env ??= {}; s.env.GLASS_PORT = process.env.GLASS_PORT; console.log(`Every chat now uses this glass's port, ${process.env.GLASS_PORT}.`); }
   if (has('--allow')) {
     s.permissions ??= {}; s.permissions.allow ??= [];
     for (const r of rules) if (!s.permissions.allow.includes(r)) s.permissions.allow.push(r);
