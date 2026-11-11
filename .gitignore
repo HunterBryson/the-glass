@@ -1,3 +1,4 @@
 node_modules/
 glass/data/
-sync.py
+carry.mjs
+.carried-from
