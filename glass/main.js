@@ -35,6 +35,7 @@ process.on('uncaughtException', e => trail('main error: ' + (e.stack || e)));
 trail('glass starting');
 
 let panes = []; // { win, d (display), primary }
+let restoredOnce = false;
 let active = null; // the pane my cursor is on
 let puck = null, mode = 'off';
 // Test switches, so a freeze can be pinned to one part.
@@ -52,7 +53,9 @@ function log(e) {
   events.push(e); if (events.length > 500) events.shift();
   fs.appendFile(path.join(DATA, 'events.jsonl'), JSON.stringify(e) + '\n', () => {});
   // Wake only who was waiting before this event. (Draining in a loop let a waiter re-queue itself forever: the day-one freeze.)
-  if (e.who === 'hunter' && e.op === 'send' && !e.error) unread.push(e);
+  if (e.who === 'hunter' && e.op === 'send' && !e.error) {
+    unread.push(e);
+  }
   waiters.splice(0).forEach(w => w());
   linkSay(true);
 }
@@ -120,6 +123,9 @@ function build() {
   });
   active = panes.find(p => p.primary) || panes[0];
   if (WITH_PUCK) buildPuck(prim);
+  // Once every screen's glass has loaded the first time, put back what was on it.
+  if (!restoredOnce) Promise.all(panes.map(p => new Promise(r => p.win.webContents.once('did-finish-load', r))))
+    .then(() => new Promise(r => setTimeout(r, 400))).then(() => { if (!restoredOnce) { restoredOnce = true; restoreScene(); } });
 }
 
 function watchWin(win, name) {
@@ -232,12 +238,12 @@ function setMode(m) {
 // Second layout, from his first real use: "alt+5 is impossible to it. alt +4 is unreliable. Alt + 1-3 is alright even
 // thoguht its a stretch." So the tools sit on the home row under his fingers. These take over Chrome's Alt+D and
 // Firefox's Alt+F/Alt+S menus everywhere; Ctrl+L still reaches the address bar. Alt+Z stays NVIDIA's.
-const KEYS = { 'Alt+A': 'pen', 'Alt+S': 'box', 'Alt+D': 'ellipse', 'Alt+F': 'hl', 'Alt+V': 'arrow',
+const KEYS = { 'Alt+A': 'note', 'Alt+R': 'pen', 'Alt+S': 'box', 'Alt+D': 'ellipse', 'Alt+F': 'hl', 'Alt+V': 'arrow',
   'Alt+X': 'off', 'Alt+C': 'color', 'Alt+W': 'undo', 'Alt+Q': 'send', 'Alt+E': 'clear', 'Alt+K': 'legend' };
 // His ask the same night: "where is my key to clear the glass? ... I need to have this keybind box up all the time".
 // Clear is Alt+E. The key list stays up by the puck (drag it anywhere; it remembers), and Alt+K hides or
 // shows it. It lights the tool that's on and shows the pen's color, so it's also how he sees what a key just did.
-const KEY_NAMES = { pen: 'pen', box: 'box', ellipse: 'circle', hl: 'highlighter', arrow: 'arrow', off: 'tool off',
+const KEY_NAMES = { note: 'text box', pen: 'pen', box: 'box', ellipse: 'circle', hl: 'highlighter', arrow: 'arrow', off: 'tool off',
   color: 'color', undo: 'undo', send: 'send ➤', clear: 'clear glass', legend: 'hide this list' };
 const SWATCH = { blue: '#6cc6ff', red: '#ff5a5a', green: '#3fb950', yellow: '#ffe14d' };
 let legend = null, legendOn = true;
@@ -272,6 +278,7 @@ function buildLegend() {
   legend.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(legendHtml()));
 }
 app.whenReady().then(buildLegend);
+
 function key(a) {
   if (a === 'color') { const c = ['blue', 'red', 'green', 'yellow']; style = { ...style, color: c[(c.indexOf(style.color) + 1) % c.length] }; sayStyle(); }
   else if (a === 'undo' || a === 'send' || a === 'clear') ipcMain.emit(a, {});
@@ -401,13 +408,14 @@ ipcMain.on('card-rects', (e, rects) => {
 });
 // While his Snipping Tool is up, the glass lets go of the mouse everywhere, so a snip can be dragged across my cards
 // (Nov 7 night: "I hit keep and I cant screenshot it"). A small helper reports which app is in front.
-let snipping = false;
+let snipping = false, front = { app: '', title: '', at: 0 };
 const SNIP = /^(ScreenClippingHost|SnippingTool|ScreenSketch)$/i;
 function watchFront() {
   const ps = require('child_process').spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, '..', 'tools', 'foreground.ps1')], { windowsHide: true });
   let buf = '';
   ps.stdout.on('data', d => { buf += d; const lines = buf.split(/\r?\n/); buf = lines.pop();
-    for (const name of lines) { const on = SNIP.test(name.trim()); if (on === snipping) continue; snipping = on;
+    for (const ln of lines) { const [name, ...t] = ln.split('\t'); front = { app: name.trim(), title: t.join(' ').trim(), at: Date.now() };
+      const on = SNIP.test(name.trim()); if (on === snipping) continue; snipping = on;
       if (on) { caught.clear(); for (const p of panes) if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(true, { forward: true }); }
       else if (mode !== 'off') for (const p of panes) if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(false); } });
   ps.on('exit', () => { snipping = false; setTimeout(watchFront, 5000); });
@@ -474,9 +482,32 @@ ipcMain.on('undo', async () => {
   else if (last && panes[last.pane]) await run(panes[last.pane], { op: 'clear', id: last.id });
   log({ who: 'hunter', op: 'undo', of: last && last.op });
 });
+// ---- Looking with him (Nov 10) ----
+// ➤ with nothing marked means "look at what I'm looking at": I get the window in front of him, cut out, with its words.
+// And I can take the same look myself (glass.js look) when he's working with me. Either way a soft amber frame
+// shows around the window for a moment, so he always knows when I looked.
+async function lookAt() {
+  const ws = await windowsOnce(), c = screen.getCursorScreenPoint();
+  const w = (ws.w || []).find(x => x[0] === ws.fg) || winAt(c.x, c.y, ws.w || []);
+  const d = w ? screen.getDisplayNearestPoint({ x: Math.round((w[1] + w[3]) / 2), y: Math.round((w[2] + w[4]) / 2) }) : screen.getDisplayNearestPoint(c);
+  const p = panes.find(x => x.d.id === d.id) || active, o = p.d.bounds;
+  const r = w ? { x1: Math.max(w[1], o.x), y1: Math.max(w[2], o.y), x2: Math.min(w[3], o.x + o.width), y2: Math.min(w[4], o.y + o.height) } : { x1: o.x, y1: o.y, x2: o.x + o.width, y2: o.y + o.height };
+  const [s] = await shotNow(p.primary ? 'main' : 'second', '-clean');
+  run(p, { op: 'looking', x1: r.x1 - o.x, y1: r.y1 - o.y, x2: r.x2 - o.x, y2: r.y2 - o.y }).catch(() => {});
+  const img = nativeImage.createFromPath(s.file), crop = img.crop({ x: r.x1 - o.x, y: r.y1 - o.y, width: Math.max(4, r.x2 - r.x1), height: Math.max(4, r.y2 - r.y1) });
+  const file = s.file.replace('-clean.png', '-look.png'); fs.writeFileSync(file, crop.toPNG());
+  const [wh] = await whereIs([[Math.round((r.x1 + r.x2) / 2), Math.round((r.y1 + r.y2) / 2)]]);
+  const hid = hides.some(h => meets(h.box, r));
+  return { app: wh?.app || null, title: hid ? '(withheld: a hidden area is in this window)' : (wh?.title || null), rect: r, crop: file, screen: p.primary ? 'main' : 'second', clean: [{ file: s.file, screen: p.primary ? 'main' : 'second', bounds: o }] };
+}
 ipcMain.on('send', async () => {
   await finishNote();
   setMode('off');
+  if (!pending.length && !keptWaiting) {
+    try { const l = await lookAt(); log({ who: 'hunter', op: 'send', marks: [], look: { app: l.app, title: l.title, rect: l.rect, crop: l.crop, screen: l.screen }, shots: [], clean: l.clean }); }
+    catch (err) { log({ who: 'hunter', op: 'send', error: String(err) }); }
+    return;
+  }
   try {
     if (puck && !puck.isDestroyed()) puck.hide();
     await new Promise(r => setTimeout(r, 150));
@@ -522,7 +553,7 @@ const lastSig = new Map();
 let DEBUG_FRAMES = 6;
 
 function protect(on) {
-  for (const w of [...panes.map(p => p.win), puck, noteWin]) if (w && !w.isDestroyed()) w.setContentProtection(on);
+  for (const w of [...panes.map(p => p.win), puck, noteWin, legend]) if (w && !w.isDestroyed()) w.setContentProtection(on); // the key list too (it showed up in my reads, Nov 10)
 }
 
 let lookN = 0, lookMs = 0;
@@ -676,8 +707,158 @@ async function trackLoop() {
   tracking = false;
 }
 
-ipcMain.on('track', (e, id, r) => { const p = paneOf(e.sender); if (p) track(panes.indexOf(p), id, r); });
-ipcMain.on('untrack', (e, ids) => { const p = paneOf(e.sender); if (p) for (const id of ids) tracked.delete(`${panes.indexOf(p)}:${id}`); });
+// ---- Marks live on their window (Nov 10) ----
+// Every mark, note and answer belongs to the window it was drawn on. When that window moves, the whole thread rides
+// along; when he switches apps, minimizes it, or another window covers the spot, the thread hides, and it comes back
+// with the window. Drawn on the bare desktop, it stays put. tools/windows.ps1 reports the windows, top to bottom,
+// only when they change; it runs only while something is on the glass. Scrolling inside the window is followed too:
+// tools/scroll.ps1 watches the columns each thread sits in, in the window in front of him, and reports how far they moved.
+const ANCHOR = process.env.GLASS_ANCHOR !== '0';
+const anchors = new Map(); // `${pane}:${id}` -> { pane, id, pt (screen), hwnd, r0 (window x1,y1 when anchored), dx, dy, shown }
+let winList = [], winFg = 0, winProc = null;
+const winAt = (x, y, list = winList) => list.find(w => x >= w[1] && x < w[3] && y >= w[2] && y < w[4]) || null;
+function startWins() {
+  if (winProc || !ANCHOR) return;
+  winProc = spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, '..', 'tools', 'windows.ps1'), '-skipPid', String(process.pid)], { windowsHide: true });
+  let buf = '';
+  winProc.stdout.on('data', d => { buf += d; const lines = buf.split(/\r?\n/); buf = lines.pop(); const l = lines.filter(Boolean).pop(); if (!l) return;
+    try { const j = JSON.parse(l); winList = j.w; winFg = j.fg; reanchor(); } catch {} });
+  const me = winProc; me.on('exit', () => { if (winProc === me) winProc = null; if (anchors.size) setTimeout(startWins, 2000); });
+}
+function stopWinsIfIdle() { if (!anchors.size && winProc) { const p = winProc; winProc = null; winList = []; try { p.kill(); } catch {} } }
+app.on('before-quit', () => { try { winProc && winProc.kill(); } catch {} });
+// One look at the windows right now, for a moment when the watcher isn't running.
+function windowsOnce() {
+  if (winProc && winList.length) return Promise.resolve({ fg: winFg, w: winList });
+  return new Promise(resolve => {
+    const ps = spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, '..', 'tools', 'windows.ps1'), '-skipPid', String(process.pid), '-once'], { windowsHide: true });
+    let o = ''; ps.stdout.on('data', d => o += d);
+    const t = setTimeout(() => { ps.kill(); resolve({ fg: 0, w: [] }); }, 5000);
+    ps.on('close', () => { clearTimeout(t); try { resolve(JSON.parse(o.trim().split(/\r?\n/).pop())); } catch { resolve({ fg: 0, w: [] }); } });
+  });
+}
+function anchor(pane, id, r, keep) {
+  if (!ANCHOR) return; const p = panes[pane]; if (!p || !r) return; const o = p.d.bounds;
+  const pt = { x: o.x + (r.x1 + r.x2) / 2, y: o.y + (r.y1 + r.y2) / 2 };
+  anchors.set(`${pane}:${id}`, { pane, id, pt, bx: [o.x + r.x1, o.x + r.x2], by: [o.y + r.y1, o.y + r.y2], hwnd: keep ? keep.hwnd : null, r0: keep ? keep.r0 : null, sy: keep && keep.sy || 0, dx: 0, dy: 0, shown: true });
+  startWins(); if (winList.length) reanchor();
+}
+function reanchor() {
+  if (snipping) return; // his snip covers the screen for a moment; nothing really moved
+  for (const a of anchors.values()) {
+    if (a.hwnd === null) { const w = winAt(a.pt.x, a.pt.y); a.hwnd = w ? w[0] : 0; a.r0 = w ? [w[1], w[2]] : null; }
+    if (!a.hwnd) continue; // on the bare desktop: stays put
+    const i = winList.findIndex(w => w[0] === a.hwnd);
+    let dx = a.dx, dy = a.dy, shown = false;
+    if (i >= 0) {
+      const w = winList[i]; dx = w[1] - a.r0[0]; dy = w[2] - a.r0[1] + (a.sy || 0);
+      const x = a.pt.x + dx, y = a.pt.y + dy;
+      shown = !a.lost && x >= w[1] && x < w[3] && y >= w[2] + 30 && y < w[4] && !winList.slice(0, i).some(u => x >= u[1] && x < u[3] && y >= u[2] && y < u[4]);
+    }
+    if (shown === a.shown && dx === a.dx && dy === a.dy) continue;
+    const mx = dx - a.dx, my = dy - a.dy; a.dx = dx; a.dy = dy; a.shown = shown;
+    const p = panes[a.pane]; if (!p || p.win.isDestroyed()) continue;
+    p.win.webContents.send('shift', { id: a.id, dx, dy, shown });
+    for (const m of pending) if (m.pane === a.pane && m.id === a.id) moveMark(m, dx, dy, shown);
+    if ((mx || my) && noteWin && !noteWin.isDestroyed() && noteAt && noteAt.tie && noteAt.pane === a.pane && noteAt.tie.id === a.id) { const b = noteWin.getBounds(); noteWin.setPosition(b.x + mx, b.y + my); }
+  }
+}
+// ---- Scrolling inside the window (Nov 10, his first v2 test: our chat scrolled, my underline stayed behind) ----
+// tools/scroll.ps1 keeps a snapshot of the page around each thread and finds it again in the window's own picture,
+// a few times a second, for the window in front of him. Found: the thread moves with it. Gone: the thread hides,
+// and it comes back when its page does.
+let scrollProc = null, scrollSent = '';
+function scrollWatch() {
+  if (!ANCHOR || process.env.GLASS_SCROLL === '0') return;
+  const by = new Map(); // hwnd -> ["key:x1,x2,y1,y2"] relative to the window's visible top-left, where the mark is now
+  for (const [key, a] of anchors) {
+    if (!a.hwnd || !a.r0 || !a.bx || !a.by) continue; const w = winList.find(u => u[0] === a.hwnd); if (!w) continue;
+    let x1 = Math.round(a.bx[0] + a.dx - w[1]), x2 = Math.round(a.bx[1] + a.dx - w[1]); if (x2 - x1 < 40) { x1 -= 30; x2 += 30; }
+    const y1 = Math.round(a.by[0] + a.dy - w[2]), y2 = Math.round(a.by[1] + a.dy - w[2]);
+    if (!by.has(a.hwnd)) by.set(a.hwnd, []); by.get(a.hwnd).push(`${key.replace(':', '_')}:${x1},${x2},${y1},${y2}`);
+  }
+  if (!by.size) { if (scrollProc) { try { scrollProc.kill(); } catch {} scrollProc = null; scrollSent = ''; } return; }
+  // Send only when the set of threads changes; the helper moves its own boxes as it finds them.
+  const ids = [...by].map(([h, l]) => `${h} ${l.map(e => e.split(':')[0]).join(',')}`).join('|');
+  if (!scrollProc && Date.now() - (scrollWatch.spawned || 0) < 10000) return; // it just died: wait before starting another
+  if (!scrollProc) {
+    scrollWatch.spawned = Date.now();
+    scrollProc = spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, '..', 'tools', 'scroll.ps1')], { windowsHide: true, env: { ...process.env, SCROLL_DEBUG: process.env.GLASS_SCROLL_DEBUG || '', SCROLL_SNAP: process.env.GLASS_SCROLL_SNAP || '' } });
+    scrollProc.stderr.on('data', d => trail('scroll err: ' + String(d).slice(0, 300)));
+    let buf = ''; scrollSent = '';
+    scrollProc.stdout.on('data', d => { buf += d; const ls = buf.split(/\r?\n/); buf = ls.pop(); for (const l of ls) { try { onScroll(JSON.parse(l)); } catch { if (l.trim()) trail('scroll out: ' + l.slice(0, 200)); } } });
+    const me = scrollProc; me.on('exit', () => { if (scrollProc === me) { scrollProc = null; scrollSent = ''; } });
+  }
+  if (ids === scrollSent) return;
+  const was = new Set(scrollSent.split('|').filter(Boolean).map(l => l.split(' ')[0]));
+  for (const [h, l] of by) { scrollProc.stdin.write(`${h} ${l.join(';')}\n`); was.delete(String(h)); }
+  for (const h of was) scrollProc.stdin.write(h + '\n'); // a window with no threads left
+  scrollSent = ids;
+}
+function onScroll(m) {
+  const a = anchors.get(String(m.k).replace('_', ':')); if (!a || a.hwnd !== m.h) return;
+  if (m.lost) { if (!a.lost) { a.lost = true; a.forceShift = true; reanchor(); } return; }
+  a.sy = (a.sy || 0) + (m.dy || 0); if (a.lost) { a.lost = false; a.forceShift = true; } reanchor();
+}
+setInterval(scrollWatch, 700);
+app.on('before-quit', () => { try { scrollProc && scrollProc.kill(); } catch {} });
+ipcMain.on('track', (e, id, r) => { const p = paneOf(e.sender); if (!p) return; const i = panes.indexOf(p); anchor(i, id, r, restoreKeep.get(`${i}:${id}`)); restoreKeep.delete(`${i}:${id}`); track(i, id, r); });
+ipcMain.on('untrack', (e, ids) => { const p = paneOf(e.sender); if (!p) return; for (const id of ids) { tracked.delete(`${panes.indexOf(p)}:${id}`); anchors.delete(`${panes.indexOf(p)}:${id}`); } stopWinsIfIdle(); });
+
+// ---- The glass never forgets (Nov 10) ----
+// What's on it is saved every couple of seconds when it changes (data/scene.json): his marks and words, my answers and
+// my own marks, the pills, which window each lives on, and what was still waiting for ➤. When the glass starts, it puts
+// back everything whose window is still open, with the same numbers, so a crash or a restart loses nothing.
+// Things whose window closed (a reboot) are kept in data/scene-closed.json, and glass.js scene shows them.
+const SCENE = path.join(DATA, 'scene.json'), SCENE_CLOSED = path.join(DATA, 'scene-closed.json');
+const restoreKeep = new Map(); // `${pane}:${id}` -> { hwnd, r0 } for a thread being put back
+let lastScene = '', restoring = false, sceneBack = false;
+async function sceneNow() {
+  const all = [];
+  for (const [i, p] of panes.entries()) {
+    if (p.win.isDestroyed()) continue;
+    const gs = await run(p, { op: 'scene' }).catch(() => []);
+    for (const g of gs) { const a = anchors.get(`${i}:${g.id}`); all.push({ ...g, pane: i, screen: p.primary ? 'main' : 'second',
+      win: a && a.hwnd ? { hwnd: a.hwnd, r0: a.r0, sy: a.sy || 0 } : null, waiting: pending.filter(m => m.pane === i && m.id === g.id).map(({ pane, ...m }) => m) }); }
+  }
+  return all;
+}
+setInterval(async () => {
+  // Never save before the put-back has run: a slow start used to save an empty glass over the real one (Nov 10).
+  if (restoring || !restoredOnce || !sceneBack || !panes.length) return;
+  try { const s = await sceneNow(), k = JSON.stringify(s); if (k === lastScene) return; lastScene = k;
+    fs.writeFile(SCENE, JSON.stringify({ saved: new Date().toISOString(), items: s }, null, 1), () => {}); } catch (e) { trail('scene save failed: ' + e); }
+}, 2000);
+async function restoreScene() {
+  try { await restoreSceneNow(); } finally { sceneBack = true; }
+}
+async function restoreSceneNow() {
+  if (process.env.GLASS_NORESTORE === '1') return;
+  let saved; try { saved = JSON.parse(fs.readFileSync(SCENE, 'utf8')); } catch { return; }
+  const items = saved.items || []; if (!items.length) return;
+  restoring = true;
+  try {
+    const now = await windowsOnce(), alive = new Set((now.w || []).map(w => w[0])), closed = [];
+    let back = 0;
+    for (const g of items) {
+      const p = panes[g.pane] || panes.find(x => (x.primary ? 'main' : 'second') === g.screen); if (!p) continue;
+      const i = panes.indexOf(p);
+      if (g.win && !alive.has(g.win.hwnd)) { closed.push(g); continue; }
+      if (g.win) restoreKeep.set(`${i}:${g.id}`, { hwnd: g.win.hwnd, r0: g.win.r0, sy: g.win.sy || 0 });
+      try {
+        const id = await run(p, { op: 'putback', g });
+        if (!id) { restoreKeep.delete(`${i}:${g.id}`); continue; }
+        for (const m of g.waiting || []) pending.push({ ...m, pane: i });
+        if (g.hide) hides.push({ pane: i, id: g.id, box: g.hide });
+        back++;
+      } catch (e) { trail('put back failed: ' + e); }
+    }
+    if (closed.length) { let old = []; try { old = JSON.parse(fs.readFileSync(SCENE_CLOSED, 'utf8')).items || []; } catch {}
+      fs.writeFileSync(SCENE_CLOSED, JSON.stringify({ saved: saved.saved, items: [...closed, ...old].slice(0, 60) }, null, 1)); }
+    puckSay(); trail(`put back ${back} of ${items.length}${closed.length ? `, ${closed.length} whose window closed kept aside` : ''}`);
+    log({ who: 'glass', op: 'restored', back, of: items.length, closed: closed.length });
+  } finally { restoring = false; }
+}
 
 // ---- Talk instead of type: his voice in a note box goes through the Ear (local, his own model) ----
 const EAR = process.env.GLASS_EAR_DIR || path.join(__dirname, '..', '..', 'ear');
@@ -889,6 +1070,19 @@ function body(req) {
 }
 
 const run = (pane, cmd) => pane.win.webContents.executeJavaScript(`window.glass.do(${JSON.stringify(cmd)})`);
+// My cards stay off my own face and his tools: each pane knows where the bubble, the key list and the puck sit (Nov 10:
+// a card landed on the bubble's sentence twice in his first test). Sent only when they move.
+let fixedSent = [];
+setInterval(() => {
+  const wins = [legend, puck].filter(w => w && !w.isDestroyed() && w.isVisible()).map(w => w.getBounds());
+  panes.forEach((p, i) => {
+    if (!p.win || p.win.isDestroyed()) return;
+    const o = p.d.bounds, r = wins.filter(b => b.x < o.x + o.width && b.x + b.width > o.x && b.y < o.y + o.height && b.y + b.height > o.y)
+      .map(b => ({ x1: b.x - o.x, y1: b.y - o.y, x2: b.x + b.width - o.x, y2: b.y + b.height - o.y }));
+    const s = JSON.stringify(r); if (s === fixedSent[i]) return; fixedSent[i] = s;
+    p.win.webContents.executeJavaScript('window.fixedAvoid = ' + s).catch(() => {});
+  });
+}, 700);
 
 async function doCmd(cmd) {
   if (cmd.op === 'den') {
@@ -902,6 +1096,7 @@ async function doCmd(cmd) {
   }
   if (cmd.op === 'answer' || cmd.op === 'status') {
     const i = Math.floor(cmd.to / 1000), target = panes[i]; if (!target) throw new Error(`no mark #${cmd.to}`);
+    if (Array.isArray(cmd.avoid)) { const o = target.d.bounds; cmd.avoid = cmd.avoid.map(r => ({ x1: r.x1 - o.x, y1: r.y1 - o.y, x2: r.x2 - o.x, y2: r.y2 - o.y })); }
     if (target !== active) { await run(active, { op: 'hide' }); const f = active.d.bounds, o = target.d.bounds; cmd.enter = f.x < o.x ? 'left' : 'right'; cmd.x = o.width / 2; cmd.y = o.height / 2; active = target; }
     const id = await run(target, { ...cmd, id: cmd.to % 1000 });
     return i * 1000 + id;
@@ -916,6 +1111,7 @@ async function doCmd(cmd) {
   ['x', 'x1', 'x2'].forEach(k => { if (typeof cmd[k] === 'number') cmd[k] -= o.x; });
   ['y', 'y1', 'y2'].forEach(k => { if (typeof cmd[k] === 'number') cmd[k] -= o.y; });
   if (Array.isArray(cmd.points)) cmd.points = cmd.points.map(([px, py]) => [px - o.x, py - o.y]);
+  if (Array.isArray(cmd.avoid)) cmd.avoid = cmd.avoid.map(r => ({ x1: r.x1 - o.x, y1: r.y1 - o.y, x2: r.x2 - o.x, y2: r.y2 - o.y }));
   if (target !== active) {
     // My cursor leaves one screen and comes in from the side that faces it.
     const from = active.d.bounds;
@@ -971,6 +1167,8 @@ http.createServer(async (req, res) => {
       return send(200, { ok: true, id });
     }
     if (req.method === 'POST' && url.pathname === '/shot') { const b = await body(req); return send(200, { ok: true, shots: await shot(b.which || 'all', !!b.clean) }); }
+    if (req.method === 'GET' && url.pathname === '/front') { const { powerMonitor } = require('electron'); return send(200, { ok: true, app: front.app, title: hides.length ? '(withheld: something is hidden on the glass)' : front.title, since: front.at ? Math.round((Date.now() - front.at) / 1000) : null, idle: powerMonitor.getSystemIdleTime(), on: anchors.size }); }
+    if (req.method === 'POST' && url.pathname === '/look') { const l = await lookAt(); log({ who: 'odie', op: 'look', app: l.app, title: l.title }); return send(200, { ok: true, ...l }); }
     if (req.method === 'POST' && url.pathname === '/drop') { const b = await body(req); return send(200, { ok: true, ...(await dropToDen(b.title || 'From the glass', b.which)) }); }
     if (req.method === 'POST' && url.pathname === '/mode') { const b = await body(req); setMode(b.mode); return send(200, { ok: true, mode }); }
     if (req.method === 'POST' && url.pathname === '/quit') { send(200, { ok: true }); return setTimeout(() => app.quit(), 100); }

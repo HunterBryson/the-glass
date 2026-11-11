@@ -41,9 +41,10 @@
   .card .more { display: none; margin-top: 3px; font-size: 12px; color: var(--dim); }
   .card.long .more { display: block; }
   /* Tucked: a finished thread folds to its name tag; a click opens it again. */
-  .card.tucked > *:not(.who):not(.more) { display: none !important; }
+  .card.tucked > *:not(.who):not(.more):not(.tn) { display: none !important; }
   .card.tucked .more { display: block; }
   .card.tucked { opacity: .8; padding-bottom: 6px; }
+  .card.tuckhide { display: none !important; }
   .card.dragging { cursor: grabbing; }
   /* ✕ on every card (his ask, Nov 7: "I can't get rid of the box... I can't delete it"): on his note it takes the whole thread, on mine just my card. */
   .card .x { position: absolute; top: -11px; right: -11px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--odie); background: #15171c; color: var(--ink);
@@ -52,6 +53,27 @@
   .card:hover .x { opacity: 1; }
   .card .x:hover { background: #e5534b; border-color: #e5534b; color: #fff; }
   .card.proposal .x { display: none; }
+  /* ▴ fold, beside ✕ (his ask, Nov 10: "I expand it to read the chain then id want to collapse again"): folds the whole thread back to its one tag. */
+  .card .fold { position: absolute; top: -11px; right: 18px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--odie); background: #15171c; color: var(--ink);
+             font: 700 12px/20px "Segoe UI"; text-align: center; padding: 0; cursor: pointer; opacity: 0; transition: opacity .15s; box-shadow: 0 0 0 2px rgba(0,0,0,.7); }
+  .card.hunter .fold { border-color: var(--his); }
+  .card:hover .fold { opacity: 1; }
+  .card .fold:hover { background: var(--odie); color: #15171c; }
+  .card.tucked .fold, .card.proposal .fold { display: none; }
+  /* One thread, one number (his ask, Nov 10: "to me it is not obvious at all when it clumps like this"): the same small
+     number on his mark and on every card of the thread, so even a screenshot shows what goes together. */
+  .tn { position: absolute; top: -12px; left: -12px; min-width: 22px; height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px;
+        background: #f4f4f2; color: #15171c; font: 800 12px/22px "Segoe UI"; text-align: center; box-shadow: 0 0 0 2px rgba(0,0,0,.75), 0 2px 6px rgba(0,0,0,.6); pointer-events: none; z-index: 2; }
+  .card.tucked .tn { top: -10px; }
+  .card.tuckhide .tn { display: none; }
+  .chip { position: absolute; pointer-events: none; }
+  /* Hover lights one thread: everything else steps back. */
+  .grp { transition: opacity .15s; }
+  body.spot .grp:not(.lit) { opacity: .2; }
+  .grp.lit .tie { stroke-width: 3.5; opacity: 1; }
+  /* A folded thread says what's inside: his words, then mine. */
+  .card.tucked .more { white-space: pre-wrap; max-width: 340px; color: var(--ink); font-size: 13px; line-height: 1.35; }
+  .card.tucked .more i { color: var(--dim); font-style: normal; }
   /* Where I am with his mark, right on it: on it (amber, breathing), done (green), needs you (blue). */
   .badge { position: absolute; padding: 2px 9px 2px 4px; border-radius: 999px; font: 600 12px/18px "Segoe UI"; white-space: nowrap; pointer-events: none;
            display: flex; align-items: center; gap: 5px; background: var(--card); border: 1px solid var(--odie); color: var(--ink); box-shadow: 0 3px 10px rgba(0,0,0,.6); }
@@ -87,6 +109,9 @@
   .ask { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: var(--card); border: 2px solid var(--his);
          color: var(--his); font: 700 20px/30px "Segoe UI"; text-align: center; box-shadow: 0 0 12px rgba(108,198,255,.5); pointer-events: none; }
 
+  /* When I look at his screen with him: a soft amber frame around the window, for a moment, so he always knows. */
+  .lookframe { position: absolute; border: 3px solid var(--odie); border-radius: 10px; pointer-events: none; box-shadow: 0 0 0 3px rgba(0,0,0,.5), inset 0 0 40px rgba(245,165,36,.18); transition: opacity .8s; }
+  .lookframe.fade { opacity: 0; }
   /* My cursor */
   #me { position: fixed; left: 0; top: 0; pointer-events: none; transition: opacity .6s; will-change: transform; opacity: 0; }
   #me.on { opacity: 1; } #me.idle { opacity: .45; }
@@ -197,13 +222,13 @@ const around = (x, y, w = 120, h = 60) => ({ x1: x - w, y1: y - h, x2: x + w, y2
 const rnd = r => ({ x1: Math.round(r.x1), y1: Math.round(r.y1), x2: Math.round(r.x2), y2: Math.round(r.y2) });
 
 // ---- Groups: everything about one thing moves together, so it stays on what it's about ----
-function makeGroup(who, mark, anchor) {
-  const id = nextId++;
+function makeGroup(who, mark, anchor, keepId) {
+  const id = keepId || nextId++; if (keepId) nextId = Math.max(nextId, keepId + 1);
   const g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'grp'); svg.appendChild(g);
   const box = document.createElement('div'); box.className = 'gbox grp'; layer.appendChild(box);
   const G = { id, who, g, box, dx: 0, dy: 0, mark: mark || null, cards: [] };
   groups.set(id, G);
-  const a = anchor || mark; if (a) host.track(id, rnd(a));
+  const a = anchor || mark; G.anchor = a ? rnd(a) : null; if (a) host.track(id, rnd(a));
   return G;
 }
 function removeGroup(G) { G.g.remove(); G.box.remove(); groups.delete(G.id); host.untrack([G.id]); }
@@ -227,6 +252,13 @@ function makeCard(G, who, text, to) {
     else if (el.classList.contains('reply')) removeCard(c); // an older, sent reply: just that one (the thread stays)
     else if (c.who === 'hunter') { host.removed(G.id); removeGroup(G); } else removeCard(c); });
   el.appendChild(x);
+  const fb = document.createElement('button'); fb.className = 'fold'; fb.title = 'Fold this thread'; fb.textContent = '▴';
+  fb.addEventListener('mousedown', e => e.stopPropagation(), true);
+  fb.addEventListener('click', e => { e.stopPropagation(); tuckThread(G); placeBadge(G); });
+  el.appendChild(fb);
+  const tn = document.createElement('span'); tn.className = 'tn'; tn.textContent = threadNo(G); el.appendChild(tn);
+  if (G.mark && !G.chip) { const ch = document.createElement('span'); ch.className = 'tn chip'; ch.textContent = threadNo(G);
+    ch.style.left = (G.mark.x1 - 11) + 'px'; ch.style.top = (G.mark.y1 - 11) + 'px'; G.box.appendChild(ch); G.chip = ch; }
   G.box.appendChild(el);
   const line = document.createElementNS(NS, 'line'); line.setAttribute('class', 'tie ' + who);
   const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('r', 4); dot.setAttribute('class', 'dot ' + who);
@@ -246,6 +278,7 @@ const rectOf = r => ({ x1: r.left, y1: r.top, x2: r.right, y2: r.bottom });
 function aim(c) {
   const G = c.G, m = c.to === 'mark' ? G.mark : c.to ? local(c.to.el) : null;
   if (!m) { c.line.remove(); c.dot.remove(); return; }
+  if (c.el.classList.contains('tuckhide') || (c.to && c.to.el && c.to.el.classList.contains('tuckhide'))) { c.line.style.display = c.dot.style.display = 'none'; return; }
   if (!c.line.parentNode) { G.g.appendChild(c.line); G.g.appendChild(c.dot); }
   const r = local(c.el), cx = (r.x1 + r.x2) / 2, cy = (r.y1 + r.y2) / 2;
   const p1 = [clamp(cx, m.x1, m.x2), clamp(cy, m.y1, m.y2)];
@@ -256,6 +289,41 @@ function aim(c) {
   c.dot.setAttribute('cx', p1[0]); c.dot.setAttribute('cy', p1[1]);
 }
 const aimAll = G => G.cards.forEach(aim);
+// A finished thread folds to ONE tag where it started, not a tag per card with lines between them
+// (Nov 10, his screenshot: three "done · click to open" tags in a web of lines after he flipped windows).
+function threadNo(G) { return String(G.id >= 1000 ? G.id - 1000 : G.id); }
+function gist(k, n) { const t = (k.el.querySelector('.txt') || {}).textContent || ''; const s = t.replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s; }
+function tuckThread(G) {
+  const vis = G.cards.filter(k => !k.el.classList.contains('hidetag')); if (!vis.length) return;
+  const head = vis[0], n = vis.length;
+  for (const k of vis) { k.el.classList.add('tucked'); if (k !== head) k.el.classList.add('tuckhide'); }
+  // What's inside, in words (Nov 10: "I need some indicator of whats in there. somethin other than relying on my memory").
+  const mo = head.el.querySelector('.more');
+  if (mo) {
+    const his = vis.find(k => k.who === 'hunter'), mine = [...vis].reverse().find(k => k.who !== 'hunter');
+    mo.textContent = '';
+    const line = (who, k) => { const d = document.createElement('div'); d.textContent = `${who}: ${gist(k, 70)}`; mo.appendChild(d); };
+    if (his) line('You', his);
+    if (mine) line(AI, mine);
+    const f = document.createElement('i'); f.textContent = n > 1 ? `${n} cards · click to open ▾` : 'click to open ▾'; mo.appendChild(f);
+  }
+  aimAll(G);
+}
+function untuckThread(G) {
+  for (const k of G.cards) { k.el.classList.remove('tucked', 'tuckhide'); const mo = k.el.querySelector('.more'); if (mo) mo.textContent = k.el.classList.contains('folded') ? 'click to open ▾' : 'click to fold ▴'; }
+  clearTimeout(G.tuckT); aimAll(G);
+}
+// The pill sits outside the mark, to its left, so it never covers the line above (a stranger's catch, Nov 7).
+// No room on the left: above. A loose note has no mark, so the pill rides with its first card
+// (Nov 10, his catch: "these just hang around and look broken when you move text glass blocks away from them").
+function placeBadge(G) {
+  const b = G.badge; if (!b) return;
+  const head = G.cards.find(k => !k.el.classList.contains('tuckhide'));
+  const m = G.mark || (head && local(head.el)) || { x1: 20, y1: 40 };
+  const w = b.offsetWidth || 110;
+  if (m.x1 + G.dx - w - 10 >= 4) { b.style.left = (m.x1 - w - 10) + 'px'; b.style.top = (m.y1 + 2) + 'px'; }
+  else { b.style.left = (m.x1 - 2) + 'px'; b.style.top = Math.max(4, m.y1 - 28) + 'px'; }
+}
 function reaimTo(c) { aim(c); for (const G of groups.values()) for (const k of G.cards) if (k.to === c) aim(k); }
 
 // Where a new card goes: beside what it's about, on the side with room, never over another note or his mark.
@@ -277,10 +345,31 @@ function placeCard(c, hint) {
   if (prev.length) { const r = prev[prev.length - 1]; cands.push([r.x1, r.y2 + 10], [r.x2 + 14, r.y1], [r.x1 - 14 - w, r.y1], [r.x1, r.y1 - 10 - h]); }
   if (M) cands.push([M.x2 + gap, M.y1], [M.x1 - gap - w, M.y1], [M.x1, M.y2 + gap], [M.x2 + gap, M.y2 - h], [M.x1, M.y1 - gap - h]);
   if (!cands.length) cands.push([pos.x + 20, pos.y]);
-  const avoid = seen().filter(o => o !== c.el); if (M) avoid.push(M);
+  const avoid = seen().filter(o => o !== c.el).concat(window.fixedAvoid || []); if (M) avoid.push(M);
   const free = (x, y) => x >= 8 && y >= 8 && x + w <= scr.width - 8 && y + h <= scr.height - 8 &&
-    !avoid.some(o => x < o.x2 + 8 && x + w > o.x1 - 8 && y < o.y2 + 8 && y + h > o.y1 - 8);
-  let p = cands.find(([x, y]) => free(x, y));
+    !avoid.some(o => x < o.x2 + 18 && x + w > o.x1 - 18 && y < o.y2 + 18 && y + h > o.y1 - 18); // 18 px between threads (Nov 10)
+  let p;
+  if (c.dock) {
+    // Docked under the card it answers: only other threads' cards and the mark count as in the way.
+    el.style.minWidth = Math.max(0, c.dock.w - 28) + 'px';
+    const dw = el.offsetWidth, dh = el.offsetHeight, { x, y } = c.dock;
+    const others = []; for (const g of groups.values()) { if (g === G || g.box.classList.contains('gone')) continue; for (const k of g.cards) others.push(rectOf(k.el.getBoundingClientRect())); }
+    if (M) others.push(M);
+    const ok = x >= 8 && x + dw <= scr.width - 8 && y + dh <= scr.height - 8 && !others.some(o => x < o.x2 + 6 && x + dw > o.x1 - 6 && y < o.y2 + 6 && y + dh > o.y1 - 6);
+    if (ok) p = [x, y]; else el.style.minWidth = '';
+  }
+  if (p) ; else if (c.avoid && c.avoid.length) {
+    // Words on his screen: try every spot (beside, then sliding along each side) and keep the one over the fewest words.
+    const words = c.avoid, cover = (x, y) => { let a = 0; for (const o of words) { const ox = Math.min(x + w, o.x2) - Math.max(x, o.x1), oy = Math.min(y + h, o.y2) - Math.max(y, o.y1); if (ox > 0 && oy > 0) a += ox * oy; } return a; };
+    let best = null;
+    const tryAt = (x, y, rank) => { if (!free(x, y)) return; const a = cover(x, y) + rank * 40; if (!best || a < best.a) best = { a, x, y }; };
+    cands.forEach(([x, y], i) => tryAt(x, y, i));
+    for (let i = 0; i < cands.length && !(best && best.a < 1); i++) {
+      const x = clamp(cands[i][0], 8, scr.width - w - 8);
+      for (let k = 1; k < 30; k++) for (const sg of [1, -1]) tryAt(x, cands[i][1] + sg * k * 24, cands.length + k);
+    }
+    if (best) p = [best.x, best.y];
+  } else if (!p) p = cands.find(([x, y]) => free(x, y));
   // Nothing free right there: slide along that side until there's room.
   for (let i = 0; !p && i < cands.length; i++) {
     const x = clamp(cands[i][0], 8, scr.width - w - 8);
@@ -296,8 +385,20 @@ function putCard(c, x, y) { c.el.style.left = (x - c.G.dx) + 'px'; c.el.style.to
 // ---- Grab any note, anytime. The glass feels the mouse go by and only catches it over a note. ----
 let catching = false, last = { x: -1, y: -1 }, drag = null;
 function overCard(x, y) { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('.card') : null; }
+// Hover lights one thread: the card or mark under his mouse, its whole thread bright, the rest dimmed.
+let litG = null;
+function spot(x, y) {
+  let G = null; const el = overCard(x, y); if (el && el._c) G = el._c.G;
+  if (!G) for (const g of groups.values()) { const m = g.mark; if (m && !g.box.classList.contains('gone') && x >= m.x1 + g.dx - 6 && x <= m.x2 + g.dx + 6 && y >= m.y1 + g.dy - 6 && y <= m.y2 + g.dy + 6) { G = g; break; } }
+  if (G === litG) return;
+  if (litG) { litG.g.classList.remove('lit'); litG.box.classList.remove('lit'); }
+  litG = G && groups.size > 1 ? G : null;
+  if (litG) { litG.g.classList.add('lit'); litG.box.classList.add('lit'); }
+  document.body.classList.toggle('spot', !!litG);
+}
 function hover(x, y) {
   last = { x, y };
+  spot(x, y);
   // His mouse coming near mine: mine gets out of the way.
   if (me.classList.contains('on') && Math.hypot(x - pos.x, y - pos.y) < 90) hideMe();
   const on = !!drag || (mode === 'off' && !!overCard(x, y));
@@ -309,6 +410,8 @@ setInterval(() => {
   const rs = [];
   for (const G of groups.values()) { if (G.box.classList.contains('gone')) continue; for (const k of G.cards) { const r = k.el.getBoundingClientRect(); if (r.width) rs.push({ x1: Math.round(r.left) - 2, y1: Math.round(r.top) - 2, x2: Math.round(r.right) + 2, y2: Math.round(r.bottom) + 2 }); } }
   const s = JSON.stringify(rs); if (s !== lastRects) { lastRects = s; host.cardRects(rs); }
+  // The glass only hears his mouse over a card, so when it lets go, the hover light goes too.
+  if (litG && !catching && !drag) spot(-1, -1);
 }, 200);
 document.addEventListener('mouseleave', () => { if (catching && !drag) { catching = false; host.catchMouse(false); } });
 document.addEventListener('mousedown', e => {
@@ -328,14 +431,14 @@ document.addEventListener('mousemove', e => {
     drag.moved = true; drag.c.el.classList.add('dragging');
     drag.c.el.style.left = (drag.l + dx) + 'px'; drag.c.el.style.top = (drag.t + dy) + 'px';
     for (const w of drag.with) { w.k.el.style.left = (w.l + dx) + 'px'; w.k.el.style.top = (w.t + dy) + 'px'; }
-    reaimTo(drag.c); e.stopImmediatePropagation(); return;
+    reaimTo(drag.c); if (!drag.c.G.mark) placeBadge(drag.c.G); e.stopImmediatePropagation(); return;
   }
   hover(e.clientX, e.clientY);
 }, true);
 document.addEventListener('mouseup', e => {
   if (!drag) return;
   const d = drag; drag = null; d.c.el.classList.remove('dragging');
-  if (!d.moved && d.c.el.classList.contains('tucked')) { for (const k of d.c.G.cards) { k.el.classList.remove('tucked'); const mo = k.el.querySelector('.more'); if (mo) mo.textContent = k.el.classList.contains('folded') ? 'click to open ▾' : 'click to fold ▴'; } clearTimeout(d.c.G.tuckT); for (const k of d.c.G.cards) aim(k); reaimTo(d.c); e.stopImmediatePropagation(); return; }
+  if (!d.moved && d.c.el.classList.contains('tucked')) { untuckThread(d.c.G); reaimTo(d.c); e.stopImmediatePropagation(); return; }
   if (!d.moved && d.c.el.classList.contains('long')) { d.c.el.classList.toggle('folded'); d.c.el.querySelector('.more').textContent = d.c.el.classList.contains('folded') ? 'click to open ▾' : 'click to fold ▴'; }
   reaimTo(d.c); e.stopImmediatePropagation(); hover(e.clientX, e.clientY);
 }, true);
@@ -360,7 +463,7 @@ window.glass = {
     const mine = async (mark, draw, text, anchor) => {
       const G = makeGroup('odie', mark, anchor);
       if (draw) await draw(G);
-      if (text) { const k = makeCard(G, 'odie', text, mark ? 'mark' : null); addReply(G, k); const p = mark ? placeCard(k) : placeCard(k, { x: c.x + 14, y: c.y - 20 }); stepOff(p, k); }
+      if (text) { const k = makeCard(G, 'odie', text, mark ? 'mark' : null); k.avoid = c.avoid; addReply(G, k); const p = mark ? placeCard(k) : placeCard(k, { x: c.x + 14, y: c.y - 20 }); stepOff(p, k); }
       return G.id;
     };
     switch (c.op) {
@@ -406,6 +509,10 @@ window.glass = {
         // ✎ Reply keeps the thread going on this mark (Nov 9: "I need to be able to click one of these blocks to keep a thread to it going").
         addReply(G, k);
         setOld(G, false);
+        k.avoid = c.avoid;
+        // My answer docks right under the card it answers, so a thread reads as one stack (Nov 10, his screenshot of a clump).
+        const above = [...G.cards].reverse().find(x => x !== k && !x.el.classList.contains('hidetag') && !x.el.classList.contains('tuckhide'));
+        if (above) { const r = rectOf(above.el.getBoundingClientRect()); if (r.x2 > r.x1) k.dock = { x: r.x1, y: r.y2 + 3, w: r.x2 - r.x1 }; }
         const p = placeCard(k);
         await glide(p[0] - 30, p[1] + 10); stepOff(p, k);
         return G.id;
@@ -415,17 +522,11 @@ window.glass = {
         if (G.badge) G.badge.remove();
         if (c.state === 'clear') { G.badge = null; return G.id; }
         clearTimeout(G.tuckT);
-        if (c.state === 'done') G.tuckT = setTimeout(() => { if (!groups.has(G.id)) return; for (const k of G.cards) { if (k.el.matches(':hover') || k.el.querySelector('textarea')) return; } for (const k of G.cards) { k.el.classList.add('tucked'); const mo = k.el.querySelector('.more'); if (mo) mo.textContent = 'done · click to open ▾'; aim(k); } }, 20000);
+        if (c.state === 'done') G.tuckT = setTimeout(() => { if (!groups.has(G.id)) return; for (const k of G.cards) { if (k.el.matches(':hover') || k.el.querySelector('textarea')) return; } tuckThread(G); }, 20000);
         const words = { working: `${AI}'s on it`, done: 'done', you: 'needs you' };
         const b = document.createElement('div'); b.className = 'badge ' + c.state;
         b.innerHTML = `<img src="odie.png" alt=""><b></b>`; b.querySelector('b').textContent = c.text || words[c.state] || c.state;
-        const m = G.mark || (G.cards[0] && local(G.cards[0].el)) || { x1: 20, y1: 40 };
-        // The pill sits outside the mark, to its left, so it never covers the line above (a stranger's catch, Nov 7).
-        // No room on the left: above the mark, as before.
-        G.box.appendChild(b); const w = b.offsetWidth || 110;
-        if (m.x1 + G.dx - w - 10 >= 4) { b.style.left = (m.x1 - w - 10) + 'px'; b.style.top = (m.y1 + 2) + 'px'; }
-        else { b.style.left = (m.x1 - 2) + 'px'; b.style.top = Math.max(4, m.y1 - 28) + 'px'; }
-        G.badge = b; setOld(G, false);
+        G.box.appendChild(b); G.badge = b; placeBadge(G); setOld(G, false);
         return G.id;
       }
       case 'say': {
@@ -594,15 +695,51 @@ window.glass = {
       }
       case 'list': return [...groups.values()].map(G => ({ id: G.id, who: G.who, cards: G.cards.map(k => k.who) }));
       // Everything on this screen, in screen pixels, so a restart can put it back (glass.js restart).
-      case 'scene': return [...groups.values()].filter(G => G.who === 'hunter' || G.cards.some(k => k.who === 'odie')).map(G => {
-        const shape = G.g.querySelector('rect.stroke, ellipse.stroke, polyline.hl, line.stroke'), tag = shape ? shape.tagName.toLowerCase() : '';
-        const kind = tag === 'ellipse' ? 'ellipse' : tag === 'polyline' ? 'highlight' : 'box';
-        const color = Object.keys(HEX).find(k => shape && (shape.style.stroke || '').toLowerCase() === HEX[k].toLowerCase()) || 'blue';
-        const txt = k => k.el.querySelector('.txt').textContent, at = k => ({ x: (parseFloat(k.el.style.left) || 0) + origin.x, y: (parseFloat(k.el.style.top) || 0) + origin.y });
-        const his = G.cards.filter(k => k.who === 'hunter'), mine = G.cards.filter(k => k.who === 'odie' && !k.el.classList.contains('proposal'));
-        const m = G.mark ? { x1: G.mark.x1 + G.dx + origin.x, y1: G.mark.y1 + G.dy + origin.y, x2: G.mark.x2 + G.dx + origin.x, y2: G.mark.y2 + G.dy + origin.y } : null;
-        return { who: G.who, mark: m, kind, color, his: his.map(k => ({ text: txt(k), at: at(k) })), mine: mine.map(txt), badge: G.badge ? G.badge.className.replace('badge ', '') : null };
+      case 'scene': return [...groups.values()].filter(G => {
+        if (G.cards.some(k => k.el.classList.contains('hidetag'))) return true;
+        if (G.box.querySelector('.ring') && !G.cards.some(k => !k.el.classList.contains('proposal'))) return false; // a "click here" ring is for the moment
+        return G.who === 'hunter' || G.cards.some(k => !k.el.classList.contains('proposal')) || !!G.g.querySelector('polyline, rect, ellipse, line');
+      }).map(G => {
+        const g = G.g.cloneNode(true); g.querySelectorAll('line.tie, circle.dot').forEach(x => x.remove()); g.removeAttribute('style');
+        const extra = [...G.box.children].filter(x => !x.classList.contains('card')).map(x => x.outerHTML).join('');
+        const cards = G.cards.filter(k => !k.el.classList.contains('proposal')).map(k => ({ who: k.who, text: k.el.querySelector('.txt').textContent,
+          left: parseFloat(k.el.style.left) || 0, top: parseFloat(k.el.style.top) || 0, label: (k.el.querySelector('.who') || {}).textContent || '',
+          reply: k.el.classList.contains('reply'), tucked: k.el.classList.contains('tucked'), hidetag: k.el.classList.contains('hidetag'), css: k.el.style.cssText.replace(/(left|top|width):[^;]*;?/g, ''), line: k.line.style.stroke || '', sent: !!k.sent }));
+        const hide = G.cards.some(k => k.el.classList.contains('hidetag'));
+        return { id: G.id, who: G.who, mark: G.mark, anchor: G.anchor, svg: g.innerHTML, extra, cards, old: G.g.classList.contains('old'),
+          hide: hide && G.mark ? { x1: G.mark.x1 + origin.x, y1: G.mark.y1 + origin.y, x2: G.mark.x2 + origin.x, y2: G.mark.y2 + origin.y } : null };
       });
+      case 'putback': {
+        // A thread from before a restart, exactly as it was: same number, same strokes, same cards and pill.
+        const g = c.g; if (groups.has(g.id)) return 0;
+        const G = makeGroup(g.who, g.mark, g.anchor, g.id);
+        G.g.innerHTML = g.svg || '';
+        if (g.extra) G.box.insertAdjacentHTML('beforeend', g.extra);
+        G.badge = G.box.querySelector('.badge'); G.swap = G.box.querySelector('.swapbox'); G.watch = G.box.querySelector('.watchbox');
+        let lastHis = null, lastMine = null;
+        for (const d of g.cards || []) {
+          const to = d.who === 'hunter' ? (d.reply ? lastMine : (G.mark && !d.hidetag ? 'mark' : null)) : (lastHis || (G.mark ? 'mark' : null));
+          const k = makeCard(G, d.who, d.text, to);
+          if (d.css) k.el.style.cssText = d.css;
+          if (d.line) { k.line.style.stroke = d.line; k.dot.style.fill = d.line; }
+          if (d.label && k.el.querySelector('.who')) k.el.querySelector('.who').textContent = d.label;
+          if (d.hidetag) { k.el.classList.add('hidetag'); const w = k.el.querySelector('.who'); if (w) w.remove(); }
+          if (d.reply) { k.el.classList.add('reply'); k.sent = d.sent; if (!d.sent) G.steerCard = k; }
+          if (d.who === 'odie' && !d.hidetag) addReply(G, k);
+          putCard(k, d.left, d.top);
+          if (d.tucked) G.wasTucked = true;
+          if (d.who === 'hunter') lastHis = k; else lastMine = k;
+        }
+        setOld(G, !!g.old); aimAll(G); if (G.wasTucked) { delete G.wasTucked; tuckThread(G); }
+        return G.id;
+      }
+      // The glass is taking a look at his screen with him: a soft amber frame around what I'm looking at, for a moment.
+      case 'looking': {
+        const f = document.createElement('div'); f.className = 'lookframe';
+        Object.assign(f.style, { left: c.x1 + 'px', top: c.y1 + 'px', width: (c.x2 - c.x1) + 'px', height: (c.y2 - c.y1) + 'px' });
+        layer.appendChild(f); setTimeout(() => f.classList.add('fade'), 900); setTimeout(() => f.remove(), 1800);
+        return 0;
+      }
       default: throw new Error('unknown op ' + c.op);
     }
   },

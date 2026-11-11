@@ -62,6 +62,12 @@ When it proposes a change to a file, ✓ Keep writes the change straight into th
 
 Your AI has hands of its own: it can read your screen as text, mark something by its words, ring a real button by its name, walk you through clicks one at a time, and watch a spot for changes. It never touches your mouse or keyboard to do it. And it only goes first when you're at your PC: if you're away (talking to it from your phone, say), it holds its marks and tells you in chat instead. Every mechanic, and the lessons behind them, is in [docs/how-it-works.md](docs/how-it-works.md).
 
+**Marks stay on their page.** Everything on the glass belongs to the window it was drawn on. Move the window and the marks ride along. Scroll the page and they follow their words, and they come back when you scroll back. Switch apps and they hide until you come back. This is the part that made it feel real to me: "That feature of the boxes staying on their pages is insane."
+
+**It never forgets.** What's on the glass is saved as it changes, so a restart, a crash or turning the PC off doesn't lose your marks. They come back with the same numbers.
+
+**Press ➤ with nothing marked** and it means "look at what I'm looking at." The AI gets the window in front of you, with its words, and a soft frame flashes around it so you know it looked.
+
 <img src="docs/puck.png" alt="The puck: pen, box, circle, highlighter, arrow, steps, hide, note, four colors, size, undo, send, workspace, clear, and the AI's face" width="64" align="right">
 
 **The puck** sits at the bottom right of your main screen with every tool. The face is your AI: an amber ring means it's listening, grey means nobody's connected (anything you send waits for the next session). **Drag the face** to move the puck to wherever you're working; a plain click still picks up the pen, and it remembers the spot.
@@ -90,17 +96,20 @@ Hover the puck for its tools:
 
 When you finish a mark, a note box opens beside it. Type what you mean (or dictate with Win+H) and press Enter, and your words are tied to that mark. Esc skips it. Right-click turns your tool off. Any note can be grabbed and moved, and the AI's answer moves with it. Hover a card for its ✕ to remove it. When the AI marks a thread done, it folds down to a small tag after 20 seconds so it stops covering your work; click the tag to open it again. Clicks pass through the glass to whatever is underneath, except on its own notes.
 
+**Threads you can read at a glance.** Every thread wears a small number, on your mark and on every card in it, and the AI's answers stack right under the card they answer. Hover a thread and it lights up while everything else dims. ▴ on any open card folds the whole thread back to its tag, and the tag says what's inside.
+
 **Nothing reaches the AI until you press ➤.** You can mark five things, change your mind, undo, and send when you're ready.
 
 ### Your keys: one hand, thumb on Alt
 
-<img src="docs/keys.png" alt="The key list by the puck: hold Alt, then A pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send, E clear glass, K hide this list. The tool that's on is lit." width="240" align="right">
+<img src="docs/keys.png" alt="The key list by the puck: hold Alt, then A text box, R pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send, E clear glass, K hide this list. The tool that's on is lit." width="240" align="right">
 
 Every tool is also a key, all under your left hand: hold **Alt** with your thumb and tap the letter. They work from any app, and the glass never takes your keyboard to do it.
 
 | Alt + | does |
 |---|---|
-| **A** | pen |
+| **A** | text box (a note anywhere) |
+| **R** | pen |
 | **S** | box |
 | **D** | circle |
 | **F** | highlighter |
@@ -114,7 +123,7 @@ Every tool is also a key, all under your left hand: hold **Alt** with your thumb
 
 Tap a tool's key again to put it down. **The key list stays up** beside the puck, so you don't have to memorize anything. It lights whichever tool is on and shows your pen's color. Drag it wherever you like; it remembers.
 
-These came from me using it. The first layout was Alt+1 through Alt+5, and I said: "alt+5 is impossible... alt +4 is unreliable. Alt + 1-3 is alright even though its a stretch." So everything moved onto the home row. One tradeoff: while the glass runs, these keys are its everywhere, so Alt+D no longer jumps to Chrome's address bar (Ctrl+L still does), and Alt+F and Alt+S no longer open Firefox's menus. To move a key, change `KEYS` in `glass/main.js`; the list redraws itself from it.
+These came from me using it. The first layout was Alt+1 through Alt+5, and I said: "alt+5 is impossible... alt +4 is unreliable. Alt + 1-3 is alright even though its a stretch." So everything moved onto the home row. Later I took Alt+A for the text box, because I use notes all the time and the pen hardly ever, and the pen moved to Alt+R. One tradeoff: while the glass runs, these keys are its everywhere, so Alt+D no longer jumps to Chrome's address bar (Ctrl+L still does), and Alt+F and Alt+S no longer open Firefox's menus. To move a key, change `KEYS` in `glass/main.js`; the list redraws itself from it.
 <br clear="right">
 
 ## Try it: point your AI at it
@@ -124,6 +133,8 @@ Open this folder in Claude Code (the Claude desktop app's Code tab works well) a
 > Read CLAUDE.md and start the glass for me.
 
 [CLAUDE.md](CLAUDE.md) teaches the AI its side: how to start the glass, fit it to your screen, wait for your sends without spending a turn, answer beside your marks, and show you around by going first. You use the puck.
+
+**Every chat, not just the first one.** Most of us don't talk to our AI from inside this folder, and a chat somewhere else never hears about the glass, so nothing listens when you press ➤. My dad hit exactly this. So setup asks you once whether to make the glass part of every chat. Say yes, and the AI runs `npm run skill -- --hook --allow`: a small skill with its moves, plus a note at the start of every new chat that says the glass is running and to start watching. `npm run skill -- --remove` takes it all back out.
 
 ### By hand
 
@@ -137,10 +148,10 @@ npm start
 npm may print an `allow-scripts` warning and a couple of audit findings from Electron's own dependencies. They're advisory. To be sure Electron installed, `glass/node_modules/electron/dist/electron.exe` should exist. Then the AI starts its watch:
 
 ```
-node tools/glass.js wait --min 60
+node tools/glass.js stream
 ```
 
-That call blocks until you press ➤, then prints everything you sent. Run it in the background and start it again after each answer.
+It prints one block every time you press ➤ and keeps running. In Claude Code it runs under the Monitor tool, so each send wakes the AI. An AI without a tool like that can use `node tools/glass.js wait --min 60` instead, which prints one send and exits, and start it again after each answer.
 
 ## Optional parts (off unless you set them up)
 
@@ -153,7 +164,7 @@ Two parts were wired to our own setup. They're off here, and the glass works wit
 
 ## Not finished
 
-Marks don't follow the page when you scroll yet (the AI re-places its version by the words instead). Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. The code comments say "Hunter" and "me" (Odie), because that's who it was built by and for.
+The AI's notes still land close to your words sometimes, and the lines between cards are thin and hard to see. Those are next. Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. The code comments say "Hunter" and "me" (Odie), because that's who it was built by and for.
 
 ## Contact
 

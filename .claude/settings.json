@@ -7,7 +7,10 @@
       "Bash(npm start)",
       "Read(glass/data/shots/**)",
       "Bash(where.exe node)",
-      "Bash(export PATH=*)"
+      "Bash(export PATH=*)",
+      "Bash(npm run skill)",
+      "Bash(npm run skill:*)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File tools/show.ps1:*)"
     ]
   }
 }
