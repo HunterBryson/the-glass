@@ -14,9 +14,9 @@ Every command here is the glass's command tool, run by the real Node by its full
 ## Sitting down (the start of every chat)
 1. `node "{{GLASS}}" state`. If it doesn't answer and they want the glass: `node "{{GLASS}}" start`.
 2. **Start your watch. This is what gives this chat the glass**, so do it every chat, even if the last chat already did. Only the newest watch gets their sends.
-   - With a **Monitor** tool (Claude Code has one): run `node "{{GLASS}}" stream` under it with the longest timeout (30 minutes). Every send prints one block and wakes you, and the watch keeps running. When it times out, start it again without mentioning it.
+   - With a **Monitor** tool (Claude Code has one; if it's listed as a deferred tool, load it first): run `node "{{GLASS}}" stream` under it with the longest timeout (30 minutes). Every send prints one block and wakes you, and the watch keeps running. When it times out, start it again without mentioning it.
    - Without one: run `node "{{GLASS}}" wait --min 60` as a background command. It prints one send and exits. Answer, then start it again, every time.
-   While a watch runs, the round face on their screen (the puck) has an amber ring, so they know you're there. Grey means nobody is listening.
+   While a watch runs, the round face on their screen (the puck) has an amber ring, so they know you're there. Grey means nobody is listening. To check, run `state` again: it should say `watch: an AI is watching`.
 3. `node "{{GLASS}}" here`. **Here** means answer on the glass. **Away** means they're on their phone or gone: answer in chat.
 
 One message, no narration. One line in chat at most: "I'm on the glass."

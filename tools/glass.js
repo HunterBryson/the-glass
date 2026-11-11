@@ -552,7 +552,7 @@ try {
       const me = path.join(here, 'glass.js').split(String.fromCharCode(92)).join('/');
       if (!(await up())) { console.log(`The glass is installed on this PC but not running. If they want it: "${process.execPath.split(String.fromCharCode(92)).join("/")}" "${me}" start, then start your watch (the-glass skill).`); break; }
       const idle = idleSeconds(), at = idle < AWAY_MIN * 60;
-      console.log(`The glass is running on this PC, and they are ${at ? 'at the PC' : `away (no input for ${ago(idle)})`}. Load the the-glass skill, then take the glass for this chat by starting your watch: "${process.execPath.split(String.fromCharCode(92)).join("/")}" "${me}" stream (under your Monitor tool, 30 min timeout; re-arm it when it ends. No Monitor tool: wait --min 60 in the background, started again after each send). ${at ? 'Answer their glass sends on the glass.' : 'While they are away, answer in chat.'}`);
+      console.log(`The glass is running on this PC, and they are ${at ? 'at the PC' : `away (no input for ${ago(idle)})`}. Load your the-glass skill, then take the glass for this chat by starting your watch: "${process.execPath.split(String.fromCharCode(92)).join("/")}" "${me}" stream (under your Monitor tool, 30 min timeout; re-arm it when it ends. No Monitor tool: wait --min 60 in the background, started again after each send). ${at ? 'Answer their glass sends on the glass.' : 'While they are away, answer in chat.'}`);
       break;
     }
     case 'here': { const idle = idleSeconds(); console.log(idle >= AWAY_MIN * 60 ? `away (no input for ${ago(idle)})` : `here (last input ${ago(idle)} ago)`); break; }
