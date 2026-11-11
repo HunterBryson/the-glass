@@ -72,7 +72,7 @@ Your AI has hands of its own: it can read your screen as text, mark something by
 
 **Marks stay on their page.** Everything on the glass belongs to the window it was drawn on. Move the window and the marks ride along. Scroll the page and they follow their words, and they come back when you scroll back. Switch apps and they hide until you come back. This is the part that made it feel real to me: "That feature of the boxes staying on their pages is insane."
 
-**It never forgets.** What's on the glass is saved as it changes, so a restart, a crash or turning the PC off doesn't lose your marks. They come back with the same numbers.
+**It never forgets.** What's on the glass is saved as it changes, so a restart, a crash or turning the PC off doesn't lose your marks. They come back with the same numbers, and so does any version from your AI that's still waiting for your Keep.
 
 **Press ➤ with nothing marked** and it means "look at what I'm looking at." The AI gets the window in front of you, with its words, and a soft frame flashes around it so you know it looked.
 
@@ -172,7 +172,7 @@ Two parts were wired to our own setup. They're off here, and the glass works wit
 
 ## Not finished
 
-Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. The code comments say "Hunter" and "me" (Odie), because that's who it was built by and for.
+Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. After a restart, a mark on a page you had scrolled can come back a little off its words; we're still chasing that one. The code comments say "Hunter" and "me" (Odie), because that's who it was built by and for.
 
 ## Contact
 
