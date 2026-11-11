@@ -852,8 +852,8 @@ async function sceneNow() {
 setInterval(async () => {
   // Never save before the put-back has run: a slow start used to save an empty glass over the real one (Nov 10).
   if (restoring || !restoredOnce || !sceneBack || !panes.length) return;
-  try { const s = await sceneNow(), k = JSON.stringify(s); if (k === lastScene) return; lastScene = k;
-    fs.writeFile(SCENE, JSON.stringify({ saved: new Date().toISOString(), items: s }, null, 1), () => {}); } catch (e) { trail('scene save failed: ' + e); }
+  try { const s = await sceneNow(), props = [...proposals].filter(([, m]) => m.raw && !m.kept).map(([gid, m]) => ({ gid, ...m })), k = JSON.stringify([s, props]); if (k === lastScene) return; lastScene = k;
+    fs.writeFile(SCENE, JSON.stringify({ saved: new Date().toISOString(), items: s, proposals: props }, null, 1), () => {}); } catch (e) { trail('scene save failed: ' + e); }
 }, 2000);
 async function restoreScene() {
   try { await restoreSceneNow(); } finally { sceneBack = true; }
@@ -881,6 +881,11 @@ async function restoreSceneNow() {
     }
     if (closed.length) { let old = []; try { old = JSON.parse(fs.readFileSync(SCENE_CLOSED, 'utf8')).items || []; } catch {}
       fs.writeFileSync(SCENE_CLOSED, JSON.stringify({ saved: saved.saved, items: [...closed, ...old].slice(0, 60) }, null, 1)); }
+    // My versions waiting for his Keep come back too, beside the same marks (Nov 10: a restart used to drop them).
+    for (const pr of saved.proposals || []) {
+      try { const id = await doCmd(JSON.parse(JSON.stringify(pr.raw))); proposals.set(id, { file: pr.file, old: pr.old, new: pr.new, raw: pr.raw }); }
+      catch (e) { trail('put back version failed: ' + e); }
+    }
     puckSay(); trail(`put back ${back} of ${items.length}${closed.length ? `, ${closed.length} whose window closed kept aside` : ''}`);
     log({ who: 'glass', op: 'restored', back, of: items.length, closed: closed.length });
   } finally { restoring = false; }
@@ -1024,6 +1029,7 @@ ipcMain.on('proposal', async (e, localId, choice) => {
   } else if (choice === 'keep') text = "kept ✓ I'll make the change";
   await run(p, { op: 'proposed', id: localId, choice, ok, text }).catch(() => {});
   if (choice === 'drop') proposals.delete(gid);
+  if (choice === 'keep' && proposals.has(gid)) proposals.get(gid).kept = true;
   if (choice === 'keep') { keptWaiting++; puckSay(); }
   log({ who: 'hunter', op: 'proposal', id: gid, choice, written, file: meta.file || null, note: text });
 });
@@ -1180,6 +1186,7 @@ http.createServer(async (req, res) => {
       const cmd = await body(req);
       if (cmd.op === 'propose') {
         const meta = { file: cmd.file, old: cmd.fileOld || cmd.old, new: cmd.new }; delete cmd.file; delete cmd.fileOld;
+        meta.raw = JSON.parse(JSON.stringify(cmd)); // kept so a restart can put my version back (Nov 10)
         const id = await doCmd(cmd); proposals.set(id, meta); log({ who: 'odie', op: 'propose', id, file: meta.file || null });
         return send(200, { ok: true, id });
       }

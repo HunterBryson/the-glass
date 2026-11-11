@@ -69,7 +69,7 @@
   .chip { position: absolute; pointer-events: none; }
   /* Hover lights one thread: everything else steps back. */
   .grp { transition: opacity .15s; }
-  body.spot .grp:not(.lit) { opacity: .2; }
+  /* Hover brightens one thread; nothing else dims (his catch, Nov 10: "it makes the screen glitchy"). */
   .grp.lit .tie { stroke-width: 3.5; opacity: 1; }
   /* A folded thread says what's inside: his words, then mine. */
   .card.tucked .more { white-space: pre-wrap; max-width: 340px; color: var(--ink); font-size: 13px; line-height: 1.35; }
@@ -150,7 +150,8 @@
   .card.hunter .who { color: #a9dcff !important; } .card.odie .who { color: #ffcf7a !important; }  .card .who { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; padding: 0; background: none !important; color: rgba(255,255,255,.7) !important;
                font: 600 13px/22px "Segoe UI", system-ui, sans-serif; letter-spacing: 0; text-transform: none; border-radius: 0; }
   .card .who::before { content: ""; width: 22px; height: 22px; border-radius: 50%; flex: none; background: url(odie.png) center/cover; box-shadow: 0 0 0 2px rgba(0,0,0,.5); }
-  .card.hunter .who::before { content: "H"; background: var(--his); color: #04121e; font: 700 12px/22px "Segoe UI"; text-align: center; }
+  /* The person is a plain figure, not anyone's initial (a stranger's glass shouldn't say H). */
+  .card.hunter .who::before { content: ""; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='9' r='4.2' fill='%2304121e'/%3E%3Cpath d='M4.5 21c.8-4.2 3.8-6.4 7.5-6.4s6.7 2.2 7.5 6.4z' fill='%2304121e'/%3E%3C/svg%3E") center/70% no-repeat, var(--his); }
   .card .txt { color: #fff; }
   .tn, .tn.chip { display: none !important; }
   .card .x, .card .fold { border: 1px solid rgba(255,255,255,.25); background: rgba(30,36,46,.95); box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 4px 10px rgba(0,0,0,.5); line-height: 22px; }
@@ -192,6 +193,15 @@
   .card.proposal { max-width: 380px; }
   .proposal .txt { padding: 9px 11px; }
   .proposal button { height: 32px; font-size: 14px; }
+  /* The folded chip: a count you can see from across the room. */
+  .card.tucked { padding: 6px 10px 6px 8px; }
+  .card.tucked .who { display: none; }
+  .card.tucked .more { margin: 0; }
+  .card.tucked .msgs { display: inline-flex; align-items: center; gap: 7px; font: 600 14px/22px "Segoe UI"; color: #fff; white-space: nowrap; }
+  .card.tucked .msgs b { min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border-radius: 11px; text-align: center; font: 800 13px/22px "Segoe UI"; background: #f5a524; color: #1f1300; }
+  .card.hunter.tucked .msgs b { background: #6cc6ff; color: #04121e; }
+  .card.tucked .msgs .open { font-weight: 600; font-size: 13px; color: rgba(255,255,255,.75); }
+  .card.tucked::before { content: ""; position: absolute; left: 6px; top: 6px; }
 </style>
 </head>
 <body>
@@ -356,12 +366,10 @@ function tuckThread(G) {
   // What's inside, in words (Nov 10: "I need some indicator of whats in there. somethin other than relying on my memory").
   const mo = head.el.querySelector('.more');
   if (mo) {
-    const his = vis.find(k => k.who === 'hunter'), mine = [...vis].reverse().find(k => k.who !== 'hunter');
+    // Folded: a clear chip that says messages are inside, not a grey summary (his catch, Nov 10: "just make it clear there are messages hidden instaed of the summary").
     mo.textContent = '';
-    const line = (who, k) => { const d = document.createElement('div'); d.textContent = `${who}: ${gist(k, 70)}`; mo.appendChild(d); };
-    if (his) line('You', his);
-    if (mine) line(AI, mine);
-    const f = document.createElement('i'); f.textContent = n > 1 ? `${n} cards · click to open ▾` : 'click to open ▾'; mo.appendChild(f);
+    const chip = document.createElement('span'); chip.className = 'msgs';
+    chip.innerHTML = `<b>${n}</b> ${n === 1 ? 'message' : 'messages'} inside <span class="open">open ▾</span>`; mo.appendChild(chip);
   }
   aimAll(G);
 }
@@ -830,7 +838,7 @@ window.glass = {
         G.badge = G.box.querySelector('.badge'); G.swap = G.box.querySelector('.swapbox'); G.watch = G.box.querySelector('.watchbox');
         let lastHis = null, lastMine = null;
         for (const d of g.cards || []) {
-          const to = d.who === 'hunter' ? (d.reply ? lastMine : (G.mark && !d.hidetag ? 'mark' : null)) : (lastHis || (G.mark ? 'mark' : null));
+          const to = d.who === 'hunter' ? (d.reply && !/steer/i.test(d.label || '') ? lastMine : d.reply ? (lastHis || (G.mark ? 'mark' : null)) : (G.mark && !d.hidetag ? 'mark' : null)) : (lastHis || (G.mark ? 'mark' : null));
           const k = makeCard(G, d.who, d.text, to);
           if (d.css) k.el.style.cssText = d.css;
           if (d.line) { k.line.style.stroke = d.line; k.dot.style.fill = d.line; }

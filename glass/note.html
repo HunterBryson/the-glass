@@ -23,6 +23,16 @@
          font: 600 13px/32px "Segoe UI"; cursor: pointer; }
   #den:hover { border-color: #f5a524; color: #f5a524; }
   #state { position: absolute; right: 130px; bottom: 15px; font-size: 12px; color: #6cc6ff; }
+  /* Lens (Nov 10, his catch: "the box when making steer is the old design"): his typing box is blue glass like his cards. */
+  .card { padding: 0 12px 10px; border-radius: 14px; border: 1px solid rgba(108,198,255,.55); background: linear-gradient(180deg, rgba(34,58,86,.97), rgba(19,33,52,.97)); }
+  .bar { height: 28px; }
+  .who { display: flex; align-items: center; gap: 6px; background: none !important; color: #a9dcff; font: 600 12px/18px "Segoe UI"; letter-spacing: 0; text-transform: none; padding: 0; }
+  .who::before { content: ""; width: 18px; height: 18px; border-radius: 50%; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='9' r='4.2' fill='%2304121e'/%3E%3Cpath d='M4.5 21c.8-4.2 3.8-6.4 7.5-6.4s6.7 2.2 7.5 6.4z' fill='%2304121e'/%3E%3C/svg%3E") center/70% no-repeat, #6cc6ff; }
+  .grip { color: rgba(169,220,255,.6); }
+  textarea { color: #fff; }
+  textarea::placeholder { color: rgba(200,225,245,.45); }
+  #mic, #den { border: 0; background: rgba(255,255,255,.12); color: #fff; }
+  #mic:hover, #den:hover { background: rgba(255,255,255,.2); color: #fff; }
 </style>
 </head>
 <body>
@@ -35,8 +45,8 @@ const t = document.getElementById('t'), mic = document.getElementById('mic'), st
 // The note box wears his mark's color and says what that color means.
 { const C = { blue: ['#6cc6ff', ''], red: ['#ff5a5a', 'wrong · cut'], green: ['#3fd37a', 'good · keep'], yellow: ['#ffd23f', 'look here'] };
   const [hex, means] = C[new URLSearchParams(location.search).get('color')] || C.blue, card = document.querySelector('.card'), who = document.querySelector('.who');
-  card.style.borderColor = hex; card.style.boxShadow = `0 0 0 3px rgba(0,0,0,.7), 0 0 22px ${hex}61`;
-  if (who) { who.style.background = hex; if (means) who.textContent = 'You · ' + means; } }
+  card.style.borderColor = hex; card.style.boxShadow = `inset 0 1px 0 rgba(160,215,255,.18), 0 0 0 1px rgba(0,0,0,.6), 0 18px 44px rgba(0,0,0,.62)`;
+  if (who) { if (means) who.textContent = 'You · ' + means; } }
 { const AI = new URLSearchParams(location.search).get('ai') || 'Odie'; const t0 = document.getElementById('t'); t0.placeholder = t0.placeholder.replace(/Odie/g, AI); }
 if (new URLSearchParams(location.search).get("tie") === "1") t.placeholder = "What is this about? Type, or talk with Win+H. Enter ties it, Esc skips";
 t.focus();
