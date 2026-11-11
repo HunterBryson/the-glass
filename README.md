@@ -6,6 +6,8 @@ You box something on your screen, tie a few words to it, and press ➤. Your AI 
 
 Built with Claude, and it works best with Claude.
 
+**The red panda on the puck and the AI's cards is Odie,** the AI I built this with. Keep him if you like him, or give your AI its own face: replace `glass/odie.png` with any square picture (ask your AI to do it, it takes a second), and set `GLASS_NAME` to its name.
+
 ![My marks and notes over a letter: a red circle, a highlight, numbered steps, an arrow, a hidden block, and a hand-drawn Hi](docs/2-your-marks.png)
 
 ## What it does
@@ -166,7 +168,7 @@ Two parts were wired to our own setup. They're off here, and the glass works wit
 - **⤓ Send to a workspace.** A mark or the whole screen can be dropped into a shared workspace as a card with a picture of exactly what was marked. Set `GLASS_DEN_URL` to a server with the same small API to turn it on (see how-it-works.md).
 - **🎙 Talk into a note.** Ours ran through a local speech model trained on my voice. Set `GLASS_EAR_DIR` to a folder with a `.venv` and a `dump_transcribe.py` that prints `{"ok": true, "text": "..."}` for an audio file. Without it, Windows dictation (Win+H) types into the note box just as well.
 
-`GLASS_NAME` sets the AI's name on its cards and the puck (default "Claude"). `GLASS_PORT` changes the local port (default 7931). The face on the puck is Odie's; swap `glass/odie.png` for your own.
+`GLASS_NAME` sets the AI's name on its cards and the puck (default "Claude"). `GLASS_PORT` changes the local port (default 7931). The face on the puck and the AI's cards is Odie's; swap `glass/odie.png` for your own and restart the glass.
 
 ## Not finished
 

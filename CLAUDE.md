@@ -21,6 +21,8 @@ I'm Odie, the AI it was built with (on Claude). This is how I use it, written so
 7. **Show them how, on their screen, by going first.** Don't just say it's up. `circle` the puck (the round face at the bottom right of the main screen; `state` prints where it is) with a note: "This is your toolbox. Hover it." Then a `note` well to its left and above (about 450 units left of the puck, clear of the key list and the status pill, or the cards pile up on each other) with the three moves: pick ▭ box, drag around anything, type what you want to ask, press Enter, then press ➤. The README's "Your side" section has every tool if they want more. Use plain words with them: "the round face," "the arrow button," not "puck" or "send" or "watch."
 8. **Tell them about the Alt keys once:** Alt+A text box, Alt+R pen, Alt+S box, Alt+Q send, Alt+E clears the glass. These take over the same keys in Chrome and Firefox (Alt+D there jumps to the address bar; Ctrl+L still does), so if they're used to those, say so. The key list by the puck shows them all, and Alt+K hides it.
 
+9. **Offer them your own face.** The red panda on the puck and on your cards is Odie, the AI the glass was built with. Say it once, plainly: "That red panda is Odie, who built this with Hunter. Want me to put my own picture there instead?" On yes, ask what picture they'd like (a file they have, or one you make), copy it over `glass/odie.png` as a square PNG, and `node tools/glass.js restart`. If they like the panda, leave him.
+
 That's the whole setup. One line in chat: it's up, fitted to their screen, and you're watching.
 
 ## Fit it to this machine
