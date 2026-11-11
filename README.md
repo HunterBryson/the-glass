@@ -18,7 +18,7 @@ Built with Claude, and it works best with Claude.
 
 ![v1: the AI's amber answer cards beside each of my notes](docs/3-odie-answers.png)
 
-**v2** (November 10): the same marks, the same jokes, in the new cards. Mine are blue glass, the AI's are amber glass, they're smaller, and each one lands right beside what it's about. My words when I saw it: "super clear, reduced clutter. Im happy. this is v2 design." We'll add a picture like this for every big look upgrade.
+**v2** (November 10): the same marks, the same jokes, in the new cards. Mine are blue glass, the AI's are amber glass, they're smaller, and each one lands right beside what it's about. We'll add a picture like this for every big look upgrade.
 
 ![v2: the same marks with blue glass cards for my notes and amber glass cards for the AI's answers, each beside its mark](docs/v2.png)
 
