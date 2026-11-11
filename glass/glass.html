@@ -136,6 +136,62 @@
   body.mode-note, body.mode-note * { cursor: text !important; }
   body.mode-ask, body.mode-ask * { cursor: help !important; }
   body[class*="mode-"] .card, body[class*="mode-"] .card * { cursor: grab !important; }
+  /* Lens (Nov 10, his pick in the Den, #15): one material for every note. A dark glass pane with a light edge and a deep
+     shadow, so it floats off any page; faces say who's talking; my version is the one bright thing; one soft white line. */
+  .card { max-width: 340px; padding: 12px 16px 14px; font-size: 17px; line-height: 1.42; border-radius: 18px;
+          background: linear-gradient(180deg, rgba(48,56,70,.93), rgba(26,31,40,.93)); border: 1px solid rgba(255,255,255,.16);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 0 1px rgba(0,0,0,.6), 0 18px 44px rgba(0,0,0,.62); }
+  /* Whose card is whose, at a glance (his catch, Nov 10: "i cannot tell the difference between my block and yours"):
+     his are cool blue glass with a blue edge, mine warm amber glass with an amber edge. */
+  .card.hunter { background: linear-gradient(180deg, rgba(34,58,86,.95), rgba(19,33,52,.95)); border-color: rgba(108,198,255,.55);
+                 box-shadow: inset 0 1px 0 rgba(160,215,255,.18), 0 0 0 1px rgba(0,0,0,.6), 0 18px 44px rgba(0,0,0,.62); }
+  .card.odie { background: linear-gradient(180deg, rgba(66,50,26,.95), rgba(37,28,15,.95)); border-color: rgba(245,165,36,.55);
+               box-shadow: inset 0 1px 0 rgba(255,210,140,.16), 0 0 0 1px rgba(0,0,0,.6), 0 18px 44px rgba(0,0,0,.62); }
+  .card.hunter .who { color: #a9dcff !important; } .card.odie .who { color: #ffcf7a !important; }  .card .who { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; padding: 0; background: none !important; color: rgba(255,255,255,.7) !important;
+               font: 600 13px/22px "Segoe UI", system-ui, sans-serif; letter-spacing: 0; text-transform: none; border-radius: 0; }
+  .card .who::before { content: ""; width: 22px; height: 22px; border-radius: 50%; flex: none; background: url(odie.png) center/cover; box-shadow: 0 0 0 2px rgba(0,0,0,.5); }
+  .card.hunter .who::before { content: "H"; background: var(--his); color: #04121e; font: 700 12px/22px "Segoe UI"; text-align: center; }
+  .card .txt { color: #fff; }
+  .tn, .tn.chip { display: none !important; }
+  .card .x, .card .fold { border: 1px solid rgba(255,255,255,.25); background: rgba(30,36,46,.95); box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 4px 10px rgba(0,0,0,.5); line-height: 22px; }
+  .card.hunter .x, .card.hunter .fold { border-color: rgba(255,255,255,.25); }
+  /* One soft white line, a dot where it lands. */
+  .tie, .tie.hunter, .tie.odie { stroke: #fff; stroke-width: 2.5; opacity: .95; filter: drop-shadow(0 0 4px rgba(255,255,255,.5)) drop-shadow(0 0 1px rgba(0,0,0,1)); }
+  .dot.hunter, .dot.odie { fill: #fff; }
+  .grp.lit .tie { stroke-width: 3.5; }
+  .card .acts { display: flex; gap: 8px; margin-top: 8px; }
+  .card .acts button { height: 30px; padding: 0 14px; border-radius: 10px; border: 0; background: rgba(255,255,255,.12); color: #fff; font: 600 13px "Segoe UI"; cursor: pointer; }
+  .card .acts button:hover { background: rgba(255,255,255,.2); }
+  /* My version: a darker well with a soft amber edge (no white: bright hurts his eyes). */
+  .card.proposal { border-left-width: 1px; padding-bottom: 12px; }
+  .proposal .txt { display: block; margin-top: 2px; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,.28); box-shadow: inset 0 0 0 1px rgba(245,165,36,.35); color: #fff; }
+  .proposal .txt ins { color: #ffc65c; background: rgba(245,165,36,.18); }
+  .proposal .txt del { color: #7d838c; }
+  .proposal .acts { gap: 8px; }
+  .proposal button { flex: 1; height: 36px; border-radius: 12px; border: 0; background: rgba(255,255,255,.14); font: 600 15px "Segoe UI"; }
+  .proposal button.keep { background: var(--odie); color: #1f1300; }
+  .proposal .hint { display: none; }
+  .proposal.keptcard { border-color: #3fb950 !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 0 2px #3fb950, 0 18px 44px rgba(0,0,0,.62) !important; }
+  .proposal.keptcard .who { color: #7ee2a0 !important; }
+  /* A finished thread folds to a glass chip. */
+  .card.tucked { border-radius: 16px; padding: 8px 14px 8px 8px; opacity: 1; }
+  .card.tucked .who { margin: 0; }
+  .card.tucked .more { font-size: 14px; color: #fff; max-width: 300px; margin: 2px 0 2px 30px; }
+  /* Status on his mark: a small glass pill. */
+  .badge { background: rgba(30,36,46,.94); border: 1px solid rgba(255,255,255,.22); box-shadow: 0 0 0 1px rgba(0,0,0,.55), 0 6px 14px rgba(0,0,0,.5); padding: 3px 11px 3px 4px; font-size: 13px; }
+  .badge.done { border-color: rgba(95,211,141,.7); } .badge.you { border-color: rgba(108,198,255,.7); }
+  /* Compact (his catch, Nov 10: "why does it look like we have so much less space on the screen still?"): v1's size again.
+     Smaller text and padding, the face inline and small, and Reply only while the pointer is on the card. */
+  .card { max-width: 300px; padding: 8px 12px 9px; font-size: 15px; line-height: 1.38; border-radius: 14px; }
+  .card .who { font-size: 12px; line-height: 18px; gap: 6px; margin: 0 0 3px; }
+  .card .who::before { width: 18px; height: 18px; }
+  .card.hunter .who::before { font-size: 10px; line-height: 18px; }
+  .card:not(.proposal) .acts { position: absolute; right: 8px; bottom: -14px; margin: 0; opacity: 0; transition: opacity .12s; pointer-events: none; }
+  .card:not(.proposal):hover .acts { opacity: 1; pointer-events: auto; }
+  .card:not(.proposal) .acts button { height: 26px; padding: 0 11px; font-size: 12px; background: rgba(30,36,46,.97); box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 4px 10px rgba(0,0,0,.5); }
+  .card.proposal { max-width: 380px; }
+  .proposal .txt { padding: 9px 11px; }
+  .proposal button { height: 32px; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -335,6 +391,56 @@ function seen() {
   }
   return out;
 }
+// Where a new card goes (Nov 10, rebuilt after Lens): close to what it's about, first. The old way slid around hunting for
+// the emptiest spot and ignored distance, so an answer could land a screen away with its line across another card.
+// Now every spot near the anchor gets a score: how far away it is, how many of his words it covers, and whether its line
+// would cross another card or a card would sit on another line. The lowest score wins.
+function segHitsRect(a, b, r) {
+  let t0 = 0, t1 = 1; const dx = b[0] - a[0], dy = b[1] - a[1];
+  const clip = (p, q) => { if (p === 0) return q >= 0; const t = q / p; if (p < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; } return true; };
+  return clip(-dx, a[0] - r.x1) && clip(dx, r.x2 - a[0]) && clip(-dy, a[1] - r.y1) && clip(dy, r.y2 - a[1]) && t0 <= t1;
+}
+function tieSegs(skipG) {
+  const out = [];
+  for (const g of groups.values()) {
+    if (g.box.classList.contains('gone')) continue;
+    for (const k of g.cards) {
+      if (!k.line.parentNode || k.line.style.display === 'none') continue;
+      const n = a => parseFloat(k.line.getAttribute(a)) || 0;
+      out.push([[n('x1') + g.dx, n('y1') + g.dy], [n('x2') + g.dx, n('y2') + g.dy], g === skipG]);
+    }
+  }
+  return out;
+}
+function bestSpot(c, w, h, A, avoid, words) {
+  const free = (x, y) => x >= 8 && y >= 8 && x + w <= scr.width - 8 && y + h <= scr.height - 8 &&
+    !avoid.some(o => x < o.x2 + 14 && x + w > o.x1 - 14 && y < o.y2 + 14 && y + h > o.y1 - 14);
+  const others = avoid.filter(o => !(o.x1 === A.x1 && o.y1 === A.y1 && o.x2 === A.x2 && o.y2 === A.y2));
+  const segs = tieSegs(c.G);
+  const area = w * h;
+  let best = null;
+  for (let y = A.y1 - h - 320; y <= A.y2 + 320; y += 14) {
+    for (let x = A.x1 - w - 380; x <= A.x2 + 380; x += 14) {
+      if (!free(x, y)) continue;
+      const gx = Math.max(0, A.x1 - (x + w), x - A.x2), gy = Math.max(0, A.y1 - (y + h), y - A.y2);
+      const gap = Math.hypot(gx, gy);
+      if (gap < 12) continue; // a little air between a card and what it points at
+      let s = gap * 2.2;
+      if (gy > 0 && gx === 0) s += 30; // beside reads better than above or below
+      let cov = 0; for (const o of words) { const ox = Math.min(x + w, o.x2) - Math.max(x, o.x1), oy = Math.min(y + h, o.y2) - Math.max(y, o.y1); if (ox > 0 && oy > 0) cov += ox * oy; }
+      s += (cov / area) * 260;
+      if (best && s >= best.s) continue;
+      // Its own line, from the anchor to the card, mustn't cross another card...
+      const r = { x1: x, y1: y, x2: x + w, y2: y + h }, cx = x + w / 2, cy = y + h / 2;
+      const p1 = [clamp(cx, A.x1, A.x2), clamp(cy, A.y1, A.y2)], p2 = [clamp(p1[0], r.x1, r.x2), clamp(p1[1], r.y1, r.y2)];
+      for (const o of others) if (segHitsRect(p1, p2, o)) s += 500;
+      // ...and the card mustn't sit on anyone else's line.
+      for (const [a, b] of segs) if (segHitsRect(a, b, r)) s += 500;
+      if (!best || s < best.s) best = { s, x, y };
+    }
+  }
+  return best ? [best.x, best.y] : null;
+}
 function placeCard(c, hint) {
   const G = c.G, el = c.el; el.style.left = '0px'; el.style.top = '0px';
   const w = el.offsetWidth, h = el.offsetHeight, gap = 26;
@@ -357,6 +463,10 @@ function placeCard(c, hint) {
     if (M) others.push(M);
     const ok = x >= 8 && x + dw <= scr.width - 8 && y + dh <= scr.height - 8 && !others.some(o => x < o.x2 + 6 && x + dw > o.x1 - 6 && y < o.y2 + 6 && y + dh > o.y1 - 6);
     if (ok) p = [x, y]; else el.style.minWidth = '';
+  }
+  if (!p && !hint) {
+    const A = c.to === 'mark' ? M : (c.to && c.to.el) ? rectOf(c.to.el.getBoundingClientRect()) : M || (prev.length ? prev[prev.length - 1] : null);
+    if (A) p = bestSpot(c, w, h, A, avoid, c.avoid || []);
   }
   if (p) ; else if (c.avoid && c.avoid.length) {
     // Words on his screen: try every spot (beside, then sliding along each side) and keep the one over the fewest words.
@@ -568,6 +678,8 @@ window.glass = {
         else if (c.kind === 'arrow') { const l = glow(document.createElementNS(NS, 'line')); l.setAttribute('class', 'stroke his'); l.setAttribute('x1', c.from[0]); l.setAttribute('y1', c.from[1]); l.setAttribute('x2', c.to[0]); l.setAttribute('y2', c.to[1]); G.g.appendChild(l);
           const ang = Math.atan2(c.to[1] - c.from[1], c.to[0] - c.from[0]), L = 20, h = glow(polyline('his', G.g)); setPts(h, [[c.to[0] - L * Math.cos(ang - .45), c.to[1] - L * Math.sin(ang - .45)], c.to, [c.to[0] - L * Math.cos(ang + .45), c.to[1] - L * Math.sin(ang + .45)]]); }
         else if (c.kind === 'step') { const d = document.createElement('div'); d.className = 'step'; d.textContent = c.n; d.style.left = (r.x1 + r.x2) / 2 + 'px'; d.style.top = (r.y1 + r.y2) / 2 + 'px'; d.style.background = hex; G.box.appendChild(d); }
+        else if (c.kind === 'pen') { for (const s of c.strokes || []) { const l = glow(polyline('his', G.g)); setPts(l, s.map(L0)); } }
+        else if (c.kind === 'hide') { const d = document.createElement('div'); d.className = 'hidebox'; Object.assign(d.style, { left: r.x1 + 'px', top: r.y1 + 'px', width: (r.x2 - r.x1) + 'px', height: (r.y2 - r.y1) + 'px' }); G.box.appendChild(d); }
         else { const el = glow(document.createElementNS(NS, 'rect')); el.setAttribute('class', 'stroke his'); el.setAttribute('rx', 6); drawRect(el, r); G.g.appendChild(el); }
         if (c.text) {
           const k = makeCard(G, 'hunter', c.text, 'mark');

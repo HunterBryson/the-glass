@@ -11,7 +11,7 @@ app.commandLine.appendSwitch('disable-background-timer-throttling');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execFile } = require('child_process');
 
 const PORT = Number(process.env.GLASS_PORT) || 7931;
 // Two parts are wired to our own setup and stay off unless you point them somewhere (see README, "Optional parts"):
@@ -244,7 +244,7 @@ const KEYS = { 'Alt+A': 'note', 'Alt+R': 'pen', 'Alt+S': 'box', 'Alt+D': 'ellips
 // Clear is Alt+E. The key list stays up by the puck (drag it anywhere; it remembers), and Alt+K hides or
 // shows it. It lights the tool that's on and shows the pen's color, so it's also how he sees what a key just did.
 const KEY_NAMES = { note: 'text box', pen: 'pen', box: 'box', ellipse: 'circle', hl: 'highlighter', arrow: 'arrow', off: 'tool off',
-  color: 'color', undo: 'undo', send: 'send ➤', clear: 'clear glass', legend: 'hide this list' };
+  color: 'color', undo: 'undo', send: 'send ➤ · nothing marked = look with me', clear: 'clear glass', legend: 'hide this list' };
 const SWATCH = { blue: '#6cc6ff', red: '#ff5a5a', green: '#3fb950', yellow: '#ffe14d' };
 let legend = null, legendOn = true;
 function legendHtml() {
@@ -743,12 +743,38 @@ function anchor(pane, id, r, keep) {
   anchors.set(`${pane}:${id}`, { pane, id, pt, bx: [o.x + r.x1, o.x + r.x2], by: [o.y + r.y1, o.y + r.y2], hwnd: keep ? keep.hwnd : null, r0: keep ? keep.r0 : null, sy: keep && keep.sy || 0, dx: 0, dy: 0, shown: true });
   startWins(); if (winList.length) reanchor();
 }
+// A thread whose window closed used to stay hidden on the glass until a clear (still counted, still saved, never seen).
+// Now: once its window is really gone (not just minimized), the thread moves to data/scene-closed.json and leaves the glass.
+// `glass.js scene` still lists it under "kept aside".
+function checkClosed(a) {
+  a.checking = true;
+  const ps = `Add-Type -Name W -Namespace U -MemberDefinition '[DllImport("user32.dll")] public static extern bool IsWindow(System.IntPtr h);'; [U.W]::IsWindow([System.IntPtr]${a.hwnd})`;
+  execFile('powershell', ['-NoProfile', '-Command', ps], { windowsHide: true, timeout: 10000 }, async (err, out) => {
+    a.checking = false;
+    if (err || String(out).trim() !== 'False' || !anchors.has(`${a.pane}:${a.id}`)) return;
+    a.missSince = 0;
+    const p = panes[a.pane]; if (!p || p.win.isDestroyed()) return;
+    try {
+      const g = (await run(p, { op: 'scene' })).find(x => x.id === a.id);
+      if (g) { let old = []; try { old = JSON.parse(fs.readFileSync(SCENE_CLOSED, 'utf8')).items || []; } catch {}
+        const item = { ...g, pane: a.pane, screen: p.primary ? 'main' : 'second', win: { hwnd: a.hwnd, r0: a.r0, sy: a.sy || 0 }, waiting: [] };
+        fs.writeFileSync(SCENE_CLOSED, JSON.stringify({ saved: new Date().toISOString(), items: [item, ...old].slice(0, 60) }, null, 1)); }
+      await run(p, { op: 'clear', id: a.id });
+      anchors.delete(`${a.pane}:${a.id}`); tracked.delete(`${a.pane}:${a.id}`);
+      for (let k = pending.length - 1; k >= 0; k--) if (pending[k].pane === a.pane && pending[k].id === a.id) pending.splice(k, 1);
+      trail(`window closed: thread #${a.pane}:${a.id} kept aside`); log({ who: 'glass', op: 'closed', id: a.pane * 1000 + a.id }); puckSay(); stopWinsIfIdle();
+    } catch (e) { trail('closed check failed: ' + e); }
+  });
+}
 function reanchor() {
   if (snipping) return; // his snip covers the screen for a moment; nothing really moved
   for (const a of anchors.values()) {
     if (a.hwnd === null) { const w = winAt(a.pt.x, a.pt.y); a.hwnd = w ? w[0] : 0; a.r0 = w ? [w[1], w[2]] : null; }
     if (!a.hwnd) continue; // on the bare desktop: stays put
     const i = winList.findIndex(w => w[0] === a.hwnd);
+    // Missing from the list for a few seconds: minimized, or closed. If closed, the thread is put aside, not left hidden forever.
+    if (i < 0) { if (!a.missSince) { a.missSince = Date.now(); setTimeout(reanchor, 3500); } else if (Date.now() - a.missSince > 3000 && !a.checking) checkClosed(a); }
+    else a.missSince = 0;
     let dx = a.dx, dy = a.dy, shown = false;
     if (i >= 0) {
       const w = winList[i]; dx = w[1] - a.r0[0]; dy = w[2] - a.r0[1] + (a.sy || 0);

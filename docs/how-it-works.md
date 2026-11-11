@@ -56,7 +56,11 @@ On day one the glass was a sheet over the screen: switch apps and your marks flo
 
 **It never forgets.** What's on the glass (strokes, cards in order, status pills, which window, what still waits for ➤, hidden areas) saves to `glass/data/scene.json` every 2 seconds when it changes, and the glass puts it all back itself when it starts, with the same numbers. Nothing saves until the put-back has run, because an early save once wrote an empty glass over the real one. Threads whose window closed (after a reboot, say) are kept in `scene-closed.json`, and `glass.js scene` lists both.
 
-**Threads at a glance.** One number per thread, the same chip on the mark and every card (#1017 shows as 17). Answers dock under the card they answer, so a thread is a stack, and stacks keep 18 px apart. Hovering lights one thread and dims the rest to 20%. ▴ folds an open thread back to one tag, and a folded tag says what's inside (their first words, the AI's last answer, how many cards).
+**The cards (v2, Nov 10, chosen from three designs side by side).** Dark glass with a light edge and a deep shadow so they float off any page. The person's cards are blue glass, the AI's amber glass, so whose is whose reads at a glance; a small face replaces the old uppercase labels. No white anywhere (bright panels hurt to look at), so the AI's version sits in a darker well with a soft amber edge. Replies to a card dock under it, so a thread is a stack. Reply shows only while the pointer is on a card. Hovering lights one thread and dims the rest; ▴ folds an open thread back to one tag that says what's inside. An earlier try put a number on every thread; it added clutter and nobody read it, so it's gone.
+
+**Where a card lands.** Every spot within a few hundred pixels of what the card is about gets a score: distance, how many of the person's words it would cover, beside over above, and a heavy cost if its line would cross another card or it would sit on someone else's line. The lowest score wins. The first version slid around looking for the emptiest spot and ignored distance, so an answer could land a screen away with its line across everything.
+
+**A window that closes.** A thread lives on its window. When the window is gone for good (not just minimized), the thread leaves the glass and is kept in `scene-closed.json`; it used to stay hidden on the glass forever.
 
 **Notes off their words.** Before placing an answer or a note, the glass reads the lines of text near the spot and lands where it covers the fewest, and never on their marks, the key list or the puck.
 
@@ -76,7 +80,7 @@ On day one the glass was a sheet over the screen: switch apps and your marks flo
 
 ## Not built yet
 
-- **Lines you can always see.** The lines between cards are thin and don't always reach what they point to. A busy session still fills the screen fast.
+- **A busy session still fills the screen.** Folding and smaller cards help; a quieter way for a long session is still open.
 - **Pen gestures the AI can read:** a strike through text to cut it, a line between two marks to say "these connect." (The arrow tool and red ink cover some of this today.)
 - **The glass on more than one OS.**
 

@@ -71,7 +71,7 @@ Each mark has a number (#6). **Use it exactly as the send prints it:** the thous
 
 **To show them a web page,** put it up full screen yourself and mark it: `powershell -NoProfile -ExecutionPolicy Bypass -File tools/show.ps1 -Url https://... -Screen main` (or `second`). Then `read`, and `mark` the lines that matter by their words. Full screen matters: if they maximize it after you marked it, your marks no longer sit on their words. Don't paste a link and describe where to look.
 
-**Marks live on their window.** Everything on the glass (their marks, their words, your answers, your own marks) belongs to the window it was drawn on: it moves with the window, follows the page when it scrolls, hides when they switch apps or scroll it away, and comes back with it. On the bare desktop it stays put. **Every thread wears a number** (a small chip on their mark and on each card, #1017 shows as 17), and your answers stack under the card they answer. In chat, name threads by that number. Hovering a thread lights it and dims the rest; ▴ on a card folds the whole thread back to one tag.
+**Marks live on their window.** Everything on the glass (their marks, their words, your answers, your own marks) belongs to the window it was drawn on: it moves with the window, follows the page when it scrolls, hides when they switch apps or scroll it away, and comes back with it. On the bare desktop it stays put. **Their cards are blue glass and yours are amber glass, and your answers stack under the card they answer. In chat, name a thread by what it's about. Hovering a thread lights it and dims the rest; ▴ on a card folds the whole thread back to one tag.
 
 ## How to be good at it
 

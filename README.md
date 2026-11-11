@@ -14,7 +14,13 @@ Built with Claude, and it works best with Claude.
 
 **Your AI answers right where you're looking,** beside each mark, tied to it by a line. No more screenshots, no more "the third paragraph down, on the left." The mark says *where*, your words say *what*, and the AI gets both at once.
 
-![The AI's amber answer cards beside each of my notes](docs/3-odie-answers.png)
+**v1** (November 7): the first time we did this, on our letter.
+
+![v1: the AI's amber answer cards beside each of my notes](docs/3-odie-answers.png)
+
+**v2** (November 10): the same marks, the same jokes, in the new cards. Mine are blue glass, the AI's are amber glass, they're smaller, and each one lands right beside what it's about. My words when I saw it: "super clear, reduced clutter. Im happy. this is v2 design." We'll add a picture like this for every big look upgrade.
+
+![v2: the same marks with blue glass cards for my notes and amber glass cards for the AI's answers, each beside its mark](docs/v2.png)
 
 **You keep the conversation going on the spot.** Every answer has ✎ Reply. Click it, add your next thought, and the thread grows right there beside the mark you started from.
 
@@ -96,7 +102,7 @@ Hover the puck for its tools:
 
 When you finish a mark, a note box opens beside it. Type what you mean (or dictate with Win+H) and press Enter, and your words are tied to that mark. Esc skips it. Right-click turns your tool off. Any note can be grabbed and moved, and the AI's answer moves with it. Hover a card for its ✕ to remove it. When the AI marks a thread done, it folds down to a small tag after 20 seconds so it stops covering your work; click the tag to open it again. Clicks pass through the glass to whatever is underneath, except on its own notes.
 
-**Threads you can read at a glance.** Every thread wears a small number, on your mark and on every card in it, and the AI's answers stack right under the card they answer. Hover a thread and it lights up while everything else dims. ▴ on any open card folds the whole thread back to its tag, and the tag says what's inside.
+**You can tell whose card is whose at a glance.** My notes are blue glass, the AI's answers are amber glass, each with a small face. Its answers stack right under the card they answer, and every card lands close to what it's about, so lines stay short. Hover a thread and it lights up while everything else dims. ▴ on any open card folds the whole thread back to one tag, and the tag says what's inside. A note whose window you closed leaves the glass on its own.
 
 **Nothing reaches the AI until you press ➤.** You can mark five things, change your mind, undo, and send when you're ready.
 
@@ -117,7 +123,7 @@ Every tool is also a key, all under your left hand: hold **Alt** with your thumb
 | **X** | tool off (your clicks go back to your apps) |
 | **C** | color: blue → red → green → yellow |
 | **W** | undo |
-| **Q** | send ➤ |
+| **Q** | send ➤ (with nothing marked: "look at what I'm looking at") |
 | **E** | clear the glass |
 | **K** | hide or show the key list |
 
@@ -164,7 +170,7 @@ Two parts were wired to our own setup. They're off here, and the glass works wit
 
 ## Not finished
 
-The AI's notes still land close to your words sometimes, and the lines between cards are thin and hard to see. Those are next. Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. The code comments say "Hunter" and "me" (Odie), because that's who it was built by and for.
+Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. The code comments say "Hunter" and "me" (Odie), because that's who it was built by and for.
 
 ## Contact
 
