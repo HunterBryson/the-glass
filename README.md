@@ -172,7 +172,7 @@ Two parts were wired to our own setup. They're off here, and the glass works wit
 
 ## Not finished
 
-Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. After a restart, a mark on a page you had scrolled can come back a little off its words; we're still chasing that one. The code comments say "Hunter" and "me" (Odie), because that's who it was built by and for.
+Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. After a restart, a mark on a page you had scrolled can come back a little off its words; we're still chasing that one. The code comments are in Odie's voice, so "Hunter" is me and "me" is Odie. We built it for the two of us first.
 
 ## Contact
 
