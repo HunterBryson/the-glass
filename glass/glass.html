@@ -273,7 +273,7 @@
   <div class="tag"><img src="odie.png" alt=""><span class="ainame">Odie</span></div><div class="say"></div></div>
 <script>
 const NS = 'http://www.w3.org/2000/svg';
-const AI = new URLSearchParams(location.search).get('ai') || 'Odie';
+const AI = new URLSearchParams(location.search).get('ai') || 'Claude';
 document.querySelector('#me .ainame').textContent = AI;
 const svg = document.getElementById('marks'), layer = document.getElementById('layer');
 const me = document.getElementById('me'), sayEl = me.querySelector('.say');
@@ -784,7 +784,11 @@ window.glass = {
         const his = G.cards.find(k => k.who === 'hunter');
         // My answer ties to his words (his steer when he just steered, else his note); my versions tie to his box.
         // (Nov 7 night: "Your lines should connect to my comment if they are related.")
-        const k = makeCard(G, 'odie', c.text, G.steerCard || his || (G.mark ? 'mark' : null));
+        // When my last card in this thread is an answer (two answers in a row), the new one points at it, so its tail
+        // never runs through that answer to reach his note (the stranger test, Nov 12: "the tail cuts through it").
+        const prevVis = [...G.cards].reverse().find(x => !x.el.classList.contains('hidetag') && !x.el.classList.contains('tuckhide') && x.el.offsetWidth);
+        const tieTo = prevVis && prevVis.who === 'odie' && !prevVis.el.classList.contains('proposal') ? prevVis : (G.steerCard || his || (G.mark ? 'mark' : null));
+        const k = makeCard(G, 'odie', c.text, tieTo);
         // ✎ Reply keeps the thread going on this mark (Nov 9: "I need to be able to click one of these blocks to keep a thread to it going").
         addReply(G, k);
         setOld(G, false);

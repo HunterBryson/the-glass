@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Note to Odie</title>
+<title>Note to your AI</title>
 <style>
   html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Segoe UI", system-ui, sans-serif; }
   body { padding: 5px; box-sizing: border-box; }
@@ -49,7 +49,7 @@
 <body>
 <div class="card"><div class="bar"><span class="who">You</span><span class="grip">⠿ drag</span></div>
   <textarea id="t" placeholder="Write or talk to Odie… Enter to keep, Esc to drop"></textarea>
-  <button id="taste" title="Save what you marked to UI Taste, with your words as its line">♥ Taste</button>
+  <button id="taste" title="Save what you marked to your taste folder, with your words as its line">♥ Taste</button>
   <button id="den" title="Keep your words on the mark and send it to the Den">⤓ Den</button>
   <button id="mic" title="Talk instead of typing (click again when you're done)">🎙</button><span id="state"></span></div>
 <script>
@@ -59,7 +59,7 @@ const t = document.getElementById('t'), mic = document.getElementById('mic'), st
   const [hex, means] = C[new URLSearchParams(location.search).get('color')] || C.blue, card = document.querySelector('.card'), who = document.querySelector('.who');
   card.style.borderColor = hex; card.style.boxShadow = `inset 0 1px 0 rgba(160,215,255,.18), 0 0 0 1px rgba(0,0,0,.6), 0 18px 44px rgba(0,0,0,.62)`;
   if (who && means) { const i = document.createElement('i'); i.className = 'mean'; i.style.background = hex; i.textContent = means; who.appendChild(i); } }
-{ const AI = new URLSearchParams(location.search).get('ai') || 'Odie'; const t0 = document.getElementById('t'); t0.placeholder = t0.placeholder.replace(/Odie/g, AI); }
+{ const AI = new URLSearchParams(location.search).get('ai') || 'Claude'; const t0 = document.getElementById('t'); t0.placeholder = t0.placeholder.replace(/Odie/g, AI); }
 if (new URLSearchParams(location.search).get("tie") === "1") t.placeholder = "What is this about? Type, or talk with Win+H. Enter ties it, Esc skips";
 t.focus();
 let rec = null, busy = false;

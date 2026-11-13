@@ -246,13 +246,15 @@ async function restart() {
 
 async function start() {
   try { fs.unlinkSync(STOPPING); } catch {}
+  const taken = path.join(glassDir, 'data', 'port-taken.txt'); try { fs.unlinkSync(taken); } catch {}
   if (await up()) return console.log('the glass is already up');
   const electron = createRequire(path.join(glassDir, 'package.json'))('electron');
   // A chat's shell can carry ELECTRON_RUN_AS_NODE (the Claude app is Electron too); with it, the glass starts as plain node and dies.
   const env = { ...process.env, NODE_EXE: process.execPath }; delete env.ELECTRON_RUN_AS_NODE;
   spawn(electron, [glassDir], { detached: true, stdio: 'ignore', windowsHide: true, env }).unref();
   for (let i = 0; i < 40; i++) { await new Promise(r => setTimeout(r, 250)); if (await up()) return console.log('the glass is up'); }
-  throw new Error('the glass did not come up');
+  if (fs.existsSync(taken)) throw new Error(`the glass did not come up: port ${fs.readFileSync(taken, 'utf8').trim()} is already taken by another program. Set GLASS_PORT to a free port (CLAUDE.md, Start, step 3).`);
+  throw new Error('the glass did not come up (the last lines of glass/data/glass.log say why)');
 }
 
 // What his mark says before his words do: the tool, and the color's meaning.

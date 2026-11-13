@@ -72,7 +72,7 @@
 <script>
 // The puck is its own little window, so it takes clicks the ordinary way.
 const tip = document.getElementById('tip'), $ = id => document.getElementById(id);
-const AI = new URLSearchParams(location.search).get('ai') || 'Odie';
+const AI = new URLSearchParams(location.search).get('ai') || 'Claude';
 document.querySelectorAll('[data-tip]').forEach(b => b.dataset.tip = b.dataset.tip.replace(/Odie/g, AI));
 let mode = 'off', pending = 0, closeT;
 const stayOpen = () => mode !== 'off' || pending > 0;

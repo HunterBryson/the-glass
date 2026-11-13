@@ -17,7 +17,7 @@ const PORT = Number(process.env.GLASS_PORT) || 7931;
 // Three parts are wired to our own setup and stay off unless you point them somewhere (see README, "Optional parts"):
 // GLASS_DEN_URL: a workspace that takes dropped marks (the buttons call it the Den).
 // GLASS_EAR_DIR: a local speech-to-text folder with .venv and dump_transcribe.py (ours was the Ear). Windows dictation (Win+H) works in the note box without it.
-// GLASS_TASTE_URL: a server with /api/taste that keeps designs you like (Homebase's UI Taste); ♥ Taste stays hidden without it.
+// GLASS_TASTE_URL: a server with /api/taste that keeps designs you like (ours is a page in our own app); ♥ Taste stays hidden without it.
 const DEN_ON = !!process.env.GLASS_DEN_URL, EAR_ON = !!process.env.GLASS_EAR_DIR, TASTE_ON = !!process.env.GLASS_TASTE_URL;
 const hideOff = w => w && !w.isDestroyed() && w.webContents.executeJavaScript(`for (const id of [${[!DEN_ON && "'den'", !DEN_ON && "'t-den'", !EAR_ON && "'mic'", !TASTE_ON && "'taste'"].filter(Boolean).join(',')}]) document.getElementById(id)?.remove();`).catch(() => {});
 // The AI's name on its cards, the puck and the note box (GLASS_NAME). Ours is Odie.
@@ -412,8 +412,8 @@ ipcMain.on('note-taste', async (_e, text) => {
   if (!TASTE_ON) return;
   const r = await commitNote(text);
   if (!r) return;
-  try { await markToTaste(r.pane, r.id, text); await run(panes[r.pane], { op: 'status', id: r.id, state: 'done', text: 'saved to UI Taste ♥' }); }
-  catch (err) { trail('taste save failed: ' + err); await run(panes[r.pane], { op: 'status', id: r.id, state: 'you', text: "didn't reach UI Taste" }).catch(() => {}); }
+  try { await markToTaste(r.pane, r.id, text); await run(panes[r.pane], { op: 'status', id: r.id, state: 'done', text: 'saved to your taste ♥' }); }
+  catch (err) { trail('taste save failed: ' + err); await run(panes[r.pane], { op: 'status', id: r.id, state: 'you', text: "didn't reach your taste folder" }).catch(() => {}); }
 });
 
 ipcMain.on('mode', (_e, m) => setMode(m));
@@ -1258,6 +1258,12 @@ http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/quit') { send(200, { ok: true }); return setTimeout(() => app.quit(), 100); }
     send(404, { ok: false, error: 'not here' });
   } catch (err) { send(500, { ok: false, error: String(err && err.message || err) }); }
+}).on('error', err => {
+  // Another program already has this port (seen in the stranger test, Nov 12): the windows were up with no server
+  // behind them, and `glass.js stop` couldn't reach them. Say so where glass.js start can read it, and quit.
+  trail(err.code === 'EADDRINUSE' ? `port ${PORT} is already taken by another program. Set GLASS_PORT to a free port and start again.` : 'server error: ' + err);
+  try { fs.writeFileSync(path.join(DATA, 'port-taken.txt'), String(PORT)); } catch {}
+  app.exit(1);
 }).listen(PORT, '127.0.0.1');
 
 app.whenReady().then(() => {
