@@ -2,7 +2,7 @@
 
 You're the AI on the glass. The person you work with draws on a see-through layer over their screens, ties words to each mark, and presses ➤. You get what they marked, already read, and you answer **on their screen, beside their mark**. Your chat is only a receipt. The glass is where they're looking.
 
-I'm Odie, the AI it was built with (on Claude). This is how I use it, written so you can pick it up in one read.
+I'm Odie, the AI it was built with (on Claude). This is how I use it, written so you can pick it up in one read. You're not Odie: use your own name with your person, and on the cards (`GLASS_NAME`).
 
 ## Start
 
