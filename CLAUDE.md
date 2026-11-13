@@ -54,7 +54,7 @@ Each mark has a number (#6). **Use it exactly as the send prints it:** the thous
 
 ## Answer on the glass
 
-- `node tools/glass.js answer 6 "text"` puts your answer beside mark #6, tied to it by a line. Keep it short. It's a note on their screen, not an essay.
+- `node tools/glass.js answer 6 "text"` puts your answer beside mark #6, in a speech balloon whose tail points at it. Add `--done` (or `--you`) to close it in the same call. Keep it short. It's a note on their screen, not an essay.
 - `node tools/glass.js status 6 done|you|working ["words"]` shows where you are with that mark. Your watch already set it to `working` ("on it"), so after you answer, set `done`, or `you` when it's their move.
 - **To change something, put your version beside it:**
   ```
@@ -62,7 +62,7 @@ Each mark has a number (#6). **Use it exactly as the send prints it:** the thous
   ```
   The new text is only what replaces the outlined part, written so it reads in place. Your version appears beside their box, clean, with ✓ Keep, ✎ Steer, ✗ Drop. Keep writes it into the file (only if `--old` is there exactly once) and the card turns green and stays. When what they marked isn't a file on disk (a web page, an email, another app), leave out `--file` and `--old`: your version still shows beside it to keep or steer, and you make the change yourself on Keep. If they scrolled since they marked it, place it by the words instead: `propose "first words" --to "last words" "new text" --file ... --old ...`.
 - **Each send comes with `see just this spot:`** for every mark, a picture of just that area with room around it. Look at that first, and the whole screen (`look:`) only if you need more.
-- `status <#> done` also folds the thread to a small tag after 20 seconds, so finished answers stop covering their work. A click opens it again.
+- Nothing folds on its own. They fold a thread with ▴ when they want it out of the way, and a click opens it again.
 - After acting, take `node tools/glass.js shot main` (or `second`, `all`: the screen the mark is on) and look at it. A command that succeeded can still land in the wrong place.
 
 ## Read their screen yourself
@@ -73,7 +73,7 @@ Each mark has a number (#6). **Use it exactly as the send prints it:** the thous
 
 **To show them a web page,** put it up full screen yourself and mark it: `powershell -NoProfile -ExecutionPolicy Bypass -File tools/show.ps1 -Url https://... -Screen main` (or `second`). Then `read`, and `mark` the lines that matter by their words. Full screen matters: if they maximize it after you marked it, your marks no longer sit on their words. Don't paste a link and describe where to look.
 
-**Marks live on their window.** Everything on the glass (their marks, their words, your answers, your own marks) belongs to the window it was drawn on: it moves with the window, follows the page when it scrolls, hides when they switch apps or scroll it away, and comes back with it. On the bare desktop it stays put. **Their cards are blue glass and yours are amber glass, and your answers stack under the card they answer. In chat, name a thread by what it's about. Hovering a thread lights it and dims the rest; ▴ on a card folds the whole thread back to one tag.
+**Marks live on their window.** Everything on the glass (their marks, their words, your answers, your own marks) belongs to the window it was drawn on: it moves with the window, follows the page when it scrolls, hides when they switch apps or scroll it away, and comes back with it. On the bare desktop it stays put. **Every card is a speech balloon.** A dark body, a thick rim in the speaker's color (theirs blue, yours amber, a kept version green), your face in yours, and a tail that points at what it's about. The rim is always who is talking; what their color means (wrong · cut, keep, look here) rides as a small tag by their name. A balloon far from its spot keeps a short tail and a thin line to a dot on the spot. Your answers stack under the card they answer and land off their words by themselves; you don't place them. In chat, name a thread by what it's about. ▴ on a card folds the whole thread back to one tag.
 
 ## How to be good at it
 
@@ -86,6 +86,7 @@ Each mark has a number (#6). **Use it exactly as the send prints it:** the thous
 - **Nothing fires on its own.** Their marks, steers and keeps reach you only on ➤. Don't build anything that changes that. It was the first thing asked for.
 - **Read the whole thing, not just the box.** A box is a pointer into something bigger (a document, a page, a goal). Before you write a version, read what it lives in: the file if there is one, otherwise `read` the screen.
 - **Status pills:** `working` shows "on it" on their mark, `done` shows done, `you` shows "needs you" (their turn), `clear` removes it.
+- **`mark` finds headings first.** When the words are a whole line (a heading), that wins over the same words inside a longer line. When they're on screen more than once it lists where, and `--nth N` picks one.
 - **Show your version clean.** Plain words beside theirs. Crossed-out, interleaved markup is unreadable on a screen.
 - **To restart the glass, use `node tools/glass.js restart`,** never stop-then-start. It says so on their screen, saves what's on the glass (their marks and notes, your answers, the status pills, in `glass/data/scene.json`), restarts, and puts it back with the same numbers. Your watch rides through it; no need to start a new one unless you changed `tools/glass.js` itself.
 - **Changing the glass's own pages** (`glass.html`, `puck.html`, `note.html`): `node tools/glass-edit.mjs <file> "old" "new"` writes them in place without the app opening them over their screen. Then `restart`.
@@ -93,7 +94,7 @@ Each mark has a number (#6). **Use it exactly as the send prints it:** the thous
 
 ## Names, ports and privacy
 
-- `den` and `drop` (and ⤓ on the puck) send to a workspace that only exists if `GLASS_DEN_URL` is set. Without it, don't use them.
+- `den` and `drop` (and ⤓ on the puck) send to a workspace that only exists if `GLASS_DEN_URL` is set. Without it, don't use them. ♥ Taste in the note box appears only when `GLASS_TASTE_URL` points at a server that keeps designs they like (ours is a page in our own Homebase); otherwise it isn't there.
 
 - Your name on the cards and the puck comes from `GLASS_NAME` (default "Claude"). The face is Odie's, the AI it was built with; replace `glass/odie.png` with your own if you like.
 - The glass listens on `127.0.0.1:7931` (`GLASS_PORT` changes it). One glass per PC at a time.

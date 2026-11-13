@@ -28,10 +28,10 @@ They just pressed ➤ and they're looking at their mark, waiting. Speed is the w
 2. **Look at `see just this spot:` first** (a close-up of each mark). The whole screens only if that isn't enough.
 3. **Colors are sentences:** blue = this, red = wrong / cut it, green = good / keep it, yellow = look here. An arrow means this goes there. Numbered steps mean in this order. A colored mark with no words still says something.
 4. **To change something, put your version beside it:** `node "{{GLASS}}" propose <#> "new text" --file <path> --old "<exact text in the file>"`. They tap Keep (it writes the file), Steer, or Drop. Not a file? Leave out `--file`/`--old` and make the change yourself on Keep.
-5. **Close each mark:** `node "{{GLASS}}" status <#> done` (it folds to a small tag after 20 s), or `status <#> you` when it's their move.
+5. **Close each mark in the same call:** `node "{{GLASS}}" answer <#> "text" --done`, or `--you` when it's their move. Nothing folds by itself; they fold a thread with ▴.
 6. **Chat gets one line,** as a receipt. The answer lives on the glass.
 
-- Their cards are blue glass and yours amber glass. In chat, name a thread by what it's about ("your note on the heading"), and they'll find it.
+- Every card is a speech balloon: their rim blue, yours amber with your face, a kept version green, and a tail pointing at what it's about. Your answers land beside their mark by themselves. In chat, name a thread by what it's about ("your note on the heading"), and they'll find it.
 - ➤ with nothing marked means "look at what I'm looking at": you get the window in front of them. Answer about that.
 - `REPLY on the thread at #N`: they answered one of your cards. `answer N` again.
 - Several marks in one send: one answer beside each.

@@ -14,7 +14,7 @@ Built with Claude, and it works best with Claude.
 
 **You point, and say what you mean.** A box, a circle, a highlight, numbered steps, an arrow, a note you typed or said out loud. Colors mean things: red is "wrong, cut this," green is "keep this," so your mark tells the AI what you think before your words do.
 
-**Your AI answers right where you're looking,** beside each mark, tied to it by a line. No more screenshots, no more "the third paragraph down, on the left." The mark says *where*, your words say *what*, and the AI gets both at once.
+**Your AI answers right where you're looking,** beside each mark, in a speech balloon whose tail points at it. No more screenshots, no more "the third paragraph down, on the left." The mark says *where*, your words say *what*, and the AI gets both at once.
 
 **v1** (November 7): the first time we did this, on our letter.
 
@@ -23,6 +23,14 @@ Built with Claude, and it works best with Claude.
 **v2** (November 10): the same marks, the same jokes, in the new cards. Mine are blue glass, the AI's are amber glass, they're smaller, and each one lands right beside what it's about. We'll add a picture like this for every big look upgrade.
 
 ![v2: the same marks with blue glass cards for my notes and amber glass cards for the AI's answers, each beside its mark](docs/v2.png)
+
+**v3** (November 12): speech balloons. Odie pictured eight ways for these cards, and I kept this one from my phone at work. A tail points at what each one is about, so I never have to follow a line to see what's tied to what. The rim tells you who's talking: blue is me, amber is the AI, green is something I kept. My first real test was a stock screener I didn't understand. I boxed three things and asked three dumb questions, and the answers taught me what tickers and P/E are, and why that page pushes stock picking so hard.
+
+![v3: a stock screener with my three questions in blue balloons and the AI's answers in amber balloons, each tail pointing at what it's about](docs/v3.png)
+
+And our zest joke again, in balloons: my ask, my steer, and the version I kept, in green.
+
+![v3: my ask and steer on a paragraph, the AI's answers, and the kept version in a green balloon](docs/v3-writing.png)
 
 **You keep the conversation going on the spot.** Every answer has ✎ Reply. Click it, add your next thought, and the thread grows right there beside the mark you started from.
 
@@ -102,9 +110,9 @@ Hover the puck for its tools:
 
 **Why colors mean things.** In Paint a color is decoration. Here, your mark tells the AI what you think before your words do: a red box arrives as "wrong, cut this", a green highlight as "keep this". The note box beside the mark wears the same color and says its meaning, so you see what you're telling it.
 
-When you finish a mark, a note box opens beside it. Type what you mean (or dictate with Win+H) and press Enter, and your words are tied to that mark. Esc skips it. Right-click turns your tool off. Any note can be grabbed and moved, and the AI's answer moves with it. Hover a card for its ✕ to remove it. When the AI marks a thread done, it folds down to a small tag after 20 seconds so it stops covering your work; click the tag to open it again. Clicks pass through the glass to whatever is underneath, except on its own notes.
+When you finish a mark, a note box opens beside it. Type what you mean (or dictate with Win+H) and press Enter, and your words are tied to that mark. Esc skips it. Right-click turns your tool off. Any note can be grabbed and moved, and the AI's answer moves with it. Hover a card for its ✕ to remove it. Nothing folds by itself: ▴ folds a thread down to a small tag when you want it out of the way, and a click opens it again. Clicks pass through the glass to whatever is underneath, except on its own notes.
 
-**You can tell whose card is whose at a glance.** My notes are blue glass, the AI's answers are amber glass, each with a small face. Its answers stack right under the card they answer, and every card lands close to what it's about, so lines stay short. Hover a thread and it lights up while everything else dims. ▴ on any open card folds the whole thread back to one tag, and the tag says what's inside. A note whose window you closed leaves the glass on its own.
+**You can tell whose card is whose at a glance.** Every card is a speech balloon: mine have a blue rim, the AI's an amber one with its face, and a version I kept turns green. The tail points at what it's about. What my color meant (wrong · cut, keep, look here) shows as a small tag by my name. Its answers stack right under the card they answer, and every balloon lands close to what it's about. ▴ on any open card folds the whole thread back to one tag. A note whose window you closed leaves the glass on its own.
 
 **Nothing reaches the AI until you press ➤.** You can mark five things, change your mind, undo, and send when you're ready.
 
@@ -163,7 +171,9 @@ It prints one block every time you press ➤ and keeps running. In Claude Code i
 
 ## Optional parts (off unless you set them up)
 
-Two parts were wired to our own setup. They're off here, and the glass works without them:
+Three parts were wired to our own setup. They're off here, and the glass works without them:
+
+- **♥ Taste.** A button in the note box that saves what you boxed to a folder of designs you like, so your AI can learn what you mean by "I like this." Ours is a page in our own Homebase. Set `GLASS_TASTE_URL` to a server with `/api/taste` to turn it on.
 
 - **⤓ Send to a workspace.** A mark or the whole screen can be dropped into a shared workspace as a card with a picture of exactly what was marked. Set `GLASS_DEN_URL` to a server with the same small API to turn it on (see how-it-works.md).
 - **🎙 Talk into a note.** Ours ran through a local speech model trained on my voice. Set `GLASS_EAR_DIR` to a folder with a `.venv` and a `dump_transcribe.py` that prints `{"ok": true, "text": "..."}` for an audio file. Without it, Windows dictation (Win+H) types into the note box just as well.
