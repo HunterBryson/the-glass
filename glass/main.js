@@ -245,14 +245,14 @@ const KEYS = { 'Alt+A': 'note', 'Alt+R': 'pen', 'Alt+S': 'box', 'Alt+D': 'ellips
 // Clear is Alt+E. The key list stays up by the puck (drag it anywhere; it remembers), and Alt+K hides or
 // shows it. It lights the tool that's on and shows the pen's color, so it's also how he sees what a key just did.
 const KEY_NAMES = { note: 'text box', pen: 'pen', box: 'box', ellipse: 'circle', hl: 'highlighter', arrow: 'arrow', off: 'tool off',
-  color: 'color', undo: 'undo', send: 'send ➤ · nothing marked = look with me', clear: 'clear glass', legend: 'hide this list' };
+  color: 'color', undo: 'undo', send: 'send ➤ · nothing marked = look with me', clear: 'clear glass', legend: 'keep this list up' };
 const SWATCH = { blue: '#6cc6ff', red: '#ff5a5a', green: '#3fb950', yellow: '#ffe14d' };
-let legend = null, legendOn = true;
+let legend = null, legendOn = false; // false: it shows with the puck (hover); Alt+K keeps it up
 function legendHtml() {
   const rows = Object.entries(KEYS).map(([k, a]) => `<div class="r" data-a="${a}"><b>${k.replace('Alt+', '')}</b><span>${KEY_NAMES[a]}${a === 'color' ? ' <i id="sw"></i>' : ''}</span></div>`).join('');
   return `<!doctype html><meta charset="utf-8"><style>
     html,body{margin:0;background:transparent;font-family:"Segoe UI",system-ui,sans-serif;user-select:none;overflow:hidden}
-    .box{-webkit-app-region:drag;cursor:move;margin:6px;padding:10px 12px 8px;background:rgba(21,23,28,.94);border:2px solid #f5a524;border-radius:12px;color:#f4f4f2;
+    .box{margin:6px;padding:10px 12px 8px;background:rgba(21,23,28,.94);border:2px solid #f5a524;border-radius:12px;color:#f4f4f2;
       box-shadow:0 0 0 3px rgba(0,0,0,.7),0 0 18px rgba(245,165,36,.3)}
     .h{font:700 12px/1 "Segoe UI";letter-spacing:.07em;text-transform:uppercase;color:#f5a524;margin:0 0 8px}
     .r{display:flex;align-items:center;gap:10px;padding:3px 4px;border-radius:6px;font-size:16px}
@@ -272,11 +272,30 @@ function buildLegend() {
   let at = { x: b.x + b.width - w - 300, y: b.y + b.height - h - 10 };
   try { const s = JSON.parse(fs.readFileSync(LEGEND_AT, 'utf8')); if (screen.getAllDisplays().some(d => s.x >= d.bounds.x - w / 2 && s.x < d.bounds.x + d.bounds.width - w / 2 && s.y >= d.bounds.y && s.y < d.bounds.y + d.bounds.height - 40)) at = s; } catch {}
   legend = new BrowserWindow({ ...at, width: w, height: h, transparent: true, frame: false,
-    resizable: false, movable: true, hasShadow: false, skipTaskbar: true, focusable: false, show: false, backgroundColor: '#00000000' });
+    resizable: false, movable: false, hasShadow: false, skipTaskbar: true, focusable: false, show: false, backgroundColor: '#00000000' });
   top(legend);
-  legend.on('moved', () => { const [x, y] = legend.getPosition(); fs.writeFile(LEGEND_AT, JSON.stringify({ x, y }), () => {}); });
-  legend.webContents.on('did-finish-load', () => { if (legendOn) legend.showInactive(); sayLegend(); });
+  // It is as tall as its rows really are (the send row wraps; the old guess cut the last key off, Nov 13).
+  legend.webContents.on('did-finish-load', async () => {
+    try { const hh = await legend.webContents.executeJavaScript('document.querySelector(".box").getBoundingClientRect().height'); if (hh > 50) legend.setBounds({ ...legend.getBounds(), height: Math.ceil(hh) + 14 }); } catch {}
+    sayLegend(); placeLegend();
+  });
   legend.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(legendHtml()));
+}
+// One thing with the puck (his ask, Nov 13: "wrap both of these into the same thing so there are not two boxes... it can
+// collapse on itself when its not in use but I can easily pull it up again... by hovering the puck"). The list sits
+// against the puck's tools, shows while the puck is open under his hand, and goes away with it. Alt+K keeps it up.
+function placeLegend() {
+  if (!legend || legend.isDestroyed() || !puck || puck.isDestroyed()) return;
+  const want = !puckGrab && (legendOn || puckOpen);
+  if (!want) { if (legend.isVisible()) legend.hide(); return; }
+  const pb = puckBounds(screen.getPrimaryDisplay(), true), lb = legend.getBounds();
+  const lefty = puckFlip.includes('lefty'), below = puckFlip.includes('below');
+  const d = screen.getDisplayNearestPoint({ x: pb.x + (lefty ? 30 : pb.width - 30), y: pb.y + (below ? 30 : pb.height - 30) }).workArea;
+  let x = lefty ? pb.x + 66 : pb.x + pb.width - 66 - lb.width, y = below ? pb.y : pb.y + pb.height - lb.height;
+  x = Math.min(Math.max(x, d.x), d.x + d.width - lb.width); y = Math.min(Math.max(y, d.y), d.y + d.height - lb.height);
+  legend.setBounds({ x: Math.round(x), y: Math.round(y), width: lb.width, height: lb.height });
+  if (!legend.isVisible()) legend.showInactive();
+  if (!puck.isDestroyed()) puck.moveTop();
 }
 app.whenReady().then(buildLegend);
 
@@ -292,7 +311,7 @@ setInterval(retop, 3000);
 function key(a) {
   if (a === 'color') { const c = ['blue', 'red', 'green', 'yellow']; style = { ...style, color: c[(c.indexOf(style.color) + 1) % c.length] }; sayStyle(); }
   else if (a === 'undo' || a === 'send' || a === 'clear') ipcMain.emit(a, {});
-  else if (a === 'legend') { legendOn = !legendOn; if (legend && !legend.isDestroyed()) legendOn ? legend.showInactive() : legend.hide(); }
+  else if (a === 'legend') { legendOn = !legendOn; placeLegend(); }
   else setMode(a === 'off' || mode === a ? 'off' : a);
   sayLegend(); log({ who: 'hunter', op: 'key', does: a });
 }
@@ -460,7 +479,7 @@ ipcMain.on('pass-wheel', () => {
 });
 let puckOpen = false;
 // While he drags, the puck is just the face, so it stays under his cursor.
-const sizePuck = () => { if (puck && !puck.isDestroyed()) puck.setBounds(puckBounds(screen.getPrimaryDisplay(), !puckGrab && (puckOpen || mode !== 'off' || pending.length > 0))); };
+const sizePuck = () => { if (puck && !puck.isDestroyed()) puck.setBounds(puckBounds(screen.getPrimaryDisplay(), !puckGrab && (puckOpen || mode !== 'off' || pending.length > 0))); placeLegend(); };
 ipcMain.on('puck-open', (_e, on) => { puckOpen = on; sizePuck(); });
 ipcMain.on('clear', async () => { for (const p of panes) await run(p, { op: 'clear', who: 'all' }); tracked.clear(); pending = []; hides = []; style.step = 1; sayStyle(); puckSay(); log({ who: 'hunter', op: 'clear' }); });
 let penNoteT = null;

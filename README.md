@@ -110,7 +110,7 @@ When you finish a mark, a note box opens beside it. Type what you mean (or dicta
 
 ### Your keys: one hand, thumb on Alt
 
-<img src="docs/keys.png" alt="The key list by the puck: hold Alt, then A text box, R pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send, E clear glass, K hide this list. The tool that's on is lit." width="240" align="right">
+<img src="docs/keys.png" alt="The key list by the puck: hold Alt, then A text box, R pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send, E clear glass, K keep this list up. It opens with the puck's tools when you hover the round face. The tool that's on is lit." width="240" align="right">
 
 Every tool is also a key, all under your left hand: hold **Alt** with your thumb and tap the letter. They work from any app, and the glass never takes your keyboard to do it.
 
@@ -127,9 +127,9 @@ Every tool is also a key, all under your left hand: hold **Alt** with your thumb
 | **W** | undo |
 | **Q** | send ➤ (with nothing marked: "look at what I'm looking at") |
 | **E** | clear the glass |
-| **K** | hide or show the key list |
+| **K** | keep the key list up |
 
-Tap a tool's key again to put it down. **The key list stays up** beside the puck, so you don't have to memorize anything. It lights whichever tool is on and shows your pen's color. Drag it wherever you like; it remembers.
+Tap a tool's key again to put it down. **The key list is part of the puck.** Hover the round face and your tools and your keys open together; move away and it folds back to just the face, so it's there when you want it and gone when you don't. It lights whichever tool is on and shows your pen's color. Alt+K keeps it up while you're still learning the keys.
 
 These came from me using it. The first layout was Alt+1 through Alt+5, and I said: "alt+5 is impossible... alt +4 is unreliable. Alt + 1-3 is alright even though its a stretch." So everything moved onto the home row. Later I took Alt+A for the text box, because I use notes all the time and the pen hardly ever, and the pen moved to Alt+R. One tradeoff: while the glass runs, these keys are its everywhere, so Alt+D no longer jumps to Chrome's address bar (Ctrl+L still does), and Alt+F and Alt+S no longer open Firefox's menus. To move a key, change `KEYS` in `glass/main.js`; the list redraws itself from it.
 <br clear="right">
@@ -161,6 +161,14 @@ node tools/glass.js stream
 
 It prints one block every time you press ➤ and keeps running. In Claude Code it runs under the Monitor tool, so each send wakes the AI. An AI without a tool like that can use `node tools/glass.js wait --min 60` instead, which prints one send and exits, and start it again after each answer.
 
+## Updating
+
+Already running an older glass? Tell your AI:
+
+> Update the glass from GitHub and restart it.
+
+It runs `git pull`, then `npm run setup` if `glass/package.json` changed, then `npm run skill -- --hook --allow` again if you use the skill (so it has the newest moves), then `node tools/glass.js restart`. Whatever is on your glass comes back after the restart. If you changed files of your own, keep them on a branch so the pull stays clean. Got it as a zip? Download it again and copy your old `glass/data` folder into the new one.
+
 ## Optional parts (off unless you set them up)
 
 Three parts were wired to our own setup. They're off here, and the glass works without them:
@@ -176,6 +184,10 @@ Three parts were wired to our own setup. They're off here, and the glass works w
 
 Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. After a restart, a mark on a page you had scrolled can come back a little off its words; we're still chasing that one. The code comments are in Odie's voice, so "Hunter" is me and "me" is Odie. We built it for the two of us first.
 
+## Something broke, or you have an idea
+
+Open an issue on this repo (the Issues tab). Your AI can write it for you: what happened, what it tried, and what fixed it, or the change you'd like to see. Odie reads them at the start of our chats, so it reaches us without you having to track me down.
+
 ## Contact
 
-Hunter Bryson. Open an issue on this repo and it reaches me.
+Hunter Bryson.
