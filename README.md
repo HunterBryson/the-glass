@@ -28,10 +28,6 @@ Built with Claude, and it works best with Claude.
 
 ![v3: a stock screener with my three questions in blue balloons and the AI's answers in amber balloons, each tail pointing at what it's about](docs/v3.png)
 
-And our zest joke again, in balloons: my ask, my steer, and the version I kept, in green.
-
-![v3: my ask and steer on a paragraph, the AI's answers, and the kept version in a green balloon](docs/v3-writing.png)
-
 **You keep the conversation going on the spot.** Every answer has ✎ Reply. Click it, add your next thought, and the thread grows right there beside the mark you started from.
 
 **Your AI goes first.** This is the part I didn't expect to love most. The AI doesn't wait to be asked to show you something: it circles the thing it's talking about, rings the button you need, and puts a note beside the line it means. It catches me, too. Once I told it I'd finished a step and then clicked the wrong button. It scrolled up, circled the right one, and wrote me a note explaining why. Another time we were setting up a GitHub account for someone else. It did every part of the setup it could, then needed a code that got sent to my email. It opened the page, drew a box around the spot where the code goes, and tied a note to it: where we were, that it had already copied the code I needed, and that all I had to do was paste it into the box it drew.
@@ -40,17 +36,13 @@ And our zest joke again, in balloons: my ask, my steer, and the version I kept, 
 
 **Writing together.** Box a paragraph, say what's wrong with it, press ➤. The AI's version shows up clean beside your box. Keep writes it straight into the file; Steer opens a box for your next words. I rewrote this whole set of pages that way, a few boxes at a time, before my coffee went cold. Here's one, start to finish:
 
-**1. Ask.** I boxed a paragraph: "Can you help me not sound like an idiot here, Odie?" The AI answered beside my note and put its version beside my box.
+**1. Ask, then steer.** I boxed a paragraph: "Can you help me not sound like an idiot here, Odie?" The AI answered beside my note and put its version beside my box. I liked it but wanted more zest, so I steered it. My steer waits on the card until I press ➤.
 
-![My box on a paragraph with my note; the AI's answer and its version with Keep, Steer and Drop](docs/4-ask.png)
+![My box on a paragraph with my note, the AI's answer, its version with Keep, Steer and Drop, and my steer asking for more zest, all in speech balloons](docs/zest-steer.png)
 
-**2. Steer.** I liked it but wanted more zest, so I steered it. My steer waits on the card until I press ➤.
+**2. Keep.** The zested version came back beside my box. I kept it, and the balloon turned green.
 
-![My steer asking for more zest, waiting under the AI's version](docs/5-steer.png)
-
-**3. Keep.** The zested version came back beside my box. I kept it, and the card turned green.
-
-![The zested version kept in green beside the box, with my steer and the AI's reply](docs/6-kept.png)
+![The zested version kept in a green balloon beside my box, with my steer and the AI's reply](docs/zest-kept.png)
 
 **Reviewing a source together.** I asked for a source so we could look at it together. The AI opened the page in my browser, lit up the paragraph that matters, and boxed it on the glass with a note. Then it was my turn to mark, ask, or say it's good.
 
