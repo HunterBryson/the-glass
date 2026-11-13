@@ -113,15 +113,18 @@ function near(a, b) {
 }
 // Find a phrase on his screen: the boxes of each place it appears.
 function findPhrase(words, phrase) {
-  const want = phrase.split(/\s+/).map(norm).filter(Boolean), seq = words.map(w => ({ ...w, n: norm(w.text) })).filter(w => w.n);
+  const on = t => norm(t).replace(/[il1|]/g, 'l').replace(/0/g, 'o');
+  const want = phrase.split(/\s+/).map(on).filter(Boolean), seq = words.map(w => ({ ...w, n: on(w.text) })).filter(w => w.n);
+  const perLine = new Map(); for (const w of seq) perLine.set(w.line, (perLine.get(w.line) || 0) + 1);
   const hits = [];
   for (let i = 0; i + want.length <= seq.length; i++) {
     if (!want.every((t, k) => near(seq[i + k].n, t))) continue;
     const ws = seq.slice(i, i + want.length);
     hits.push({ x1: Math.min(...ws.map(w => w.x1)), y1: Math.min(...ws.map(w => w.y1)), x2: Math.max(...ws.map(w => w.x2)), y2: Math.max(...ws.map(w => w.y2)),
-      lines: [...new Set(ws.map(w => w.line))].length, text: ws.map(w => w.text).join(' ') });
+      lines: [...new Set(ws.map(w => w.line))].length, text: ws.map(w => w.text).join(' '),
+      whole: [...new Set(ws.map(w => w.line))].reduce((n, l) => n + perLine.get(l), 0) === ws.length });
   }
-  return hits;
+  return hits.filter(h => h.whole).concat(hits.filter(h => !h.whole));
 }
 async function cleanWords(which = 'all') {
   const st = await call('/state');
@@ -275,8 +278,10 @@ function describe(e) {
         '\n  to point at something in it: glass.js mark "words" "note", or box x1 y1 x2 y2 "note"';
     }
     const marks = [...(e.marks || [])].sort((p, q) => (p.kind === 'step' && q.kind === 'step') ? p.n - q.n : 0);
-    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? (m.file ? `STEER on your version (re-propose to #${m.gid}): "${m.text}"` : `REPLY on the thread at #${m.gid} (answer #${m.gid} again): "${m.text}"`) : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       their words on it: "${m.note}"` : ''}${m.crop ? `\n       see just this spot: ${m.crop}` : ''}`);
-    return `${t} THEY SENT YOU ${lines.length} mark(s), answer each beside it with: glass.js answer <#> "text"\n${lines.join('\n')}\n  whole screens, only if you need more: ${(e.shots || []).join(' , ')}`;
+    const wins = [...new Set(marks.filter(m => m.app).map(m => `${m.app} "${m.title}"`))], oneWin = wins.length === 1 && marks.length > 1 ? wins[0] : null;
+    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? (m.file ? `STEER on your version (re-propose to #${m.gid}): "${m.text}"` : `REPLY on the thread at #${m.gid} (answer #${m.gid} again): "${m.text}"`) : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app && !oneWin ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       their words on it: "${m.note}"` : ''}${m.crop ? `\n       see just this spot: ${m.crop}` : ''}`);
+    if (!lines.length) return `${t} THEY PRESSED ➤ AFTER KEEPING: no new marks. Rebuild whatever shows the kept file(s) (the KEEP lines above), then clear those cards: glass.js clear <#>`;
+    return `${t} THEY SENT YOU ${lines.length} mark(s), answer each beside it with: glass.js answer <#> "text" [--done]${oneWin ? `\n  all in: ${oneWin}` : ''}\n${lines.join('\n')}\n  whole screens, only if you need more: ${(e.shots || []).join(' , ')}`;
   }
   if (e.op === 'tie') return `${t} they tied words to their ${e.of === 'ask' ? '?' : 'circle'} (#${e.id}): "${e.text}"`;
   if (e.op === 'note') return `${t} they wrote a note at ${e.x},${e.y}: "${e.text}"`;
@@ -338,12 +343,12 @@ try {
     }
     case 'mark': {
       // Mark by meaning: find the words on their screen and box them, with my note tied to them (and off the words around them).
-      const markWords = await cleanWords(), hits = findPhrase(markWords, a[0] || '');
-      if (!hits.length) { console.log(`not on their screen: "${a[0]}"`); process.exit(1); }
-      const h = hits[0], how = flag('as', h.lines > 1 ? 'box' : 'underline'), avoid = avoidNear(markWords, h);
+      const nth = Number(flag('nth', 1)), markWords = await cleanWords(), hits = findPhrase(markWords, a[0] || '');
+      if (!hits.length) { console.log(`not on their screen: "${a[0]}"`); process.exitCode = 1; break; }
+      const h = hits[Math.min(hits.length, Math.max(1, nth)) - 1], how = flag('as', h.lines > 1 ? 'box' : 'underline'), avoid = avoidNear(markWords, h);
       if (how === 'underline') await act({ op: 'underline', x1: h.x1, x2: h.x2, y: h.y2, note: a[1], avoid });
       else await act({ op: 'box', x1: h.x1 - 2, y1: h.y1 - 2, x2: h.x2 + 2, y2: h.y2 + 2, note: a[1], avoid });
-      if (hits.length > 1) console.log(`(it's on screen ${hits.length} times; I marked the first)`);
+      if (hits.length > 1) console.log(`(it's on screen ${hits.length} times; I marked #${Math.min(hits.length, Math.max(1, nth))}. --nth N picks another:\n` + hits.map((x, i) => `   ${i + 1}: ${x.x1},${x.y1}${x.whole ? ' (a whole line)' : ''}`).join('\n') + ')');
       break;
     }
     case 'point-at': {
@@ -401,6 +406,11 @@ try {
         const m = sends.flatMap(e => readSend(e).marks || []).find(m => m.gid === body.to); if (m && m.reads) body.old = m.reads.replace(/\n/g, ' ');
       }
       if (file) { body.file = path.resolve(file); body.fileOld = fileOld || body.old; }
+      if (body.to != null) {
+        // off the words on his page, like an answer
+        try { const st = await call('/state'), e = st.events.filter(x => x.op === 'send' && (x.marks || []).some(m => m.gid === body.to)).at(-1);
+          const m = e && e.marks.find(m => m.gid === body.to), b = m && m.box; if (b) body.avoid = avoidNear(sendWords(e), b); } catch {}
+      }
       const j = await call('/do', body);
       console.log(`your version is on their screen (#${j.id})${file ? `, Keep writes it into ${path.basename(file)}` : ''}`);
       break;
@@ -422,13 +432,16 @@ try {
     }
     case 'den': await act({ op: 'den', to: num(String(a[0]).replace('#', '')), note: a[1] || '' }); break;
     case 'answer': {
+      const st8 = ['done', 'you', 'working'].find(s => { const i = a.indexOf('--' + s); if (i >= 0) a.splice(i, 1); return i >= 0; });
       const to = num(String(a[0]).replace('#', '')); let avoid;
       try {
         const st = await call('/state'), e = st.events.filter(x => x.op === 'send' && (x.marks || []).some(m => m.gid === to)).at(-1);
         const m = e && e.marks.find(m => m.gid === to), b = m && (m.box || (m.x != null ? { x1: m.x, y1: m.y, x2: m.x, y2: m.y } : null));
         if (b) avoid = avoidNear(sendWords(e), b);
       } catch {}
-      await act({ op: 'answer', to, text: a[1] || '', avoid }); break;
+      await act({ op: 'answer', to, text: a[1] || '', avoid });
+      if (st8) await call('/do', { op: 'status', to, state: st8 });
+      break;
     }
     case 'look': {
       // A look at what's in front of them, with them (a soft frame shows them I looked).
@@ -560,4 +573,4 @@ try {
     case 'ack': { const u = await call('/unread'); const at = u.events.at(-1)?.at; if (at) await call('/ack', { at }); console.log(at ? `marked ${u.events.length} send(s) received` : 'nothing waiting'); break; }
     default: console.log('glass.js start|stop|state|shot|move|point|circle|box|underline|arrow|note|answer|status|den|point-at|steps|propose|watch|read|find|mark|say|clear|drop|stream|wait|last|look|scene|restart|hello|here|unread|ack  (the top of this file says what each does)');
   }
-} catch (err) { console.error('glass:', err.message); process.exit(1); }
+} catch (err) { console.error('glass:', err.message); process.exitCode = 1; setTimeout(() => process.exit(1), 1500).unref(); }

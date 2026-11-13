@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('host', {
   unsteer: id => ipcRenderer.send('unsteer', id),
   proposal: (id, choice) => ipcRenderer.send('proposal', id, choice),
   noteDen: text => ipcRenderer.send('note-den', text),
+  noteTaste: text => ipcRenderer.send('note-taste', text),
   noteDrag: (k, x, y) => ipcRenderer.send('note-drag', k, x, y),
   noteSize: h => ipcRenderer.send('note-size', h),
   puckOpen: on => ipcRenderer.send('puck-open', on),

@@ -22,6 +22,8 @@
   #den { position: absolute; right: 48px; bottom: 8px; height: 34px; padding: 0 11px; border-radius: 17px; border: 1px solid #2a2e36; background: #1d2027; color: #eceae6;
          font: 600 13px/32px "Segoe UI"; cursor: pointer; }
   #den:hover { border-color: #f5a524; color: #f5a524; }
+  #taste { position: absolute; right: 124px; bottom: 8px; height: 34px; padding: 0 11px; border-radius: 17px; border: 1px solid #2a2e36; background: #1d2027; color: #eceae6; font: 600 13px "Segoe UI", system-ui, sans-serif; cursor: pointer; }
+  #taste:hover { border-color: #f5a524; color: #f5a524; }
   #state { position: absolute; right: 130px; bottom: 15px; font-size: 12px; color: #6cc6ff; }
   /* Lens (Nov 10, his catch: "the box when making steer is the old design"): his typing box is blue glass like his cards. */
   .card { padding: 0 12px 10px; border-radius: 14px; border: 1px solid rgba(108,198,255,.55); background: linear-gradient(180deg, rgba(34,58,86,.97), rgba(19,33,52,.97)); }
@@ -31,13 +33,23 @@
   .grip { color: rgba(169,220,255,.6); }
   textarea { color: #fff; }
   textarea::placeholder { color: rgba(200,225,245,.45); }
-  #mic, #den { border: 0; background: rgba(255,255,255,.12); color: #fff; }
-  #mic:hover, #den:hover { background: rgba(255,255,255,.2); color: #fff; }
+  #mic, #den, #taste { border: 0; background: rgba(255,255,255,.12); color: #fff; }
+  #mic:hover, #den:hover, #taste:hover { background: rgba(255,255,255,.2); color: #fff; }
+  /* Balloons (Nov 12): his typing box is his balloon. Solid (his note under it used to show through), a thick blue rim,
+     his name; the color's meaning is a tag, and the rim stays his. */
+  .card { border: 3px solid #5cbcff !important; border-radius: 18px; background: #0f1620; box-shadow: 0 0 0 1px rgba(0,0,0,.75) !important; padding: 0 13px 10px; }
+  .bar { height: 32px; }
+  .who { color: #fff; font: 700 13px/22px "Segoe UI", system-ui, sans-serif; gap: 7px; }
+  .who::before { width: 22px; height: 22px; background: #2f86e6; color: #fff; font: 700 11px/22px "Segoe UI"; box-shadow: 0 0 0 2px #5cbcff; }
+  .who .mean { font: 700 11px/18px "Segoe UI", system-ui, sans-serif; font-style: normal; padding: 0 8px; border-radius: 9px; color: #0b0f14; }
+  .grip { color: rgba(160,205,240,.55); }
+  textarea { scrollbar-width: none; } textarea::-webkit-scrollbar { display: none; }
 </style>
 </head>
 <body>
 <div class="card"><div class="bar"><span class="who">You</span><span class="grip">⠿ drag</span></div>
   <textarea id="t" placeholder="Write or talk to Odie… Enter to keep, Esc to drop"></textarea>
+  <button id="taste" title="Save what you marked to UI Taste, with your words as its line">♥ Taste</button>
   <button id="den" title="Keep your words on the mark and send it to the Den">⤓ Den</button>
   <button id="mic" title="Talk instead of typing (click again when you're done)">🎙</button><span id="state"></span></div>
 <script>
@@ -46,7 +58,7 @@ const t = document.getElementById('t'), mic = document.getElementById('mic'), st
 { const C = { blue: ['#6cc6ff', ''], red: ['#ff5a5a', 'wrong · cut'], green: ['#3fd37a', 'good · keep'], yellow: ['#ffd23f', 'look here'] };
   const [hex, means] = C[new URLSearchParams(location.search).get('color')] || C.blue, card = document.querySelector('.card'), who = document.querySelector('.who');
   card.style.borderColor = hex; card.style.boxShadow = `inset 0 1px 0 rgba(160,215,255,.18), 0 0 0 1px rgba(0,0,0,.6), 0 18px 44px rgba(0,0,0,.62)`;
-  if (who) { if (means) who.textContent = 'You · ' + means; } }
+  if (who && means) { const i = document.createElement('i'); i.className = 'mean'; i.style.background = hex; i.textContent = means; who.appendChild(i); } }
 { const AI = new URLSearchParams(location.search).get('ai') || 'Odie'; const t0 = document.getElementById('t'); t0.placeholder = t0.placeholder.replace(/Odie/g, AI); }
 if (new URLSearchParams(location.search).get("tie") === "1") t.placeholder = "What is this about? Type, or talk with Win+H. Enter ties it, Esc skips";
 t.focus();
@@ -54,11 +66,13 @@ let rec = null, busy = false;
 const say = s => state.textContent = s;
 document.getElementById('den').addEventListener('mousedown', e => e.preventDefault());
 document.getElementById('den').addEventListener('click', () => { if (!busy) host.noteDen(t.value.trim()); });
+document.getElementById('taste').addEventListener('mousedown', e => e.preventDefault());
+document.getElementById('taste').addEventListener('click', () => { if (!busy) host.noteTaste(t.value.trim()); });
 // The box grows with what's in it, so a long voice note is readable before he keeps it.
 function fit() {
   // Measure the words themselves, not the box (the box fills its space, so measuring it only ever grows).
   const keep = t.style.cssText; t.style.flex = 'none'; t.style.height = '0px'; const need = t.scrollHeight; t.style.cssText = keep;
-  const h = Math.min(320, Math.max(130, need + 26 + 38 + 16)); if (Math.abs(h - innerHeight) > 4) host.noteSize(h);
+  const h = Math.min(320, Math.max(130, need + 36 + 38 + 26)); // bar 32 + balloon rim and edge (Nov 12: the top line scrolled out of view) if (Math.abs(h - innerHeight) > 4) host.noteSize(h);
 }
 t.addEventListener('input', fit);
 // Grab the top bar and move the box anywhere; the line to his mark follows.

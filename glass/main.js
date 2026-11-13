@@ -14,11 +14,12 @@ const path = require('path');
 const { spawn, execFile } = require('child_process');
 
 const PORT = Number(process.env.GLASS_PORT) || 7931;
-// Two parts are wired to our own setup and stay off unless you point them somewhere (see README, "Optional parts"):
+// Three parts are wired to our own setup and stay off unless you point them somewhere (see README, "Optional parts"):
 // GLASS_DEN_URL: a workspace that takes dropped marks (the buttons call it the Den).
 // GLASS_EAR_DIR: a local speech-to-text folder with .venv and dump_transcribe.py (ours was the Ear). Windows dictation (Win+H) works in the note box without it.
-const DEN_ON = !!process.env.GLASS_DEN_URL, EAR_ON = !!process.env.GLASS_EAR_DIR;
-const hideOff = w => w && !w.isDestroyed() && w.webContents.executeJavaScript(`for (const id of [${[!DEN_ON && "'den'", !DEN_ON && "'t-den'", !EAR_ON && "'mic'"].filter(Boolean).join(',')}]) document.getElementById(id)?.remove();`).catch(() => {});
+// GLASS_TASTE_URL: a server with /api/taste that keeps designs you like (Homebase's UI Taste); ♥ Taste stays hidden without it.
+const DEN_ON = !!process.env.GLASS_DEN_URL, EAR_ON = !!process.env.GLASS_EAR_DIR, TASTE_ON = !!process.env.GLASS_TASTE_URL;
+const hideOff = w => w && !w.isDestroyed() && w.webContents.executeJavaScript(`for (const id of [${[!DEN_ON && "'den'", !DEN_ON && "'t-den'", !EAR_ON && "'mic'", !TASTE_ON && "'taste'"].filter(Boolean).join(',')}]) document.getElementById(id)?.remove();`).catch(() => {});
 // The AI's name on its cards, the puck and the note box (GLASS_NAME). Ours is Odie.
 const AI_NAME = process.env.GLASS_NAME || 'Claude';
 const DATA = path.join(__dirname, 'data');
@@ -279,6 +280,15 @@ function buildLegend() {
 }
 app.whenReady().then(buildLegend);
 
+// Windows can stack ordinary windows above ours even though ours are flagged always-on-top (seen Nov 11: other apps sat
+// over the glass and the puck). So every few seconds the glass puts its windows back on top: the panes first (see-through),
+// then the key list, the puck and the typing box over them.
+function retop() {
+  if (LEVEL === 'none') return;
+  const ws = [...panes.map(p => p.win), legend, puck, noteWin];
+  for (const w of ws) { if (!w || w.isDestroyed() || !w.isVisible()) continue; try { w.setAlwaysOnTop(true, LEVEL); w.moveTop(); } catch {} }
+}
+setInterval(retop, 3000);
 function key(a) {
   if (a === 'color') { const c = ['blue', 'red', 'green', 'yellow']; style = { ...style, color: c[(c.indexOf(style.color) + 1) % c.length] }; sayStyle(); }
   else if (a === 'undo' || a === 'send' || a === 'clear') ipcMain.emit(a, {});
@@ -395,6 +405,15 @@ ipcMain.on('note-den', async (_e, text) => {
   if (!r) return;
   try { const n = await markToDen(r.pane, r.id, text); await run(panes[r.pane], { op: 'status', id: r.id, state: 'done', text: `in the Den · #${n}` }); }
   catch (err) { trail('den drop failed: ' + err); await run(panes[r.pane], { op: 'status', id: r.id, state: 'you', text: "didn't reach the Den" }).catch(() => {}); }
+});
+
+// ♥ Taste in the note box (only with GLASS_TASTE_URL): what they marked goes to a folder of designs they like, their words as its line.
+ipcMain.on('note-taste', async (_e, text) => {
+  if (!TASTE_ON) return;
+  const r = await commitNote(text);
+  if (!r) return;
+  try { await markToTaste(r.pane, r.id, text); await run(panes[r.pane], { op: 'status', id: r.id, state: 'done', text: 'saved to UI Taste ♥' }); }
+  catch (err) { trail('taste save failed: ' + err); await run(panes[r.pane], { op: 'status', id: r.id, state: 'you', text: "didn't reach UI Taste" }).catch(() => {}); }
 });
 
 ipcMain.on('mode', (_e, m) => setMode(m));
@@ -997,6 +1016,27 @@ async function markToDen(paneIdx, id, note) {
   return it.id;
 }
 
+// A mark into his UI Taste folder: a clean picture of exactly what he boxed (the glass not in it), and his line.
+async function markToTaste(paneIdx, id, note) {
+  const p = panes[paneIdx]; if (!p) throw new Error('no such screen');
+  const o = p.d.bounds, r = await run(p, { op: 'rect', id });
+  if (!r || !r.mark) throw new Error('box something first, then tap ♥ Taste');
+  const sx1 = Math.round(o.x + r.x1), sy1 = Math.round(o.y + r.y1), sx2 = Math.round(o.x + r.x2), sy2 = Math.round(o.y + r.y2);
+  const [win] = await whereIs([[Math.round((sx1 + sx2) / 2), Math.round((sy1 + sy2) / 2)]]);
+  const [s] = await shotNow(p.primary ? 'main' : 'second', '-clean');
+  const img = nativeImage.createFromPath(s.file), size = img.getSize();
+  const x = Math.max(0, Math.round(r.x1)), y = Math.max(0, Math.round(r.y1));
+  const crop = img.crop({ x, y, width: Math.max(1, Math.min(size.width - x, Math.round(r.x2 - r.x1))), height: Math.max(1, Math.min(size.height - y, Math.round(r.y2 - r.y1))) });
+  const png = crop.toPNG(), cs = crop.getSize();
+  // The glass itself can be what's under the point; then the app he was looking at is the one in front.
+  const under = win && !/^electron$/i.test(win.app || '') ? win : (front.app && !/^electron$/i.test(front.app) ? front : {});
+  const res = await fetch(process.env.GLASS_TASTE_URL + '/api/taste', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(30000),
+    body: JSON.stringify({ image: png.toString('base64'), note: note || '', from: { how: 'glass', app: under.app || null, title: under.title || null, w: cs.width, h: cs.height } }) });
+  const j = await res.json().catch(() => ({})); if (!res.ok) throw new Error(j.error || `UI Taste said ${res.status}`);
+  log({ who: 'hunter', op: 'taste', id: paneIdx * 1000 + id, item: j.id });
+  return j.id;
+}
+
 // ---- My versions: he taps Keep and it's written into the real file, or Drop and it's gone ----
 const proposals = new Map(); // gid -> { file, old, new }
 // ✎ Steer on my version: a note box under it; his words come straight to me, no ➤ needed.
@@ -1009,6 +1049,16 @@ ipcMain.on('steer', async (e, localId, at, prev) => {
   const i = panes.indexOf(p), o = p.d.bounds;
   openNote(i, at.x + o.x, at.y + o.y, null);
   noteAt.steer = i * 1000 + localId; noteAt.x = at.x + o.x; noteAt.y = at.y + o.y;
+  {
+    const W = Math.max(280, at.w || 280), Hh = NOTE.h, wa0 = p.d.workArea || p.d.bounds, all = cardRects.get(i) || [];
+    const ax = at.x + o.x, ay = at.y + o.y, cr = all.find(r => ax + 6 >= r.x1 && ax + 6 <= r.x2 && Math.abs(r.y2 - (ay - 8)) < 10);
+    if (cr) {
+      const fits = (x, y) => x >= wa0.x + 8 && y >= wa0.y + 8 && x + W <= wa0.x + wa0.width - 8 && y + Hh <= wa0.y + wa0.height - 8 &&
+        !all.some(r => r !== cr && x < r.x2 + 6 && x + W > r.x1 - 6 && y < r.y2 + 6 && y + Hh > r.y1 - 6);
+      const spot = [[cr.x1 + 2, cr.y2 + 6], [cr.x2 + 8, cr.y1 + 2], [cr.x1 - 8 - W, cr.y1 + 2], [cr.x1 + 2, cr.y1 - 6 - Hh]].find(([x, y]) => fits(x, y));
+      if (spot) { noteAt.x = spot[0]; noteAt.y = spot[1]; }
+    }
+  }
   const wa = p.d.workArea || p.d.bounds; if (noteAt.y + NOTE.h > wa.y + wa.height - 8) noteAt.y = wa.y + wa.height - 8 - NOTE.h;
   if (noteWin) { noteWin.setBounds({ x: noteAt.x, y: noteAt.y, width: Math.max(280, at.w || 280), height: NOTE.h });
     noteWin.webContents.once('did-finish-load', () => noteWin && noteWin.webContents.executeJavaScript(`const t=document.getElementById('t'); t.placeholder=${JSON.stringify(proposals.has(i * 1000 + localId) ? 'Steer my version: what should change? Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤' : 'Reply to keep this thread going. Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤')}; t.value=${JSON.stringify(prev || '')};`).catch(() => {})); }
@@ -1124,6 +1174,7 @@ async function doCmd(cmd) {
   }
   if ((cmd.op === 'propose' || cmd.op === 'watchmark') && cmd.to != null) {
     const i = Math.floor(cmd.to / 1000); if (!panes[i]) throw new Error(`no mark #${cmd.to}`);
+    if (Array.isArray(cmd.avoid)) { const o = panes[i].d.bounds; cmd.avoid = cmd.avoid.map(r => ({ x1: r.x1 - o.x, y1: r.y1 - o.y, x2: r.x2 - o.x, y2: r.y2 - o.y })); }
     const id = await run(panes[i], { ...cmd, id: cmd.to % 1000 }); return i * 1000 + id;
   }
   if (cmd.op === 'answer' || cmd.op === 'status') {
