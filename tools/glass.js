@@ -310,7 +310,7 @@ try {
   const any = a.indexOf('--anyway'); if (any >= 0) a.splice(any, 1);
   switch (cmd) {
     case 'start': await start(); break;
-    case 'stop': await stopGlass(); console.log('the glass is down (a running watch waits for it to come back)'); break;
+    case 'stop': await stopGlass(); console.log('the glass is down. If your watch is still running, it will start the glass again in about a minute: end the watch too to keep it off.'); break;
     case 'restart': await restart(); break;
     case 'state': {
       if (!(await up())) { console.log('the glass is down'); break; }
