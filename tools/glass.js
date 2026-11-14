@@ -350,12 +350,12 @@ try {
     }
     case 'mark': {
       // Mark by meaning: find the words on their screen and box them, with my note tied to them (and off the words around them).
-      const nth = Number(flag('nth', 1)), markWords = await cleanWords(), hits = findPhrase(markWords, a[0] || '');
+      const nth = Number(flag('nth', 1)), markWords = await cleanWords(flag('screen', 'all')), hits = findPhrase(markWords, a[0] || '');
       if (!hits.length) { console.log(`not on their screen: "${a[0]}"`); process.exitCode = 1; break; }
       const h = hits[Math.min(hits.length, Math.max(1, nth)) - 1], how = flag('as', h.lines > 1 ? 'box' : 'underline'), avoid = avoidNear(markWords, h);
       if (how === 'underline') await act({ op: 'underline', x1: h.x1, x2: h.x2, y: h.y2, note: a[1], avoid });
       else await act({ op: 'box', x1: h.x1 - 2, y1: h.y1 - 2, x2: h.x2 + 2, y2: h.y2 + 2, note: a[1], avoid });
-      if (hits.length > 1) console.log(`(it's on screen ${hits.length} times; I marked #${Math.min(hits.length, Math.max(1, nth))}. --nth N picks another:\n` + hits.map((x, i) => `   ${i + 1}: ${x.x1},${x.y1}${x.whole ? ' (a whole line)' : ''}`).join('\n') + ')');
+      if (hits.length > 1) console.log(`(it's on screen ${hits.length} times; I marked #${Math.min(hits.length, Math.max(1, nth))}. --nth N picks another, or --screen main|second looks on one screen only:\n` + hits.map((x, i) => `   ${i + 1}: ${x.x1},${x.y1}${x.whole ? ' (a whole line)' : ''}`).join('\n') + ')');
       break;
     }
     case 'point-at': {
