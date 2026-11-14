@@ -136,7 +136,7 @@ Open this folder in Claude Code (the Claude desktop app's Code tab works well) a
 
 [CLAUDE.md](CLAUDE.md) teaches the AI its side: how to start the glass, fit it to your screen, wait for your sends without spending a turn, answer beside your marks, and show you around by going first. You use the puck.
 
-**Every chat, not just the first one.** Most of us don't talk to our AI from inside this folder, and a chat somewhere else never hears about the glass, so nothing listens when you press ➤. My dad hit exactly this. So setup asks you once whether to make the glass part of every chat. Say yes, and the AI runs `npm run skill -- --hook --allow`: a small skill with its moves, plus a note at the start of every new chat that says the glass is running and to start watching. `npm run skill -- --remove` takes it all back out.
+**Every chat, not just the first one.** Most of us don't talk to our AI from inside this folder, and a chat somewhere else never hears about the glass, so nothing listens when you press ➤. The first real install hit exactly this. So setup asks you once whether to make the glass part of every chat. Say yes, and the AI runs `npm run skill -- --hook --allow`: a small skill with its moves, plus a note at the start of every new chat that says the glass is running and to start watching. `npm run skill -- --remove` takes it all back out.
 
 ### By hand
 
