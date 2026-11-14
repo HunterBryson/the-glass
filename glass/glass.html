@@ -523,9 +523,12 @@ function placeBadge(G) {
   if (G.mark) for (const g of groups.values()) { if (g.box.classList.contains('gone')) continue; const sx = g.dx - G.dx, sy = g.dy - G.dy;
     for (const k of g.cards) { if (k.el.classList.contains('tuckhide')) continue; const r = local(k.el); mine.push({ x1: r.x1 + sx, y1: r.y1 + sy, x2: r.x2 + sx, y2: r.y2 + sy }); }
     if (g !== G && g.mark) mine.push({ x1: g.mark.x1 + sx, y1: g.mark.y1 + sy, x2: g.mark.x2 + sx, y2: g.mark.y2 + sy }); }
-  const clear = (x, y) => x + G.dx >= 4 && y + G.dy >= 4 && x + G.dx + w <= scr.width - 4 && y + G.dy + h <= scr.height - 4 && !mine.some(r => x < r.x2 + 4 && x + w > r.x1 - 4 && y < r.y2 + 4 && y + h > r.y1 - 4);
+  // The floor is the work area, not the screen: a pill under a screen-sized mark used to land on the taskbar (Nov 12, Theo's test).
+  const floor = Math.min(scr.height, (typeof screen !== 'undefined' && screen.availHeight) || scr.height);
+  const clear = (x, y) => x + G.dx >= 4 && y + G.dy >= 4 && x + G.dx + w <= scr.width - 4 && y + G.dy + h <= floor - 4 && !mine.some(r => x < r.x2 + 4 && x + w > r.x1 - 4 && y < r.y2 + 4 && y + h > r.y1 - 4);
   const m2 = { x2: m.x2 ?? m.x1, y2: m.y2 ?? m.y1 };
-  const spots = [[m.x1 - w - 10, m.y1 + 2], [m.x1 - 2, m.y1 - h - 6], [m.x1 - 2, m2.y2 + 6], [m2.x2 + 10, m.y1 + 2]];
+  // Outside the mark first; for a mark too big to sit beside, just inside its top corners.
+  const spots = [[m.x1 - w - 10, m.y1 + 2], [m.x1 - 2, m.y1 - h - 6], [m.x1 - 2, m2.y2 + 6], [m2.x2 + 10, m.y1 + 2], [m.x1 + 8, m.y1 + 8], [m2.x2 - w - 8, m.y1 + 8]];
   const sp = spots.find(([x, y]) => clear(x, y)) || (m.x1 + G.dx - w - 10 >= 4 ? spots[0] : [m.x1 - 2, Math.max(4, m.y1 - 28)]);
   b.style.left = sp[0] + 'px'; b.style.top = sp[1] + 'px';
 }

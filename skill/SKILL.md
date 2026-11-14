@@ -1,6 +1,6 @@
 ---
 name: the-glass
-description: How to work on the person's screen with them through the glass, a see-through layer where they mark things and you answer beside their marks. Use at the start of every chat when the glass is running on this PC (a start-of-chat note says so), whenever a glass send wakes you ("THEY SENT YOU", "THEY PRESSED ➤"), whenever you're about to show them something, point them somewhere or tell them where to click, and whenever they say the glass, the puck, "I sent you something" or "look at this".
+description: How to work on the person's screen with them through the glass, a see-through layer where they mark things and you answer beside their marks. Use at the start of every chat when the glass is running on this PC (a start-of-chat note says so), whenever a glass send wakes you ("THEY SENT YOU", "THEY PRESSED ➤"), whenever you're about to show them something, point them somewhere or tell them where to click, and whenever you start a job with steps while they're at the PC (your card shows it), and whenever they say the glass, the card, the bubble, "I sent you something" or "look at this".
 ---
 
 # The glass
@@ -16,10 +16,26 @@ Every command here is the glass's command tool, run by the real Node by its full
 2. **Start your watch. This is what gives this chat the glass**, so do it every chat, even if the last chat already did. Only the newest watch gets their sends.
    - With a **Monitor** tool (Claude Code has one; if it's listed as a deferred tool, load it first): run `node "{{GLASS}}" stream` under it with the longest timeout (30 minutes). Every send prints one block and wakes you, and the watch keeps running. When it times out, start it again without mentioning it.
    - Without one: run `node "{{GLASS}}" wait --min 60` as a background command. It prints one send and exits. Answer, then start it again, every time.
-   While a watch runs, the round face on their screen (the puck) has an amber ring, so they know you're there. Grey means nobody is listening. To check, run `state` again: it should say `watch: an AI is watching`.
+   While a watch runs, your card on their screen (your face, with their tools along its bottom) is amber, so they know you're there. Red with Not connected means nobody is listening. To check, run `state` again: it should say `watch: an AI is watching`.
 3. `node "{{GLASS}}" here`. **Here** means answer on the glass. **Away** means they're on their phone or gone: answer in chat.
 
 One message, no narration. One line in chat at most: "I'm on the glass."
+
+## Your card
+Your face and what you're doing, on their screen, so they keep working and never have to check the chat. Hooks fill it on their own (their message in, your hands as you work, ✓ Done with your reply). You add your words:
+- `node "{{TOOLS}}/mirror.js" plan "part|part|part" "what I'm doing, in a sentence"` at the start of a job with parts.
+- `node "{{TOOLS}}/mirror.js" step 2 "what I just found"` alongside the first command of the next part.
+- `node "{{TOOLS}}/mirror.js" say "a sentence"`: plain words, short enough to read at a glance, never a path or a tool name.
+- `node "{{TOOLS}}/mirror.js" come` glides it onto the window they're using. Once per move of theirs.
+
+## What we learned the hard way
+- Answer beside their mark, within seconds. A silent mark feels broken.
+- After any change they can see, bring the changed part into view and mark it with what changed.
+- One thing, one window: keep updating the window you opened, close what you opened. In a shared workspace, a draft is one item with versions.
+- Nothing fires without their send.
+- Take a `shot` and look before saying it worked.
+- Go first when you know what they're after; on ➤ with nothing marked, find the thing and light it up.
+- Three corrections on one thing: stop patching, look at the whole screen, fix it as one design.
 
 ## When they send
 They just pressed ➤ and they're looking at their mark, waiting. Speed is the whole feeling.

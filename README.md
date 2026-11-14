@@ -6,13 +6,31 @@ You box something on your screen, tie a few words to it, and press ➤. Your AI 
 
 Built with Claude, and it works best with Claude.
 
-**The red panda on the puck and the AI's cards is Odie,** the AI I built this with. Keep him if you like him, or give your AI its own face: replace `glass/odie.png` with any square picture (ask your AI to do it, it takes a second), and set `GLASS_NAME` to its name.
+**The red panda on the card and the AI's answers is Odie,** the AI I built this with. Keep him if you like him, or give your AI its own face: replace `glass/odie.png` with any square picture (ask your AI to do it, it takes a second), and set `GLASS_NAME` to its name.
 
-![My marks and notes over a letter: a red circle, a highlight, numbered steps, an arrow, a hidden block, and a hand-drawn Hi](docs/2-your-marks.png)
+## Freedom from the chat: the card
+
+![Odie and I working in the Den: the card sits in the top corner, green and done, with my tools along its bottom](docs/card-in-the-den.png)
+
+This is how I work now. Odie and I are in the Den building something, and I don't keep going back to the chat to see if it's working or what's going on. The card up in the corner shows me exactly what my AI is doing. I can see when it's looking at my screen, and which step it's on, so I know how close it is to finishing. When it's done, it turns green and says so.
+
+![The card, done: green, a big check, and the start of the AI's reply](docs/card-done.png)
+
+**It goes where you want it.** Lock it and it stays right there. Unlock it, and you can drag it to snap to any corner of any screen. Unlocked, it follows you: click over to your other screen (say your AI just pulled something up there) and the card moves right on top of it. Your AI's chat follows you everywhere you go. You're not pinned to the chat anymore, so you can use the glass all the time.
+
+**You don't even need the chat to talk.** Drop a text box with the glass (Alt+A), type what you'd type in chat, or say it out loud with Windows' dictation (Win+H), and send. The AI answers the exact same way, right there on your screen. No distractions, and it's very flexible.
+
+**Every glass tool is a button on the card,** so you can put it wherever is convenient when you're working with your AI. ⌨ pops out the keys. I use the keys for everything, so it's all instant. I use the glass so much now it's kind of built into everything I do.
+
+**The whole idea:** mark a bunch of things on your screen (or your AI marks them first), then send with Alt+Q or the orange arrow. Your AI gets a skill built from everything Odie and I learned making this, so it works smoothly from the start.
+
+Red with "Not connected" means no chat is listening right now; anything you send waits for the next one.
 
 ## What it does
 
 **You point, and say what you mean.** A box, a circle, a highlight, numbered steps, an arrow, a note you typed or said out loud. Colors mean things: red is "wrong, cut this," green is "keep this," so your mark tells the AI what you think before your words do.
+
+![My marks and notes over a letter: a red circle, a highlight, numbered steps, an arrow, a hidden block, and a hand-drawn Hi](docs/2-your-marks.png)
 
 **Your AI answers right where you're looking,** beside each mark, in a speech balloon whose tail points at it. No more screenshots, no more "the third paragraph down, on the left." The mark says *where*, your words say *what*, and the AI gets both at once.
 
@@ -27,6 +45,8 @@ Built with Claude, and it works best with Claude.
 **v3** (November 12): speech balloons. Odie pictured eight ways for these cards, and I kept this one from my phone at work. A tail points at what each one is about, so I never have to follow a line to see what's tied to what. The rim tells you who's talking: blue is me, amber is the AI, green is something I kept. My first real test was a stock screener I didn't understand. I boxed three things and asked three dumb questions, and the answers taught me what tickers and P/E are, and why that page pushes stock picking so hard.
 
 ![v3: a stock screener with my three questions in blue balloons and the AI's answers in amber balloons, each tail pointing at what it's about](docs/v3.png)
+
+**v4** (November 14): the puck is gone. I lost it all the time and could never find it, so all my tools moved into the AI's card, the one that shows what it's doing. The puck and the bubble being meshed together is actually what it should be: one card that's my tools and my AI at the same time, so I can work on the glass and not need the chat. Its own section is below.
 
 **You keep the conversation going on the spot.** Every answer has ✎ Reply. Click it, add your next thought, and the thread grows right there beside the mark you started from.
 
@@ -43,9 +63,9 @@ Built with Claude, and it works best with Claude.
 
 ![The zested version kept in a green balloon beside my box, with my steer and the AI's reply](docs/zest-kept.png)
 
-**Reviewing a source together.** I asked for a source so we could look at it together. The AI opened the page in my browser, lit up the paragraph that matters, and boxed it on the glass with a note. Then it was my turn to mark, ask, or say it's good.
+**Getting sources without lifting a finger.** I was being silly and asked Odie to find me some sources on how to plug in a microwave. It took care of the rest: found GE's own support page, opened it on my screen, boxed the paragraph that matters, and marked the fine print, each with a note. I didn't lift a finger.
 
-![A paragraph lit up in the page, boxed in amber on the glass, with the AI's note beside it: Source #1](docs/7-ai-goes-first.png)
+![GE's support page on microwaves and extension cords, the key paragraph boxed in amber with Odie's note ("So no, not the orange one from the garage"), the fine print underlined, and the card in the corner saying Done](docs/source-microwave.png)
 
 **Getting walked through something.** When I don't know where a setting lives, the AI rings the real button on my screen and waits for my click, one step at a time.
 
@@ -72,13 +92,9 @@ Your AI has hands of its own: it can read your screen as text, mark something by
 
 **Press ➤ with nothing marked** and it means "look at what I'm looking at." The AI gets the window in front of you, with its words, and a soft frame flashes around it so you know it looked.
 
-<img src="docs/puck.png" alt="The puck: pen, box, circle, highlighter, arrow, steps, hide, note, four colors, size, undo, send, workspace, clear, and the AI's face" width="64" align="right">
+## Your side: the tools
 
-**The puck** sits at the bottom right of your main screen with every tool. The face is your AI: an amber ring means it's listening, grey means nobody's connected (anything you send waits for the next session). **Drag the face** to move the puck to wherever you're working; a plain click still picks up the pen, and it remembers the spot.
-
-## Your side: the puck
-
-Hover the puck for its tools:
+They're along the bottom of the card:
 
 | | |
 |---|---|
@@ -94,6 +110,7 @@ Hover the puck for its tools:
 | • | size: three widths |
 | ↶ | undo your last mark |
 | ➤ | send everything you've marked, at once (a count shows what's waiting) |
+| ⌨ | your keys pop out beside the card |
 | ⌫ | clear the glass |
 
 **Why colors mean things.** In Paint a color is decoration. Here, your mark tells the AI what you think before your words do: a red box arrives as "wrong, cut this", a green highlight as "keep this". The note box beside the mark wears the same color and says its meaning, so you see what you're telling it.
@@ -106,7 +123,7 @@ When you finish a mark, a note box opens beside it. Type what you mean (or dicta
 
 ### Your keys: one hand, thumb on Alt
 
-<img src="docs/keys.png" alt="The key list by the puck: hold Alt, then A text box, R pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send, E clear glass, K keep this list up. It opens with the puck's tools when you hover the round face. The tool that's on is lit." width="240" align="right">
+<img src="docs/keys.png" alt="The key list: hold Alt, then A text box, R pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send, E clear glass, K keep this list up. The tool that's on is lit." width="240" align="right">
 
 Every tool is also a key, all under your left hand: hold **Alt** with your thumb and tap the letter. They work from any app, and the glass never takes your keyboard to do it.
 
@@ -125,7 +142,7 @@ Every tool is also a key, all under your left hand: hold **Alt** with your thumb
 | **E** | clear the glass |
 | **K** | keep the key list up |
 
-Tap a tool's key again to put it down. **The key list is part of the puck.** Hover the round face and your tools and your keys open together; move away and it folds back to just the face, so it's there when you want it and gone when you don't. It lights whichever tool is on and shows your pen's color. Alt+K keeps it up while you're still learning the keys.
+Tap a tool's key again to put it down. **⌨ on the card pops the key list out beside it** (Alt+K does the same), so it's there while you're still learning and gone when you're not. It lights whichever tool is on and shows your pen's color.
 
 
 ## Try it: point your AI at it
@@ -138,7 +155,9 @@ Your AI clones it, installs it, fits it to your screen, and shows you around by 
 
 Already have the folder? Open it in Claude Code and say "Read CLAUDE.md and start the glass for me."
 
-[CLAUDE.md](CLAUDE.md) teaches the AI its side: how to start the glass, fit it to your screen, wait for your sends without spending a turn, answer beside your marks, and show you around by going first. You use the puck.
+[CLAUDE.md](CLAUDE.md) teaches the AI its side: how to start the glass, fit it to your screen, wait for your sends without spending a turn, answer beside your marks, and show you around by going first. You use the card.
+
+**Your AI starts with everything Odie and I learned the hard way.** Answer where you're looking, put every change right in front of you, keep one window per thing instead of flooding your screen, never fire without your send, look before saying it worked. It works the same whether or not you use any of my other builds; if you do (the Den, UI Taste, Homebase), your AI uses them as the place things land.
 
 **Every chat, not just the first one.** Most of us don't talk to our AI from inside this folder, and a chat somewhere else never hears about the glass, so nothing listens when you press ➤. The first real install hit exactly this. So setup asks you once whether to make the glass part of every chat. Say yes, and the AI runs `npm run skill -- --hook --allow`: a small skill with its moves, plus a note at the start of every new chat that says the glass is running and to start watching. `npm run skill -- --remove` takes it all back out.
 
@@ -176,11 +195,19 @@ Three parts were wired to our own setup. They're off here, and the glass works w
 - **⤓ Send to a workspace.** A mark or the whole screen can be dropped into a shared workspace as a card with a picture of exactly what was marked. Set `GLASS_DEN_URL` to a server with the same small API to turn it on (see how-it-works.md).
 - **🎙 Talk into a note.** Ours ran through a local speech model trained on my voice. Set `GLASS_EAR_DIR` to a folder with a `.venv` and a `dump_transcribe.py` that prints `{"ok": true, "text": "..."}` for an audio file. Without it, Windows dictation (Win+H) types into the note box just as well.
 
-`GLASS_NAME` sets the AI's name on its cards and the puck (default "Claude"). `GLASS_PORT` changes the local port (default 7931). The face on the puck and the AI's cards is Odie's; swap `glass/odie.png` for your own and restart the glass.
+`GLASS_NAME` sets the AI's name on the card and its answers (default "Claude"). `GLASS_PORT` changes the local port (default 7931). The face on the card and the AI's answers is Odie's; swap `glass/odie.png` for your own and restart the glass.
 
 ## Not finished
 
-Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys are fixed in code (`KEYS` in `glass/main.js`), not a setting. It has run on two 1920×1080 screens and on a single 1920×1080 laptop screen, both at 100%. It converts for Windows' display scaling, so 125–150% should line up the same, and CLAUDE.md has the AI check that on first start, but a scaled screen hasn't been run for real yet. After a restart, a mark on a page you had scrolled can come back a little off its words; we're still chasing that one. The code comments are in Odie's voice, so "Hunter" is me and "me" is Odie. We built it for the two of us first.
+Nothing here is done. It's my current best shot, and this is where it stands today:
+
+- **The card is brand new.** It's been lived in on my PC, not on anyone else's yet. If it lands somewhere weird or won't let go, open an issue.
+- **Windows only.** The AI's eyes use Windows' own text recognition and accessibility. On a Mac or Linux the ideas carry over, and [how-it-works.md](docs/how-it-works.md) is written so an AI can rebuild those parts.
+- **Scaled screens haven't been run for real.** It's run on two 1080p screens and on one 1080p laptop, all at 100%. It converts for Windows' display scaling (125%, 150%), and the AI checks that on first start, but nobody's tried it yet.
+- **After a restart,** a mark on a page you'd scrolled can come back a little off its words, and a pen drawing comes back as a box around where it was. Still chasing both.
+- **Your keys are fixed in code** (`KEYS` in `glass/main.js`). Ask your AI to change them if they fight with your apps.
+- **Miss the old round puck?** `GLASS_PUCK=1` brings it back.
+- **The code comments are in Odie's voice,** so "Hunter" is me and "me" is Odie. We built it for the two of us first.
 
 ## Something broke, or you have an idea
 

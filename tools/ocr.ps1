@@ -2,6 +2,7 @@
 # Prints one JSON object: { lines: [ { text, words: [ { text, x, y, w, h } ] } ] } in the picture's pixels.
 param([string]$path, [string]$crop = '')
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8  # accented words came back garbled without it (the public Den's cold test, Nov 13)
 # A second, sharper look at one spot (-crop "x,y,w,h"): cut it out, grey it, stretch the contrast, and make it 3x bigger.
 # It reads text the plain pass misses, like white-on-blue selected text. Word boxes come back in the crop's pixels.
 if ($crop) {

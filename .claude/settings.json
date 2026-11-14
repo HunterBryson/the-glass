@@ -12,7 +12,10 @@
       "Bash(npm run skill:*)",
       "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File tools/show.ps1:*)",
       "Bash(\"/c/Program Files/nodejs/node.exe\" tools/glass.js:*)",
-      "Bash(\"C:/Program Files/nodejs/node.exe\" tools/glass.js:*)"
+      "Bash(\"C:/Program Files/nodejs/node.exe\" tools/glass.js:*)",
+      "Bash(node tools/mirror.js:*)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" tools/mirror.js:*)",
+      "Bash(\"C:/Program Files/nodejs/node.exe\" tools/mirror.js:*)"
     ]
   }
 }

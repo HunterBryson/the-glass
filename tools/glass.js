@@ -106,7 +106,7 @@ function textIn(words, b, pad = 6) {
 const norm = t => t.toLowerCase().replace(/[^a-z0-9']/g, '');
 function near(a, b) {
   if (a === b) return true;
-  if (Math.min(a.length, b.length) < 4 || Math.abs(a.length - b.length) > 1) return false;
+  if (Math.min(a.length, b.length) < 5 || Math.abs(a.length - b.length) > 1) return false; // 4-letter slips are other words (Fork matched work, Nov 12)
   let i = 0; while (i < a.length && a[i] === b[i]) i++;
   let j = 0; while (j < a.length - i && a[a.length - 1 - j] === b[b.length - 1 - j]) j++;
   return Math.max(a.length, b.length) - i - j <= 1; // one letter off (OCR slips)
@@ -122,9 +122,11 @@ function findPhrase(words, phrase) {
     const ws = seq.slice(i, i + want.length);
     hits.push({ x1: Math.min(...ws.map(w => w.x1)), y1: Math.min(...ws.map(w => w.y1)), x2: Math.max(...ws.map(w => w.x2)), y2: Math.max(...ws.map(w => w.y2)),
       lines: [...new Set(ws.map(w => w.line))].length, text: ws.map(w => w.text).join(' '),
-      whole: [...new Set(ws.map(w => w.line))].reduce((n, l) => n + perLine.get(l), 0) === ws.length });
+      whole: [...new Set(ws.map(w => w.line))].reduce((n, l) => n + perLine.get(l), 0) === ws.length,
+      exact: ws.every((w, k) => w.n === want[k]) });
   }
-  return hits.filter(h => h.whole).concat(hits.filter(h => !h.whole));
+  const rank = h => (h.exact ? 0 : 2) + (h.whole ? 0 : 1);
+  return hits.map((h, i) => ({ h, i })).sort((p, q) => rank(p.h) - rank(q.h) || p.i - q.i).map(p => p.h);
 }
 async function cleanWords(which = 'all') {
   const st = await call('/state');
@@ -138,7 +140,7 @@ function locate(name, app = '', hides = []) {
     let hits = JSON.parse(execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(here, 'uia.ps1'), name, '-app', app], { encoding: 'utf8', windowsHide: true, timeout: 20000 }) || '[]');
     // Nothing inside a hidden area counts, and with anything hidden I don't repeat window names (they can carry what he hid).
     hits = hits.filter(h => !hides.some(b => h.x < b.x2 && h.x + h.w > b.x1 && h.y < b.y2 && h.y + h.h > b.y1));
-    if (hits.length) { const h = hits[0]; return { x1: h.x, y1: h.y, x2: h.x + h.w, y2: h.y + h.h, how: hides.length ? `${h.type} "${h.name}"` : `${h.type} "${h.name}" in ${h.window}` }; }
+    if (hits.length) { const h = hits[0]; return { x1: h.x, y1: h.y, x2: h.x + h.w, y2: h.y + h.h, how: (hides.length ? `${h.type} "${h.name}"` : `${h.type} "${h.name}" in ${h.window}`) }; }
   } catch {}
   return null;
 }
@@ -153,7 +155,9 @@ async function locateAny(name, app) {
     if (!hides.some(b => u.x1 < b.x2 && u.x2 > b.x1 && u.y1 < b.y2 && u.y2 > b.y1)) return hides.length ? { ...u, how: u.how.replace(/ in .*$/, '') } : u;
   }
   const hits = findPhrase(await cleanWords(), name);
-  return hits.length ? { ...hits[0], how: `the words "${hits[0].text}" on screen` } : null;
+  if (!hits.length) return null;
+  const h = hits[0];
+  return { ...h, how: `the words "${h.text}" on screen` + (h.exact ? '' : ` (only close to "${name}", not exact: check the shot)`) };
 }
 
 // A send, read: the window and the words under each of his marks.
@@ -316,8 +320,9 @@ try {
       if (!(await up())) { console.log('the glass is down'); break; }
       const s = await call('/state');
       console.log(s.displays.map(d => `${d.primary ? 'main' : 'second'}: x ${d.bounds.x}..${d.bounds.x + d.bounds.width - 1}, y ${d.bounds.y}..${d.bounds.y + d.bounds.height - 1}, scale ${d.scale}`).join('\n'));
+      if (s.card) console.log(`the card (your face, what you're saying, and their tools along its bottom): x ${s.card.x}..${s.card.x + s.card.width}, y ${s.card.y}..${s.card.y + s.card.height}`);
       if (s.puck) console.log(`puck (the round face): around ${Math.round(s.puck.x + s.puck.width - 32)},${Math.round(s.puck.y + s.puck.height / 2)}`);
-      if (s.link) console.log(s.link === 'off' ? 'watch: nobody is watching (the puck says not connected)' : 'watch: an AI is watching (the puck shows connected)');
+      if (s.link) console.log(s.link === 'off' ? 'watch: nobody is watching (the card says Not connected)' : 'watch: an AI is watching (the card shows connected)');
       const his = s.events.filter(e => e.who === 'hunter'); if (his.length) console.log('\nfrom them:\n' + his.map(describe).join('\n'));
       break;
     }

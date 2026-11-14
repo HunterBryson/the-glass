@@ -41,7 +41,9 @@ let active = null; // the pane my cursor is on
 let puck = null, mode = 'off';
 // Test switches, so a freeze can be pinned to one part.
 const LEVEL = process.env.GLASS_LEVEL || 'screen-saver'; // screen-saver | floating | none
-const WITH_PUCK = process.env.GLASS_PUCK !== '0';
+// The puck folded into the bubble (his pick, Nov 13: "Can we fold it into the bubble completely here?"). GLASS_PUCK=1 brings it back.
+const WITH_PUCK = process.env.GLASS_PUCK === '1';
+function toMirror(ch, v) { try { if (mirror && !mirror.isDestroyed()) mirror.webContents.send(ch, v); } catch {} }
 const FOCUSABLE = process.env.GLASS_FOCUSABLE === '1';
 const top = w => { if (LEVEL === 'none') w.setAlwaysOnTop(false); else w.setAlwaysOnTop(true, LEVEL); };
 const PUCK = { w: 64, closed: 64, open: 760, right: 16, bottom: 70 };
@@ -56,6 +58,9 @@ function log(e) {
   // Wake only who was waiting before this event. (Draining in a loop let a waiter re-queue itself forever: the day-one freeze.)
   if (e.who === 'hunter' && e.op === 'send' && !e.error) {
     unread.push(e);
+    // A send starts the AI's turn without a chat message, so the bubble hears it here: their words, or "look with me".
+    const words = (e.marks || []).map(m => m.note || m.text || '').filter(Boolean).join(' · ');
+    try { mirrorSet({ state: 'working', fresh: true, doing: 'Looking at what you sent', asked: words || (e.look ? 'Look at this with me' : 'Your marks on the glass') }); } catch {}
   }
   waiters.splice(0).forEach(w => w());
   linkSay(true);
@@ -87,6 +92,7 @@ function linkSay(force) {
   if (!force && k === lastLink) return;
   lastLink = k;
   if (puck && !puck.isDestroyed()) { puck.webContents.send('link', s); sizePuck(); }
+  toMirror('link', s);
 }
 setInterval(() => linkSay(false), 2000);
 
@@ -187,11 +193,11 @@ const paneOf = wc => panes.find(p => p.win.webContents === wc);
 let pending = [];
 // A Keep counts as something waiting for ➤ too, so ➤ lights up after a Keep even when no new mark is up (Nov 7: "I cant submit a turn").
 let keptWaiting = 0;
-const puckSay = () => { if (puck && !puck.isDestroyed()) puck.webContents.send('pending', pending.length + keptWaiting); };
+const puckSay = () => { if (puck && !puck.isDestroyed()) puck.webContents.send('pending', pending.length + keptWaiting); toMirror('pending', pending.length + keptWaiting); };
 
 // His pen's color and size. A color is a meaning, so his mark says what he thinks before his words do.
 let style = { color: 'blue', size: 1, step: 1 };
-const sayStyle = () => { for (const p of panes) p.win.webContents.send('style', style); if (puck && !puck.isDestroyed()) puck.webContents.send('style', style); };
+const sayStyle = () => { for (const p of panes) p.win.webContents.send('style', style); if (puck && !puck.isDestroyed()) puck.webContents.send('style', style); toMirror('style', style); };
 ipcMain.on('style', (_e, s) => { style = { ...style, ...s }; sayStyle(); sayLegend(); });
 // Areas he hid: painted out of every picture the glass takes, so they never reach me (screen pixels).
 let hides = [];
@@ -228,6 +234,7 @@ function setMode(m) {
     p.win.webContents.send('mode', mode);
   }
   if (puck && !puck.isDestroyed()) { puck.webContents.send('mode', mode); puck.moveTop(); }
+  toMirror('mode', mode);
   sayLegend();
   log({ who: 'hunter', op: 'mode', mode });
 }
@@ -285,6 +292,7 @@ function buildLegend() {
 // collapse on itself when its not in use but I can easily pull it up again... by hovering the puck"). The list sits
 // against the puck's tools, shows while the puck is open under his hand, and goes away with it. Alt+K keeps it up.
 function placeLegend() {
+  if (legend && !legend.isDestroyed() && !WITH_PUCK) return placeLegendByMirror();
   if (!legend || legend.isDestroyed() || !puck || puck.isDestroyed()) return;
   const want = !puckGrab && (legendOn || puckOpen);
   if (!want) { if (legend.isVisible()) legend.hide(); return; }
@@ -297,21 +305,205 @@ function placeLegend() {
   if (!legend.isVisible()) legend.showInactive();
   if (!puck.isDestroyed()) puck.moveTop();
 }
+function placeLegendByMirror() {
+  if (!legendOn || !mirror || mirror.isDestroyed() || !mirror.isVisible() || mirrorGrab) { if (legend.isVisible()) legend.hide(); return; }
+  const mb = mirror.getBounds(), lb = legend.getBounds(), d = screen.getDisplayNearestPoint({ x: mb.x + mb.width / 2, y: mb.y + mb.height / 2 }).workArea;
+  const right = mb.x + mb.width / 2 < d.x + d.width / 2; // open toward the middle of the screen
+  let x = right ? mb.x + mb.width - 6 : mb.x - lb.width + 6, y = mb.y + mb.height / 2 < d.y + d.height / 2 ? mb.y + 10 : mb.y + mb.height - lb.height - 10;
+  x = Math.min(Math.max(x, d.x), d.x + d.width - lb.width); y = Math.min(Math.max(y, d.y), d.y + d.height - lb.height);
+  legend.setBounds({ x: Math.round(x), y: Math.round(y), width: lb.width, height: lb.height });
+  if (!legend.isVisible()) legend.showInactive();
+}
+ipcMain.on('legend-toggle', () => { legendOn = !legendOn; placeLegend(); toMirror('legend', legendOn); });
+setInterval(() => { if (!WITH_PUCK && legendOn) placeLegend(); }, 400);
 app.whenReady().then(buildLegend);
 
 // Windows can stack ordinary windows above ours even though ours are flagged always-on-top (seen Nov 11: other apps sat
 // over the glass and the puck). So every few seconds the glass puts its windows back on top: the panes first (see-through),
 // then the key list, the puck and the typing box over them.
+// The talking bubble: the AI's face and what it's saying, with the person's tools along its bottom. Its state comes from
+// the hooks and tools/mirror.js (POST /mirror), and the AI can bring it to the person (POST /mirror/come).
+let mirror = null, mirrorGrab = null, mirrorTick = null, mirrorGlide = null, mstate = null;
 function retop() {
-  if (LEVEL === 'none') return;
-  const ws = [...panes.map(p => p.win), legend, puck, noteWin];
+  if (LEVEL === 'none' || mirrorGrab) return; // never mid-drag: re-stacking windows takes the mouse from the bubble, and his let-go is lost
+  const ws =[...panes.map(p => p.win), mirror, legend, puck, noteWin];
   for (const w of ws) { if (!w || w.isDestroyed() || !w.isVisible()) continue; try { w.setAlwaysOnTop(true, LEVEL); w.moveTop(); } catch {} }
 }
 setInterval(retop, 3000);
+const MIRROR_AT = path.join(DATA, 'mirror.json'), MIRROR_STATE = path.join(DATA, 'mirror-state.json');
+try { mstate = JSON.parse(fs.readFileSync(MIRROR_STATE, 'utf8')); } catch {}
+function buildMirror() {
+  const b = screen.getPrimaryDisplay().workArea;
+  let at = { x: b.x + b.width - 480, y: b.y + b.height - 430 };
+  try { const s = JSON.parse(fs.readFileSync(MIRROR_AT, 'utf8')); if (screen.getAllDisplays().some(d => s.x >= d.bounds.x - 40 && s.x < d.bounds.x + d.bounds.width - 60 && s.y >= d.bounds.y - 10 && s.y < d.bounds.y + d.bounds.height - 60)) at = s; } catch {}
+  mirror = new BrowserWindow({ ...at, width: 460, height: 120, transparent: true, frame: false, resizable: false, movable: true, hasShadow: false,
+    skipTaskbar: true, focusable: false, show: false, backgroundColor: '#00000000', webPreferences: { preload: path.join(__dirname, 'mirror-preload.js') } });
+  top(mirror);
+  let face = '';
+  try { face = 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, 'odie.png')).toString('base64'); } catch {}
+  const page = fs.readFileSync(path.join(__dirname, 'mirror.ui'), 'utf8').replace('{{FACE}}', face).replaceAll('{{NAME}}', AI_NAME.replace(/[<>&"]/g, ''));
+  mirror.webContents.on('did-finish-load', () => { if (!mirrorRects.length) mirror.setIgnoreMouseEvents(true, { forward: true }); mirror.showInactive(); mirrorPush();
+    toMirror('tools', { on: !WITH_PUCK, ai: AI_NAME, den: DEN_ON }); toMirror('style', style); toMirror('mode', mode); toMirror('pending', pending.length + keptWaiting); toMirror('legend', legendOn); toMirror('lock', mirrorLocked); linkSay(true); });
+  mirror.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(page));
+}
+const mirrorJs = js => { if (mirror && !mirror.isDestroyed()) mirror.webContents.executeJavaScript(js).catch(() => {}); };
+const mirrorPush = () => mirrorJs(`feed(${JSON.stringify(mstate)})`);
+// working = his message is in and I'm on it; done = my turn ended (`said` is my reply). `plan`/`step`/`say` are the parts
+// of the job, which one I'm on, and what I'm doing in my own words. A new message from him (`fresh`) keeps an unfinished plan.
+// `sid` is the chat a hook speaks for: the chat he last messaged owns the bubble, so a second open chat can't talk over it.
+// `since` is when this turn started, so "Working · 3 min" survives a glass restart.
+function mirrorSet(b = {}) {
+  const prev = mstate, one = s => String(s ?? '').replace(/\s+/g, ' ').trim(), clip = (s, n) => String(s ?? '').slice(0, n);
+  if (!b.fresh && b.sid && prev?.sid && b.sid !== prev.sid) return prev;
+  const state = b.state === 'done' ? 'done' : 'working';
+  const p = { state, at: new Date().toISOString() };
+  const carry = !b.fresh && (prev?.state === 'working' || (state === 'done' && prev?.state !== 'done'));
+  p.sid = b.fresh ? b.sid || undefined : prev?.sid;
+  p.since = carry && prev?.since ? prev.since : p.at;
+  p.asked = b.asked != null ? clip(one(b.asked), 300) || undefined : (carry || state === 'done' ? prev?.asked : undefined);
+  p.doing = clip(one(b.doing), 200) || (carry && state === 'working' ? prev?.doing : '') || (state === 'done' ? 'Done' : 'Working');
+  // A plan is the job, not the turn: it carries across his new messages (same chat) until I finish it or set a new one.
+  const keepPlan = carry || (prev?.plan && (!b.sid || !prev?.sid || b.sid === prev.sid) && (prev.step || 1) <= prev.plan.length);
+  p.plan = Array.isArray(b.plan) ? b.plan.map(s => clip(one(s), 80)).filter(Boolean).slice(0, 8) : (keepPlan ? prev?.plan : undefined);
+  p.step = b.step != null ? Number(b.step) || null : (keepPlan ? prev?.step : undefined);
+  p.say = b.say != null ? clip(one(b.say), 200) || undefined : (carry && state === 'working' ? prev?.say : undefined);
+  if (state === 'done') p.said = clip(b.said, 12000).trim() || undefined; // a turn ending isn't the plan ending
+  // A peek is a small picture of what I'm looking at right now (a screenshot, a picture I made), his favorite part:
+  // "I could see that you're looking at a screenshot of the screen to see what you're looking at" (Nov 13 dump).
+  // Shrunk here to a data URL so the bubble page never touches his files. It lasts the turn, replaced by the next one.
+  if (b.peek && /\.(png|jpe?g|webp)$/i.test(b.peek)) {
+    try { const im = nativeImage.createFromPath(String(b.peek)); if (!im.isEmpty()) { const s = im.getSize(); p.peek = im.resize(s.width / s.height > 1.6 ? { width: 300 } : { height: 180 }).toDataURL(); p.peekName = path.basename(String(b.peek)); } } catch {}
+  } else if (carry && state === 'working' && prev?.peek && !b.fresh) { p.peek = prev.peek; p.peekName = prev.peekName; }
+  mstate = p; fs.writeFile(MIRROR_STATE, JSON.stringify(p), () => {}); mirrorPush();
+  return p;
+}
+// Bring the bubble to him: onto the window he's using (its top-right corner, inside), beside his cursor, or a spot.
+// It glides there so he sees me arrive, and opens up if it was folded.
+// Locked (his button on the card): it stays where he put it. No following, and `come` leaves it alone.
+const MIRROR_LOCK = path.join(DATA, 'mirror-lock.json');
+let mirrorLocked = false;
+try { mirrorLocked = !!JSON.parse(fs.readFileSync(MIRROR_LOCK, 'utf8')).locked; } catch {}
+ipcMain.on('mirror-lock', (_e, on) => { mirrorLocked = !!on; clearInterval(mirrorGlide); fs.writeFile(MIRROR_LOCK, JSON.stringify({ locked: mirrorLocked }), () => {}); toMirror('lock', mirrorLocked); });
+async function mirrorCome(where = 'front', x, y) {
+  if (!mirror || mirror.isDestroyed()) return null;
+  if (mirrorLocked) { const [lx, ly] = mirror.getPosition(); return { x: lx, y: ly, locked: true }; }
+  mirrorCorner = null;
+  mirrorJs('arrive()'); // open up first, so it lands at its full size and doesn't grow off the edge after
+  await new Promise(r => setTimeout(r, 90));
+  const [w, h] = mirror.getSize(), c = screen.getCursorScreenPoint();
+  let to;
+  if (where === 'spot' && Number.isFinite(x) && Number.isFinite(y)) to = { x, y };
+  else if (where === 'cursor') to = { x: c.x + 28, y: c.y + 20 };
+  else {
+    const { fg, w: list } = await windowsOnce();
+    const f = list.find(r => r[0] === fg) || list[0];
+    to = f ? { x: f[3] - w - 28, y: f[2] + 64 } : { x: c.x + 28, y: c.y + 20 };
+  }
+  const wa = screen.getDisplayNearestPoint({ x: Math.round(to.x + w / 2), y: Math.round(to.y + 20) }).workArea;
+  to = { x: Math.round(Math.max(wa.x, Math.min(to.x, wa.x + wa.width - w))), y: Math.round(Math.max(wa.y, Math.min(to.y, wa.y + wa.height - h))) };
+  const [fx, fy] = mirror.getPosition(), t0 = Date.now(), ms = 420;
+  clearInterval(mirrorGlide);
+  await new Promise(done => { mirrorGlide = setInterval(() => {
+    const k = Math.min(1, (Date.now() - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    if (mirror && !mirror.isDestroyed()) mirror.setPosition(Math.round(fx + (to.x - fx) * e), Math.round(fy + (to.y - fy) * e));
+    if (k >= 1) { clearInterval(mirrorGlide); done(); }
+  }, 16); });
+  fs.writeFile(MIRROR_AT, JSON.stringify(to), () => {});
+  return to;
+}
+// I follow him across screens (his dump, Nov 13: "it just gets lost in the shuffle... you never really move it around").
+// When the window in front of him lands on the other screen while I'm working (or just finished), I glide over to the
+// same spot on that screen, keeping where he put me. Not after he dragged me in the last 30 s, never while he holds me,
+// and I don't unfold if he folded me. Off switch: GLASS_FOLLOW=0.
+let mirrorDragAt = 0, mirrorFollowT = null;
+// The corner the card is snapped to ('tl'|'tr'|'bl'|'br'), kept with its spot in mirror.json. null = wherever he put it.
+const SNAP = process.env.GLASS_SNAP !== '0', SNAP_M = 14;
+let mirrorCorner = null;
+try { const s0 = JSON.parse(fs.readFileSync(path.join(DATA, 'mirror.json'), 'utf8')); mirrorCorner = s0.corner || null; } catch {}
+function cornerSpot(wa, w, h, c) {
+  const p = { x: c[1] === 'l' ? wa.x + SNAP_M : wa.x + wa.width - w - SNAP_M, y: c[0] === 't' ? wa.y + SNAP_M : wa.y + wa.height - h - SNAP_M };
+  return p;
+}
+function mirrorGlideTo(to, ms = 380) {
+  if (!mirror || mirror.isDestroyed()) return;
+  const [fx, fy] = mirror.getPosition(), t0 = Date.now(); clearInterval(mirrorGlide);
+  mirrorGlide = setInterval(() => {
+    if (!mirror || mirror.isDestroyed() || mirrorGrab) return clearInterval(mirrorGlide);
+    const k = Math.min(1, (Date.now() - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    mirror.setPosition(Math.round(fx + (to.x - fx) * e), Math.round(fy + (to.y - fy) * e));
+    if (k >= 1) { clearInterval(mirrorGlide); fs.writeFile(MIRROR_AT, JSON.stringify({ x: to.x, y: to.y, corner: mirrorCorner }), () => {}); retop(); }
+  }, 8);
+}
+function mirrorFollowSoon() {
+  if (process.env.GLASS_FOLLOW === '0') return;
+  clearTimeout(mirrorFollowT); mirrorFollowT = setTimeout(mirrorFollow, 650);
+}
+async function mirrorFollow() {
+  if (mirrorLocked) return;
+  if (!mirror || mirror.isDestroyed() || !mirror.isVisible() || mirrorGrab || Date.now() - mirrorDragAt < 30e3) return;
+  const age = mstate ? Date.now() - new Date(mstate.at) : Infinity;
+  if (!mstate || !(mstate.state === 'working' ? age < 15 * 60e3 : age < 10 * 60e3)) return;
+  if (!front.title || SNIP.test(front.app) || /^(electron|homebase-glass)/i.test(front.app)) return;
+  let f;
+  try { const { fg, w: list } = await windowsOnce(); f = list.find(r => r[0] === fg); } catch { return; }
+  if (!f) return;
+  const [bx, by] = mirror.getPosition(), [w, h] = mirror.getSize();
+  const from = screen.getDisplayNearestPoint({ x: bx + 40, y: by + 40 });
+  const to = screen.getDisplayNearestPoint({ x: Math.round((f[1] + f[3]) / 2), y: Math.round((f[2] + f[4]) / 2) });
+  if (to.id === from.id) return;
+  const a = from.workArea, b = to.workArea;
+  if (SNAP && mirrorCorner) return mirrorGlideTo(cornerSpot(b, w, h, mirrorCorner), 520);
+  const tx = Math.round(b.x + Math.max(0, Math.min(b.width - w, bx - a.x))), ty = Math.round(b.y + Math.max(0, Math.min(b.height - h, by - a.y)));
+  const t0 = Date.now(), ms = 520; clearInterval(mirrorGlide);
+  mirrorGlide = setInterval(() => {
+    if (!mirror || mirror.isDestroyed() || mirrorGrab) return clearInterval(mirrorGlide);
+    const k = Math.min(1, (Date.now() - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    mirror.setPosition(Math.round(bx + (tx - bx) * e), Math.round(by + (ty - by) * e));
+    if (k >= 1) { clearInterval(mirrorGlide); fs.writeFile(MIRROR_AT, JSON.stringify({ x: tx, y: ty }), () => {}); retop(); }
+  }, 8);
+}
+let mirrorPendingSize = null;
+ipcMain.on('mirror-size', (_e, w, h) => {
+  if (mirrorGrab) { mirrorPendingSize = [w, h]; return; }
+  if (!mirror || mirror.isDestroyed()) return;
+  const [x, y] = mirror.getPosition(), wa = screen.getDisplayNearestPoint({ x, y }).workArea;
+  w = Math.max(80, Math.min(Math.round(w), 700)); h = Math.max(80, Math.min(Math.round(h), wa.height));
+  if (SNAP && mirrorCorner) { clearInterval(mirrorGlide); const c = cornerSpot(wa, w, h, mirrorCorner); return mirror.setBounds({ ...c, width: w, height: h }); }
+  mirror.setBounds({ x: Math.max(wa.x, Math.min(x, wa.x + wa.width - w)), y: Math.max(wa.y, Math.min(y, wa.y + wa.height - h)), width: w, height: h });
+});
+// Clicks pass through everywhere except my face and the bubble: the window is a rectangle, but the see-through
+// corners around them shouldn't swallow his clicks on whatever is underneath.
+// (Like the glass's notes, it checks his real cursor 20 times a second: synthetic and fast moves never reach a see-through page.)
+let mirrorRects = [], mirrorCatching = false;
+// The window is cut to the shape of my face and the bubble (a little room for the glow), so Windows itself sends clicks
+// inside to me and everything else through. The cursor polling below missed 'Read all' (Nov 10, twice on his screen).
+ipcMain.on('mirror-rects', (_e, r) => { mirrorRects = Array.isArray(r) ? r : [];
+  if (!mirror || mirror.isDestroyed() || !mirrorRects.length) return; const P = 10;
+  try { mirror.setShape(mirrorRects.map(([l, t, rr, b]) => ({ x: Math.max(0, l - P), y: Math.max(0, t - P), width: rr - l + 2 * P, height: b - t + 2 * P }))); mirror.setIgnoreMouseEvents(false); mirrorCatching = true; } catch (e) { trail('mirror shape: ' + e); } });
+setInterval(() => {
+  if (!mirror || mirror.isDestroyed() || !mirror.isVisible()) return;
+  let on = !!mirrorGrab;
+  if (!on) { const c = screen.getCursorScreenPoint(), [x, y] = mirror.getPosition(); on = mirrorRects.some(([l, t, r, b]) => c.x >= x + l && c.x < x + r && c.y >= y + t && c.y < y + b); }
+  if (mirrorRects.length) return; // shaped: Windows does it
+  if (on !== mirrorCatching) { mirrorCatching = on; mirror.setIgnoreMouseEvents(!on, { forward: true }); }
+}, 50);
+ipcMain.on('mirror-drag', (_e, k) => {
+  if (!mirror || mirror.isDestroyed()) return;
+  const follow = () => { if (!mirrorGrab) return; const c = screen.getCursorScreenPoint(); mirror.setPosition(mirrorGrab.wx + c.x - mirrorGrab.x, mirrorGrab.wy + c.y - mirrorGrab.y); };
+  if (k === 'start') { clearInterval(mirrorGlide); const [wx, wy] = mirror.getPosition(), c = screen.getCursorScreenPoint(); mirrorGrab = { x: c.x, y: c.y, wx, wy }; clearInterval(mirrorTick); mirrorTick = setInterval(follow, 8); return; }
+  if (k === 'end' && mirrorGrab) { follow(); clearInterval(mirrorTick); mirrorGrab = null; mirrorDragAt = Date.now();
+    const [w, h] = mirrorPendingSize || mirror.getSize(); mirrorPendingSize = null;
+    let [x, y] = mirror.getPosition(); const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+    x = Math.max(wa.x - 10, Math.min(x, wa.x + wa.width - w + 10)); y = Math.max(wa.y - 10, Math.min(y, wa.y + wa.height - h + 10));
+    mirror.setBounds({ x, y, width: w, height: h });
+    if (SNAP) { mirrorCorner = (y + h / 2 < wa.y + wa.height / 2 ? 't' : 'b') + (x + w / 2 < wa.x + wa.width / 2 ? 'l' : 'r'); mirrorGlideTo(cornerSpot(wa, w, h, mirrorCorner)); }
+    else fs.writeFile(MIRROR_AT, JSON.stringify({ x, y }), () => {}); }
+});
+app.whenReady().then(buildMirror);
 function key(a) {
   if (a === 'color') { const c = ['blue', 'red', 'green', 'yellow']; style = { ...style, color: c[(c.indexOf(style.color) + 1) % c.length] }; sayStyle(); }
   else if (a === 'undo' || a === 'send' || a === 'clear') ipcMain.emit(a, {});
-  else if (a === 'legend') { legendOn = !legendOn; placeLegend(); }
+  else if (a === 'legend') { legendOn = !legendOn; placeLegend(); toMirror('legend', legendOn); }
   else setMode(a === 'off' || mode === a ? 'off' : a);
   sayLegend(); log({ who: 'hunter', op: 'key', does: a });
 }
@@ -453,6 +645,7 @@ function watchFront() {
   let buf = '';
   ps.stdout.on('data', d => { buf += d; const lines = buf.split(/\r?\n/); buf = lines.pop();
     for (const ln of lines) { const [name, ...t] = ln.split('\t'); front = { app: name.trim(), title: t.join(' ').trim(), at: Date.now() };
+      setTimeout(retop, 60); setTimeout(retop, 400); mirrorFollowSoon();
       const on = SNIP.test(name.trim()); if (on === snipping) continue; snipping = on;
       if (on) { caught.clear(); for (const p of panes) if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(true, { forward: true }); }
       else if (mode !== 'off') for (const p of panes) if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(false); } });
@@ -591,7 +784,7 @@ const lastSig = new Map();
 let DEBUG_FRAMES = 6;
 
 function protect(on) {
-  for (const w of [...panes.map(p => p.win), puck, noteWin, legend]) if (w && !w.isDestroyed()) w.setContentProtection(on); // the key list too (it showed up in my reads, Nov 10)
+  for (const w of [...panes.map(p => p.win), puck, noteWin, legend, mirror]) if (w && !w.isDestroyed()) w.setContentProtection(on); // the key list too (it showed up in my reads, Nov 10)
 }
 
 let lookN = 0, lookMs = 0;
@@ -1175,7 +1368,7 @@ const run = (pane, cmd) => pane.win.webContents.executeJavaScript(`window.glass.
 // a card landed on the bubble's sentence twice in his first test). Sent only when they move.
 let fixedSent = [];
 setInterval(() => {
-  const wins = [legend, puck].filter(w => w && !w.isDestroyed() && w.isVisible()).map(w => w.getBounds());
+  const wins = [mirror, legend, puck].filter(w => w && !w.isDestroyed() && w.isVisible()).map(w => w.getBounds());
   panes.forEach((p, i) => {
     if (!p.win || p.win.isDestroyed()) return;
     const o = p.d.bounds, r = wins.filter(b => b.x < o.x + o.width && b.x + b.width > o.x && b.y < o.y + o.height && b.y + b.height > o.y)
@@ -1235,7 +1428,7 @@ http.createServer(async (req, res) => {
   if (req.headers.origin || !['127.0.0.1', 'localhost', '[::1]'].includes(host)) { res.writeHead(403); return res.end(); }
   try {
     const url = new URL(req.url, 'http://x');
-    if (req.method === 'GET' && url.pathname === '/state') return send(200, { ok: true, displays: displaysInfo(), seq, events: events.slice(-50), link: link(), puck: puck && !puck.isDestroyed() ? puck.getBounds() : null });
+    if (req.method === 'GET' && url.pathname === '/state') return send(200, { ok: true, displays: displaysInfo(), seq, events: events.slice(-50), link: link(), puck: puck && !puck.isDestroyed() ? puck.getBounds() : null, card: mirror && !mirror.isDestroyed() && mirror.isVisible() ? mirror.getBounds() : null });
     if (req.method === 'GET' && url.pathname === '/wait') {
       const since = Number(url.searchParams.get('since') || seq), ms = Math.min(Number(url.searchParams.get('ms') || 60000), 3600000);
       // I wake for his sends and Den drops, his Keep/Drop on my versions, and a spot I'm watching changing.
@@ -1248,6 +1441,10 @@ http.createServer(async (req, res) => {
       const w = () => { if (has()) { clearTimeout(t); lastWaiting = Date.now(); done(); } else waiters.push(w); };
       waiters.push(w); linkSay(true); return;
     }
+    if (req.method === 'GET' && url.pathname === '/mirror') return send(200, { ok: true, mirror: mstate });
+    if (req.method === 'GET' && url.pathname === '/mirror/hit') { const c = screen.getCursorScreenPoint(); return send(200, { ok: true, bounds: mirror && !mirror.isDestroyed() ? mirror.getBounds() : null, rects: mirrorRects, catching: mirrorCatching, cursor: c, visible: mirror && mirror.isVisible() }); }
+    if (req.method === 'POST' && url.pathname === '/mirror') return send(200, { ok: true, mirror: mirrorSet(await body(req)) });
+    if (req.method === 'POST' && url.pathname === '/mirror/come') { const b = await body(req); return send(200, { ok: true, at: await mirrorCome(b.where, b.x, b.y) }); }
     if (req.method === 'POST' && url.pathname === '/convert') { const b = await body(req); const f = b.to === 'screen' ? toScreen : toDip; return send(200, { ok: true, points: (b.points || []).map(f) }); }
     if (req.method === 'GET' && url.pathname === '/hides') return send(200, { ok: true, hides: hides.map(h => h.box) });
     if (req.method === 'GET' && url.pathname === '/unread') return send(200, { ok: true, delivered, link: link(), events: unread });

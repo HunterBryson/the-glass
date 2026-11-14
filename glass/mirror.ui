@@ -1,0 +1,301 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- Way 3, the corner card (his pick, Nov 13: "I love this one. I like that your picture is folded into the box so its compact
+     and solid... I want the picture in the card so its compact for moving around"): one card, my face inside it, a thick rim.
+     The talking bubble (Nov 10, his ask from work): my face and what I'd be saying to him, on the glass, anywhere he drags it.
+     Amber breathing ring = I'm working. Green = done, my reply right there. Nothing going on = just my face, small.
+     Loaded by main.js as a data URL (the FACE slot becomes my picture); main feeds it with feed(state) and calls arrive() when I bring it to him. -->
+<style>
+:root{--ink:#f4f4f2;--dim:#a9afb8;--faint:#666d77;--amber:#f5a524;--green:#3fb950;--his:#6cc6ff;--c:var(--amber)}
+*{box-sizing:border-box}
+html,body{margin:0;background:transparent;font-family:"Segoe UI",system-ui,sans-serif;color:var(--ink);user-select:none;overflow:hidden}
+#root{padding:16px;width:max-content}
+#card{display:flex;align-items:flex-start;gap:16px;padding:14px 20px 14px 14px;border-radius:22px;cursor:grab;
+  background:linear-gradient(180deg,#1a1d23,#111317);border:2.5px solid color-mix(in srgb,var(--c) 85%,#000);
+  box-shadow:0 0 22px color-mix(in srgb,var(--c) 30%,transparent),0 12px 34px rgba(0,0,0,.7);transition:box-shadow .6s,border-color .6s}
+body.collapsed #card{padding:0;border-color:transparent;background:none;box-shadow:none;gap:0}
+body.lifted #card{box-shadow:0 0 34px color-mix(in srgb,var(--c) 45%,transparent),0 20px 48px rgba(0,0,0,.8)}
+body.done{--c:var(--green)}
+body.idle{--c:#5d636c}
+
+/* my face, and the ring that says what I'm doing */
+#face{position:relative;width:104px;height:104px;flex:none;cursor:grab}
+body.collapsed #face{width:66px;height:66px}
+#face img{position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);border-radius:50%;object-fit:cover;z-index:2;
+  box-shadow:0 0 0 2px #0b0c0e;transition:filter .6s}
+body.idle #face img{filter:saturate(.55) brightness(.8)}
+#ring{position:absolute;inset:0;border-radius:50%;z-index:1;
+  background:conic-gradient(from 0deg,var(--c),transparent 30%,var(--c) 52%,transparent 80%,var(--c));
+  -webkit-mask:radial-gradient(circle,transparent calc(50% - 5px),#000 calc(50% - 4px));mask:radial-gradient(circle,transparent calc(50% - 5px),#000 calc(50% - 4px))}
+#halo{position:absolute;inset:-6px;border-radius:50%;z-index:0;background:radial-gradient(circle,var(--c) 0,transparent 68%);opacity:.0;transition:opacity .6s}
+body.working #ring{animation:spin 2.6s linear infinite}
+body.working #halo{animation:breathe 2.6s ease-in-out infinite}
+body.done #ring{background:var(--c)}
+body.done #halo{opacity:.28}
+body.idle #ring{background:#3a3f47}
+#face .badge{position:absolute;right:2px;bottom:2px;z-index:3;width:24px;height:24px;border-radius:50%;background:var(--green);color:#0b0c0e;
+  font:800 15px/24px "Segoe UI";text-align:center;box-shadow:0 0 0 3px #0b0c0e;transform:scale(0);transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+body.done #face .badge{transform:scale(1)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes breathe{0%,100%{opacity:.18;transform:scale(.96)}50%{opacity:.5;transform:scale(1.06)}}
+.bloom #halo{animation:bloom 1.1s ease-out!important}
+@keyframes bloom{0%{opacity:.9;transform:scale(.9)}100%{opacity:.28;transform:scale(1.5)}}
+
+/* what I'd be saying: a speech bubble that points at my face */
+#talk{position:relative;width:360px;padding-top:2px;cursor:grab}
+body.collapsed #talk{display:none}
+body.collapsed.done #talk{display:block;width:auto}body.collapsed.done #talk>*:not(#main){display:none}
+body.lifted #face img{box-shadow:0 0 0 2px #0b0c0e,0 10px 24px rgba(0,0,0,.6)}
+#head{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--dim);margin-bottom:5px}
+#who{color:var(--amber);font-weight:700;font-size:20px;letter-spacing:.2px}
+#pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px 2px 8px;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--c) 70%,#000);color:var(--ink);font-size:13px;font-weight:600}
+#pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+body.working #pill::before{background:var(--green);box-shadow:0 0 6px var(--green)}
+#state{font-weight:700}
+#head .x{margin-left:auto;color:var(--faint);font-size:16px;line-height:1;padding:0 2px;cursor:pointer;opacity:0;transition:opacity .2s}
+#talk:hover .x{opacity:1}
+/* the lock: always there, so he can see which way it is */
+#lock{margin-left:auto;cursor:pointer;font-size:13px;line-height:1;padding:3px 7px;border-radius:9px;border:1px solid #3a3f48;color:var(--faint);white-space:nowrap}
+#lock:hover{border-color:var(--amber);color:var(--amber)}
+#lock.on{border-color:var(--amber);color:var(--amber);background:rgba(240,170,60,.12)}
+#lock + .x{margin-left:8px}
+#head .x:hover{color:var(--ink)}
+
+#main{overflow-wrap:anywhere;position:relative;font-size:20px;font-weight:700;line-height:1.25;min-height:25px;color:#ffc35a}
+body.done #main,body.idle #main{color:var(--ink)}
+#main span{display:block}
+#main span.out{position:absolute;left:0;right:0;top:0;animation:out .35s forwards}
+#main span.in{animation:in .4s ease-out}
+@keyframes out{to{opacity:0;transform:translateY(-10px)}}
+@keyframes in{from{opacity:0;transform:translateY(10px)}}
+#hands{font-size:13px;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hands:empty{display:none}
+#peek{display:none;margin-top:9px;max-width:100%;max-height:170px;border-radius:9px;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--c) 55%,transparent),0 6px 16px rgba(0,0,0,.5);animation:in .4s ease-out}
+body.working #peek.on{display:block}
+
+#plan{margin-top:11px}
+#plan:empty{display:none}
+#plan .bars{display:flex;gap:4px}
+#plan .bars i{flex:1;height:4px;border-radius:2px;background:#2b3038;position:relative;overflow:hidden}
+#plan .bars i.did{background:color-mix(in srgb,var(--c) 70%,#000)}
+#plan .bars i.now{background:#3a3020}
+#plan .bars i.now::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,var(--amber),transparent);animation:sweep 1.6s ease-in-out infinite}
+body.done #plan .bars i{background:var(--green)}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+#plan .what{font-size:13.5px;color:var(--dim);margin-top:6px}
+#plan .what b{color:var(--ink);font-weight:600}
+
+#reply{overflow-wrap:anywhere;font-size:15.5px;line-height:1.5;color:#e6e6e3;margin-top:4px;white-space:pre-wrap;
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+#reply:empty{display:none}
+#reply b{color:var(--ink)}
+#reply code{font:13.5px Consolas,monospace;background:#23272f;padding:0 4px;border-radius:4px}
+body.all #reply{display:block;-webkit-line-clamp:unset;max-height:430px;overflow-y:auto;padding-right:6px;cursor:auto;user-select:text}
+#reply::-webkit-scrollbar{width:6px}#reply::-webkit-scrollbar-thumb{background:#333a44;border-radius:3px}
+#more{display:none;margin-top:6px;font-size:13px;color:var(--green);cursor:pointer}
+#more.show{display:inline-block}
+#more:hover{text-decoration:underline}
+
+/* his tools, folded in from the puck (Nov 13) */
+#card{flex-wrap:wrap}
+#tools{display:none;flex-basis:100%;gap:5px;align-items:center;padding-top:10px;margin-top:2px;border-top:1px solid #2a2e36;cursor:default}
+body.tools #tools{display:flex}
+body.collapsed.tools #card{padding:10px 12px 10px 10px;border-color:color-mix(in srgb,var(--c) 85%,#000);background:linear-gradient(180deg,#1a1d23,#111317);
+  box-shadow:0 0 22px color-mix(in srgb,var(--c) 30%,transparent),0 12px 34px rgba(0,0,0,.7);gap:12px;flex-wrap:nowrap;align-items:center}
+body.collapsed.tools #tools{flex-basis:auto;border-top:none;padding-top:0;margin:0;display:grid;grid-template-columns:repeat(7,36px);gap:5px}
+#tools button{width:36px;height:36px;flex:none;border-radius:10px;border:1.5px solid transparent;background:#22262e;color:var(--ink);font:17px/1 "Segoe UI Symbol","Segoe UI";cursor:pointer;padding:0;position:relative}
+#tools button:hover{background:#2c313b;border-color:#3a404b}
+#tools button.on{border-color:var(--his);color:var(--his);background:#17222b;box-shadow:0 0 0 2px color-mix(in srgb,var(--his) 25%,transparent)}
+#tools .gap{width:6px;flex:none}
+body.collapsed #tools .gap{display:none}
+#t-color i{display:block;width:16px;height:16px;margin:auto;border-radius:50%;background:var(--his);box-shadow:0 0 0 2px #0b0c0e}
+#t-send{width:52px!important;background:var(--amber)!important;color:#15171c!important;font-weight:800!important;font-size:19px!important}
+body.collapsed #t-send{width:36px!important}
+#t-send:hover{filter:brightness(1.1)}
+#t-send b{position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 4px;border-radius:10px;background:var(--his);color:#0d1116;font:800 11px/19px "Segoe UI";display:none}
+#t-send b.n{display:block}
+#t-keys.on{border-color:var(--amber);color:var(--amber);background:#2a2214;box-shadow:none}
+/* nobody listening: say so, loud (the puck used to) */
+body.idle.tools{--c:var(--amber)} body.idle.tools #face img{filter:none}
+body.off,body.off.tools{--c:#ff5a5a}
+body.off #pill{border-color:#ff5a5a}
+body.off #face img{filter:grayscale(1) brightness(.75)}
+#you{margin-top:10px;padding-top:8px;border-top:1px solid #2a2e36;font-size:13px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#you:empty{display:none}
+#you em{color:var(--his);font-style:normal}
+/* smaller (Nov 13, his note) */
+#card{padding:11px 16px 11px 11px;gap:12px;border-radius:18px}
+#face{width:72px;height:72px}
+body.collapsed #face{width:54px;height:54px}
+#face .badge{width:20px;height:20px;font-size:13px;line-height:20px;right:0;bottom:0}
+#talk{width:340px}
+#who{font-size:17px}
+#main{font-size:17px;line-height:1.25}
+#reply{font-size:14.5px}
+#tools{gap:3px;padding-top:8px}
+#tools button{width:30px;height:30px;font-size:15px;border-radius:8px}
+#t-send{width:44px!important;font-size:17px!important}
+body.collapsed.tools #tools{grid-template-columns:repeat(7,30px);gap:4px}
+body.collapsed #t-send{width:30px!important}
+#tools .gap{width:5px}
+body:not(.collapsed) #card{width:512px}
+#talk{width:auto;flex:1;min-width:0}
+#tools{gap:2px}
+body.collapsed.done #talk{flex:none}
+#peek{max-height:120px}
+/* done, his pick C: the card turns a glowing green and says Done big, so he knows to swap to chat */
+body.done #card{border-width:3px;border-color:var(--green);background:linear-gradient(180deg,#14261a,#0f1a13);animation:donepulse 2.4s ease-in-out infinite}
+@keyframes donepulse{0%,100%{box-shadow:0 0 18px rgba(63,185,80,.35),0 12px 34px rgba(0,0,0,.7)}50%{box-shadow:0 0 44px rgba(63,185,80,.75),0 12px 34px rgba(0,0,0,.7)}}
+body.done #main{color:var(--green);font-size:30px;font-weight:800;letter-spacing:.3px;line-height:1.1}
+body.done #plan,body.done #you,body.done #hands{display:none}
+body.done #reply{-webkit-line-clamp:2;color:#cfe9d4}
+body.done #pill{border-color:var(--green);color:#bff0c8}
+body.done #face .badge{width:26px;height:26px;font-size:16px;line-height:26px}
+body.done #tools{border-top-color:#24402c}
+body.done.collapsed.tools #card{border-color:var(--green)}
+body.off #pill::before{background:#ff5a5a!important;box-shadow:none!important}
+</style>
+<div id="root"><div id="card">
+  <div id="face" title="{{NAME}}"><div id="halo"></div><div id="ring"></div><img src="{{FACE}}" alt=""><div class="badge">✓</div></div>
+  <div id="talk">
+    <div id="head"><span id="who">{{NAME}}</span><span id="pill"><span id="state">Here</span><span id="time"></span></span><span id="lock" title="Follows you between screens. Click to lock it here.">🔓 Follows you</span><span class="x" id="fold" title="fold to just my face">–</span></div>
+    <div id="main"><span>Hi buddy</span></div>
+    <div id="hands"></div>
+    <img id="peek" alt="">
+    <div id="reply"></div>
+    <span id="more">Read all</span>
+    <div id="plan"></div>
+    <div id="you"></div>
+  </div>
+  <div id="tools">
+    <button data-m="pen" data-tip="Pen · Alt+R">✎</button><button data-m="box" data-tip="Box: I read everything inside · Alt+S">▭</button><button data-m="ellipse" data-tip="Circle · Alt+D">◯</button><button data-m="hl" data-tip="Highlighter: exactly these words · Alt+F">▍</button><button data-m="arrow" data-tip="Arrow: this goes there · Alt+V">↗</button><button data-m="step" data-tip="Numbered steps: in this order">①</button><button data-m="hide" data-tip="Hide: blacked out of every picture I get">▦</button><button data-m="note" data-tip="Text box where you click · Alt+A">T</button>
+    <span class="gap"></span>
+    <button id="t-color" data-tip="Color · Alt+C (blue this · red cut · green keep · yellow look)"><i></i></button><button id="t-undo" data-tip="Undo your last mark · Alt+W">↶</button><button id="t-keys" data-tip="Show the keys · Alt+K">⌨</button><button id="t-den" data-tip="This screen to the Den">⤓</button><button id="t-clear" data-tip="Clear the glass · Alt+E">⌫</button>
+    <span class="gap"></span>
+    <button id="t-send" data-tip="Send to {{NAME}} · Alt+Q · nothing marked = look with me">➤<b></b></button>
+  </div>
+</div></div>
+<script>
+const $ = s => document.querySelector(s);
+let P = null, kind = '', folded = false, auto = false, said = '', lastSize = '';
+const esc = s => String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+// My reply, readable: bold and code kept, links to their words, headings and fences dropped.
+const md = s => esc(s).replace(/```\w*\n?/g, '').replace(/^#+\s*/gm, '').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+  .replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^\s*[-*] /gm, '• ').replace(/\n{3,}/g, '\n\n');
+const ago = ms => { const s = ms / 1000; return s < 45 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min' + (kind === 'done' ? ' ago' : '') : Math.round(s / 3600) + ' h' + (kind === 'done' ? ' ago' : ''); };
+
+function kindOf(p) {
+  if (!p) return 'idle';
+  const age = Date.now() - new Date(p.at);
+  if (p.state === 'working') return age < 15 * 60e3 ? 'working' : 'idle';
+  if (p.state === 'done') return age < 30 * 60e3 ? 'done' : 'idle';
+  return age < 3 * 60e3 ? 'working' : 'idle';
+}
+function sayMain(text) {
+  const m = $('#main'), cur = m.querySelector('span:not(.out)');
+  if (cur && cur.textContent === text) return;
+  m.querySelectorAll('.out').forEach(e => e.remove());
+  if (cur) { cur.className = 'out'; setTimeout(() => cur.remove(), 360); }
+  const n = document.createElement('span'); n.className = 'in'; n.textContent = text; m.append(n);
+}
+function render() {
+  const k = kindOf(P), was = kind; kind = k;
+  document.body.className = [k, folded ? 'collapsed' : '', document.body.classList.contains('all') && k === 'done' ? 'all' : '', T.on ? 'tools' : '', T.on && T.link === 'off' ? 'off' : ''].filter(Boolean).join(' ');
+  if (k === 'done' && was === 'working') { $('#root').classList.add('bloom'); setTimeout(() => $('#root').classList.remove('bloom'), 1200); }
+  // When there's nothing going on I tuck down to my face; when something starts I open up again (unless he folded me).
+  if (k === 'idle' && was !== 'idle' && !folded) { folded = true; auto = true; } // only as work stops, so he (or arrive) can open it while quiet
+  if (k !== 'idle' && folded && auto) { folded = false; auto = false; }
+  document.body.classList.toggle('collapsed', folded);
+  const p = P || {};
+  $('#state').textContent = T.on && T.link === 'off' ? 'Not connected' : k === 'working' ? 'Working' : k === 'done' ? 'Done' : T.on ? 'Listening' : 'Here';
+  $('#time').textContent = k === 'working' ? '· ' + ago(Date.now() - new Date(p.since || p.at)) : k === 'done' ? '· ' + ago(Date.now() - new Date(p.at)) : '';
+  if (k === 'working') sayMain(p.say || p.doing || 'Working');
+  else if (k === 'done') sayMain('✓ Done');
+  else sayMain(p.state === 'done' ? 'Here when you need me' : 'Hi buddy');
+  $('#hands').textContent = k === 'working' && p.say && p.doing && p.doing !== p.say && p.doing !== 'Working' ? p.doing.charAt(0).toLowerCase() + p.doing.slice(1) : '';
+  const pk = $('#peek'), want = k === 'working' && p.peek ? p.peek : '';
+  if (pk.dataset.src !== want) { pk.dataset.src = want; if (want) pk.src = want; pk.classList.toggle('on', !!want); }
+  // my reply, when I'm done
+  const r = k === 'done' ? (p.said || '') : '';
+  if (r !== said) { said = r; $('#reply').innerHTML = md(r); document.body.classList.remove('all'); }
+  requestAnimationFrame(() => { const el = $('#reply'); $('#more').classList.toggle('show', k === 'done' && (el.scrollHeight > el.clientHeight + 2 || document.body.classList.contains('all'))); $('#more').textContent = document.body.classList.contains('all') ? 'Show less' : 'Read all'; size(); });
+  // the parts of the job, and which one we're on
+  const plan = $('#plan');
+  if (p.plan?.length && k !== 'idle') {
+    const at = Math.min(p.step || 1, p.plan.length + 1);
+    plan.innerHTML = '<div class="bars">' + p.plan.map((_, i) => `<i class="${i + 1 < at ? 'did' : i + 1 === at && k === 'working' ? 'now' : ''}"></i>`).join('') + '</div>'
+      + `<div class="what">${k === 'done' || at > p.plan.length ? `All ${p.plan.length} parts done` : `Part ${at} of ${p.plan.length} · <b>${esc(p.plan[at - 1])}</b>`}</div>`;
+  } else plan.innerHTML = '';
+  $('#you').innerHTML = p.asked && k !== 'idle' ? `You asked: <em>${esc(p.asked)}</em>` : '';
+  size();
+}
+function size() { const r = $('#root').getBoundingClientRect(), s = Math.ceil(r.width) + 'x' + Math.ceil(r.height); rects(); if (s === lastSize) return; lastSize = s; host.size(Math.ceil(r.width), Math.ceil(r.height)); }
+// The mouse is mine only over my face and the bubble: main checks his real cursor against these shapes.
+let lastRects = '';
+function rects() { const r = [...document.querySelectorAll(document.body.classList.contains('collapsed') && !T.on ? '#face' : '#card')].map(e => e.getBoundingClientRect()).filter(b => b.width).map(b => [Math.floor(b.left), Math.floor(b.top), Math.ceil(b.right), Math.ceil(b.bottom)]); const s = JSON.stringify(r); if (s !== lastRects) { lastRects = s; host.rects(r); } }
+window.feed = p => { P = p; render(); };
+// His tools (folded in from the puck). Main tells me his tool, color, how many marks wait, and whether I'm listening.
+const T = { on: false, mode: 'off', color: 'blue', pending: 0, link: 'on', legend: false };
+const HEX = { blue: '#6cc6ff', red: '#ff5a5a', green: '#3fb950', yellow: '#ffe14d' }, ORDER = ['blue', 'red', 'green', 'yellow'];
+function paintTools() {
+  document.querySelectorAll('#tools [data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === T.mode));
+  document.documentElement.style.setProperty('--his', HEX[T.color] || HEX.blue);
+  const n = $('#t-send b'); n.textContent = T.pending; n.classList.toggle('n', T.pending > 0);
+  $('#t-keys').classList.toggle('on', T.legend);
+}
+if (window.host && host.on) {
+  host.on('tools', v => { T.on = !!v.on; const d = document.getElementById('t-den'); if (d) d.style.display = v.den ? '' : 'none'; render(); });
+  host.on('mode', m => { T.mode = m; paintTools(); });
+  host.on('style', s => { T.color = s.color || 'blue'; paintTools(); });
+  host.on('pending', n => { T.pending = n; paintTools(); });
+  host.on('link', s => { const was = T.link; T.link = s.state; if (was !== T.link) render(); });
+  host.on('legend', on => { T.legend = on; paintTools(); });
+}
+document.querySelectorAll('#tools [data-m]').forEach(b => b.onclick = () => host.mode(T.mode === b.dataset.m ? 'off' : b.dataset.m));
+$('#t-color').onclick = () => { host.style({ color: ORDER[(ORDER.indexOf(T.color) + 1) % 4] }); if (T.mode === 'off') host.mode('pen'); };
+$('#t-undo').onclick = () => host.undo();
+$('#t-keys').onclick = () => host.keys();
+$('#t-den').onclick = () => host.drop('From the glass');
+$('#t-clear').onclick = () => host.clear();
+$('#t-send').onclick = () => host.send();
+document.querySelectorAll('#tools [data-tip]').forEach(b => b.title = b.dataset.tip);
+paintTools();
+// I bring it to him: it opens up (even if he folded it) and the ring blooms once as it lands.
+window.arrive = () => { folded = false; auto = false; render(); const r = document.getElementById('root'); r.classList.remove('bloom'); void r.offsetWidth; r.classList.add('bloom'); setTimeout(() => r.classList.remove('bloom'), 1200); };
+setInterval(render, 20e3);
+
+// He moves me by grabbing my face or the bubble (main follows his real cursor); a click on my face folds or opens me.
+let grab = null, moved = false;
+const letGo = () => { if (!grab) return; if (moved) host.drag('end'); grab = null; document.body.classList.remove('lifted'); document.body.style.cursor = ''; };
+document.addEventListener('pointerdown', e => {
+  if (e.button !== 0 || e.target.closest('#more,#fold,#lock,#tools') || (document.body.classList.contains('all') && e.target.closest('#reply'))) return;
+  grab = { x: e.screenX, y: e.screenY, id: e.pointerId, onFace: !!e.target.closest('#face') }; moved = false;
+  try { document.documentElement.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener('pointermove', e => {
+  if (!grab || moved) return;
+  if (Math.hypot(e.screenX - grab.x, e.screenY - grab.y) > 3) { moved = true; host.drag('start', grab.x, grab.y); document.body.classList.add('lifted'); document.body.style.cursor = 'grabbing'; }
+});
+document.addEventListener('pointerup', () => {
+  if (!grab) return;
+  if (!moved && grab.onFace) { folded = !folded; auto = false; render(); }
+  letGo();
+});
+document.documentElement.addEventListener('lostpointercapture', letGo);
+document.addEventListener('pointercancel', letGo);
+window.addEventListener('blur', letGo);
+$('#fold').onclick = () => { folded = true; auto = false; render(); };
+let locked = false;
+const paintLock = () => { const l = $('#lock'); l.classList.toggle('on', locked); l.textContent = locked ? '🔒 Stays here' : '🔓 Follows you'; l.title = locked ? 'Locked: it stays on this screen. Click to let it follow you.' : 'Follows you between screens. Click to lock it here.'; };
+$('#lock').onclick = () => { locked = !locked; paintLock(); host.lock(locked); };
+if (window.host && host.on) host.on('lock', v => { locked = !!v; paintLock(); });
+$('#more').onclick = () => { document.body.classList.toggle('all'); render(); };
+// The shapes main checks his cursor against must match what he sees. The bubble grows and slides with CSS, so a
+// measure taken mid-animation missed its bottom row (Read all) and his click fell through. Re-measure on every real change.
+new ResizeObserver(() => size()).observe($('#card'));
+$('#peek').onload = () => size();
+new ResizeObserver(() => rects()).observe($('#face'));
+['transitionend','animationend'].forEach(t => document.addEventListener(t, () => rects()));
+setInterval(rects, 500);
+render();
+</script>
