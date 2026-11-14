@@ -15,7 +15,7 @@
 //   node tools/glass.js find "phrase" [screen]          where those words are on their screen
 //   node tools/glass.js mark "phrase" ["note"] [--as box|underline]   mark by meaning: find the words and mark them
 //   node tools/glass.js status <#> working|done|you|clear ["words"]   where I am with their mark, shown on it
-//   node tools/glass.js point-at "name" ["note"] [--app x]   "click here": a ring on the real button/link/field, found by name
+//   node tools/glass.js point-at "name" ["note"] [--app x] [--screen main|second]   "click here": a ring on the real button/link/field, found by name
 //   node tools/glass.js steps "name|note" "name|note" ...      a walkthrough: ring, wait for their click there, next
 //   node tools/glass.js propose <#|"phrase"> "new text" [--file f --old "exact text in f"]   my version over it, Keep/Drop
 //   node tools/glass.js watch <#|"phrase"|x1 y1 x2 y2> [--label t] [--every 60] [--above N|--below N]   ping on change
@@ -146,15 +146,19 @@ function locate(name, app = '', hides = []) {
 }
 // Between real pixels and the glass's units; an older glass without /convert means 100%, so points pass through.
 const convert = async (to, points) => (await call('/convert', { to, points }).catch(() => ({ points }))).points;
-async function locateAny(name, app) {
+async function locateAny(name, app, scr = 'all') {
   const hides = (await call('/hides').catch(() => ({ hides: [] }))).hides || [];
+  // --screen main|second: only a hit on that screen counts (names like Search or Back are on both; a stranger test rang the wrong one)
+  let area = null;
+  if (scr !== 'all') { const st = await call('/state').catch(() => null), d = st && st.displays.find(d => (d.primary ? 'main' : 'second') === scr); if (d) area = d.bounds; }
+  const onArea = r => !area || ((r.x1 + r.x2) / 2 >= area.x && (r.x1 + r.x2) / 2 < area.x + area.width && (r.y1 + r.y2) / 2 >= area.y && (r.y1 + r.y2) / 2 < area.y + area.height);
   let u = locate(name, app, []);
   if (u) { // real pixels -> the glass's units, then drop anything inside a hidden area
     const [[x1, y1], [x2, y2]] = await convert('dip', [[u.x1, u.y1], [u.x2, u.y2]]);
     u = { ...u, x1, y1, x2, y2 };
-    if (!hides.some(b => u.x1 < b.x2 && u.x2 > b.x1 && u.y1 < b.y2 && u.y2 > b.y1)) return hides.length ? { ...u, how: u.how.replace(/ in .*$/, '') } : u;
+    if (onArea(u) && !hides.some(b => u.x1 < b.x2 && u.x2 > b.x1 && u.y1 < b.y2 && u.y2 > b.y1)) return hides.length ? { ...u, how: u.how.replace(/ in .*$/, '') } : u;
   }
-  const hits = findPhrase(await cleanWords(), name);
+  const hits = findPhrase(await cleanWords(scr), name);
   if (!hits.length) return null;
   const h = hits[0];
   return { ...h, how: `the words "${h.text}" on screen` + (h.exact ? '' : ` (only close to "${name}", not exact: check the shot)`) };
@@ -360,7 +364,7 @@ try {
     }
     case 'point-at': {
       // "Click here": a ring on the real button, found by its name.
-      const app = flag('app', ''), r = await locateAny(a[0] || '', app);
+      const app = flag('app', ''), scr = flag('screen', 'all'), r = await locateAny(a[0] || '', app, scr);
       if (!r) { console.log(`couldn't find "${a[0]}" on their screen`); process.exit(1); }
       const j = await call('/do', { op: 'ring', x1: r.x1, y1: r.y1, x2: r.x2, y2: r.y2, note: a[1] });
       console.log(`ringed ${r.how} at ${r.x1},${r.y1} (#${j.id})`);

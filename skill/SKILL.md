@@ -31,7 +31,7 @@ Your face and what you're doing, on their screen, so they keep working and never
 ## What we learned the hard way
 - Answer beside their mark, within seconds. A silent mark feels broken.
 - After any change they can see, bring the changed part into view and mark it with what changed.
-- One thing, one window: keep updating the window you opened, close what you opened. In a shared workspace, a draft is one item with versions.
+- One thing, one window: keep updating the window you opened, and close it (its close button) once they are done with it, not right after you show it. In a shared workspace, a draft is one item with versions.
 - Nothing fires without their send.
 - Take a `shot` and look before saying it worked.
 - Go first when you know what they're after; on ➤ with nothing marked, find the thing and light it up.
