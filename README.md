@@ -130,9 +130,13 @@ Tap a tool's key again to put it down. **The key list is part of the puck.** Hov
 
 ## Try it: point your AI at it
 
-Open this folder in Claude Code (the Claude desktop app's Code tab works well) and say:
+Paste this to your Claude, in the Claude app's Code tab:
 
-> Read CLAUDE.md and start the glass for me.
+> Set up the glass for me from https://github.com/HunterBryson/the-glass. Read its CLAUDE.md there first, then follow it. If anything asks for permission along the way, it's fine.
+
+Your AI clones it, installs it, fits it to your screen, and shows you around by going first. Windows, with [Node](https://nodejs.org) and [Claude Code](https://claude.com/claude-code). It downloads about 100 MB.
+
+Already have the folder? Open it in Claude Code and say "Read CLAUDE.md and start the glass for me."
 
 [CLAUDE.md](CLAUDE.md) teaches the AI its side: how to start the glass, fit it to your screen, wait for your sends without spending a turn, answer beside your marks, and show you around by going first. You use the puck.
 
