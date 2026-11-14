@@ -131,8 +131,6 @@ Every tool is also a key, all under your left hand: hold **Alt** with your thumb
 
 Tap a tool's key again to put it down. **The key list is part of the puck.** Hover the round face and your tools and your keys open together; move away and it folds back to just the face, so it's there when you want it and gone when you don't. It lights whichever tool is on and shows your pen's color. Alt+K keeps it up while you're still learning the keys.
 
-These came from me using it. The first layout was Alt+1 through Alt+5, and I said: "alt+5 is impossible... alt +4 is unreliable. Alt + 1-3 is alright even though its a stretch." So everything moved onto the home row. Later I took Alt+A for the text box, because I use notes all the time and the pen hardly ever, and the pen moved to Alt+R. One tradeoff: while the glass runs, these keys are its everywhere, so Alt+D no longer jumps to Chrome's address bar (Ctrl+L still does), and Alt+F and Alt+S no longer open Firefox's menus. To move a key, change `KEYS` in `glass/main.js`; the list redraws itself from it.
-<br clear="right">
 
 ## Try it: point your AI at it
 
