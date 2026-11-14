@@ -40,6 +40,7 @@ if (has('--remove')) {
   dropBubble(s);
   if (s.permissions?.allow) s.permissions.allow = s.permissions.allow.filter(r => !rules.includes(r));
   if (s.env?.GLASS_PORT) delete s.env.GLASS_PORT;
+  if (s.env?.GLASS_NAME) delete s.env.GLASS_NAME;
   writeSettings(s);
   console.log("Removed the glass skill, its start-of-chat note, the bubble's hooks and its allow rules.");
   process.exit(0);
@@ -61,6 +62,7 @@ if (has('--hook') || has('--allow')) {
     console.log("The bubble now hears every chat: amber when a message comes in, what the AI is doing as it works, green with its reply when it's done.");
   }
   if (process.env.GLASS_PORT) { s.env ??= {}; s.env.GLASS_PORT = process.env.GLASS_PORT; console.log(`Every chat now uses this glass's port, ${process.env.GLASS_PORT}.`); }
+  if (process.env.GLASS_NAME) { s.env ??= {}; s.env.GLASS_NAME = process.env.GLASS_NAME; console.log(`The card now says ${process.env.GLASS_NAME}; restart the glass to see it.`); }
   if (has('--allow')) {
     s.permissions ??= {}; s.permissions.allow ??= [];
     for (const r of rules) if (!s.permissions.allow.includes(r)) s.permissions.allow.push(r);

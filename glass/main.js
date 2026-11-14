@@ -331,7 +331,7 @@ function retop() {
 }
 setInterval(retop, 3000);
 const MIRROR_AT = path.join(DATA, 'mirror.json'), MIRROR_STATE = path.join(DATA, 'mirror-state.json');
-try { mstate = JSON.parse(fs.readFileSync(MIRROR_STATE, 'utf8')); } catch {}
+try { mstate = JSON.parse(fs.readFileSync(MIRROR_STATE, 'utf8')); if (mstate) delete mstate.sid; } catch {} // a saved card belongs to no chat: the next chat to speak claims it
 function buildMirror() {
   const b = screen.getPrimaryDisplay().workArea;
   let at = { x: b.x + b.width - 480, y: b.y + b.height - 430 };
@@ -358,7 +358,7 @@ function mirrorSet(b = {}) {
   const state = b.state === 'done' ? 'done' : 'working';
   const p = { state, at: new Date().toISOString() };
   const carry = !b.fresh && (prev?.state === 'working' || (state === 'done' && prev?.state !== 'done'));
-  p.sid = b.fresh ? b.sid || undefined : prev?.sid;
+  p.sid = b.fresh ? b.sid || undefined : prev?.sid || b.sid || undefined;
   p.since = carry && prev?.since ? prev.since : p.at;
   p.asked = b.asked != null ? clip(one(b.asked), 300) || undefined : (carry || state === 'done' ? prev?.asked : undefined);
   p.doing = clip(one(b.doing), 200) || (carry && state === 'working' ? prev?.doing : '') || (state === 'done' ? 'Done' : 'Working');

@@ -34,24 +34,12 @@ Red with "Not connected" means no chat is listening right now; anything you send
 
 **Your AI answers right where you're looking,** beside each mark, in a speech balloon whose tail points at it. No more screenshots, no more "the third paragraph down, on the left." The mark says *where*, your words say *what*, and the AI gets both at once.
 
-**v1** (November 7): the first time we did this, on our letter.
-
-![v1: the AI's amber answer cards beside each of my notes](docs/3-odie-answers.png)
-
-**v2** (November 10): the same marks, the same jokes, in the new cards. Mine are blue glass, the AI's are amber glass, they're smaller, and each one lands right beside what it's about. We'll add a picture like this for every big look upgrade.
-
-![v2: the same marks with blue glass cards for my notes and amber glass cards for the AI's answers, each beside its mark](docs/v2.png)
-
-**v3** (November 12): speech balloons. Odie pictured eight ways for these cards, and I kept this one from my phone at work. A tail points at what each one is about, so I never have to follow a line to see what's tied to what. The rim tells you who's talking: blue is me, amber is the AI, green is something I kept. My first real test was a stock screener I didn't understand. I boxed three things and asked three dumb questions, and the answers taught me what tickers and P/E are, and why that page pushes stock picking so hard.
-
-![v3: a stock screener with my three questions in blue balloons and the AI's answers in amber balloons, each tail pointing at what it's about](docs/v3.png)
-
-**v4** (November 14): the puck is gone. I lost it all the time and could never find it, so all my tools moved into the AI's card, the one that shows what it's doing. The puck and the bubble being meshed together is actually what it should be: one card that's my tools and my AI at the same time, so I can work on the glass and not need the chat. Its own section is below.
-
 **You keep the conversation going on the spot.** Every answer has ✎ Reply. Click it, add your next thought, and the thread grows right there beside the mark you started from.
 
 
 ## Things I use it for
+
+**Looking at something together.** This is the one I use most. I'm on a long page (a settings screen, a doc, a dashboard) and I press Alt+Q with nothing marked. That means "look at what I'm looking at." My AI already knows what we're working on, so I don't explain anything. It finds the part that matters, lights it up, and puts a note beside it.
 
 **Writing together.** Box a paragraph, say what's wrong with it, press ➤. The AI's version shows up clean beside your box. Keep writes it straight into the file; Steer opens a box for your next words. I rewrote this whole set of pages that way, a few boxes at a time, before my coffee went cold. Here's one, start to finish:
 
@@ -67,9 +55,11 @@ Red with "Not connected" means no chat is listening right now; anything you send
 
 ![GE's support page on microwaves and extension cords, the key paragraph boxed in amber with Odie's note ("So no, not the orange one from the garage"), the fine print underlined, and the card in the corner saying Done](docs/source-microwave.png)
 
-**Getting walked through something.** When I don't know where a setting lives, the AI rings the real button on my screen and waits for my click, one step at a time.
+**Asking dumb questions.** I pulled up a stock screener I didn't understand, boxed three things and asked three dumb questions. The answers taught me what tickers and P/E are, and why that page pushes stock picking so hard.
 
-**Looking after my AI's memory.** With [Homebase](https://github.com/HunterBryson/the-homebase) on screen, I box a line of my AI's memory, say "this is old," and watch it get fixed.
+![A stock screener with my three questions in blue balloons and the AI's answers in amber balloons, each tail pointing at what it's about](docs/v3.png)
+
+**Getting walked through something.** When I don't know where a setting lives, the AI rings the real button on my screen and waits for my click, one step at a time.
 
 **Keeping an eye on something.** The AI can watch a spot on my screen (a number, a status) and tell me when it changes.
 
@@ -77,6 +67,15 @@ Red with "Not connected" means no chat is listening right now; anything you send
 
 This is the part I didn't expect to love most. The AI doesn't wait to be asked to show you something: it circles the thing it's talking about, rings the button you need, and puts a note beside the line it means. It catches me, too. Once I told it I'd finished a step and then clicked the wrong button. It scrolled up, circled the right one, and wrote me a note explaining why. Another time we were setting up a GitHub account for someone else. It did every part of the setup it could, then needed a code that got sent to my email. It opened the page, drew a box around the spot where the code goes, and tied a note to it: where we were, that it had already copied the code I needed, and that all I had to do was paste it into the box it drew.
 
+
+## It plugs into everything
+
+The glass is how I work with my AI on anything on my screen, so it's the start of everything else I build. Each of my other builds works on its own, and each one gets better with the glass on top:
+
+- **[The shelves](https://github.com/HunterBryson/the-shelves):** a memory for your AI. The glass brings its own block for it, with how to care about working on your screen and room for what your AI learns about you there, so the next chat already knows how you work. No memory? The glass works fine without one.
+- **[The Den](https://github.com/HunterBryson/the-den):** a table my AI and I share. Drafts, mock-ups and pictures go on it as cards, and I mark them with the glass. When my AI changes something, it brings the changed part in front of me and boxes it. This README was written that way.
+- **[UI Taste](https://github.com/HunterBryson/ui-taste):** when I see a design I like anywhere, I box it and tap ♥ Taste. It goes in my folder, and my AI learns what I mean by "I like this."
+- **[Homebase](https://github.com/HunterBryson/the-homebase):** my AI's memory as a web I can see. I box a line of it, say "this is old," and watch it get fixed.
 
 ## How it works
 
@@ -123,26 +122,13 @@ When you finish a mark, a note box opens beside it. Type what you mean (or dicta
 
 ### Your keys: one hand, thumb on Alt
 
-<img src="docs/keys.png" alt="The key list: hold Alt, then A text box, R pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send, E clear glass, K keep this list up. The tool that's on is lit." width="240" align="right">
+![The card in the bottom corner with the key list popped out beside it: hold Alt, then A text box, R pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send (nothing marked = look with me), E clear glass, K keep this list up. The tool that is on is lit.](docs/card-keys.png)
 
-Every tool is also a key, all under your left hand: hold **Alt** with your thumb and tap the letter. They work from any app, and the glass never takes your keyboard to do it.
+Every tool is also a key, all under your left hand: hold **Alt** with your thumb and tap the letter. They work from any app, and the glass never takes your keyboard to do it. Tap a tool's key again to put it down.
 
-| Alt + | does |
-|---|---|
-| **A** | text box (a note anywhere) |
-| **R** | pen |
-| **S** | box |
-| **D** | circle |
-| **F** | highlighter |
-| **V** | arrow |
-| **X** | tool off (your clicks go back to your apps) |
-| **C** | color: blue → red → green → yellow |
-| **W** | undo |
-| **Q** | send ➤ (with nothing marked: "look at what I'm looking at") |
-| **E** | clear the glass |
-| **K** | keep the key list up |
+**This is what you see when you press ⌨ on the card** (or Alt+K): the key list pops out right beside it, lights whichever tool is on, and shows your pen's color. Keep it up while you're learning, and put it away when you're not.
 
-Tap a tool's key again to put it down. **⌨ on the card pops the key list out beside it** (Alt+K does the same), so it's there while you're still learning and gone when you're not. It lights whichever tool is on and shows your pen's color.
+**Alt+Q is the one to remember.** It sends everything you've marked, and with nothing marked it means "look at what I'm looking at."
 
 
 ## Try it: point your AI at it
@@ -159,7 +145,7 @@ Already have the folder? Open it in Claude Code and say "Read CLAUDE.md and star
 
 **Your AI starts with everything Odie and I learned the hard way.** Answer where you're looking, put every change right in front of you, keep one window per thing instead of flooding your screen, never fire without your send, look before saying it worked. It works the same whether or not you use any of my other builds; if you do (the Den, UI Taste, Homebase), your AI uses them as the place things land.
 
-**Every chat, not just the first one.** Most of us don't talk to our AI from inside this folder, and a chat somewhere else never hears about the glass, so nothing listens when you press ➤. The first real install hit exactly this. So setup asks you once whether to make the glass part of every chat. Say yes, and the AI runs `npm run skill -- --hook --allow`: a small skill with its moves, plus a note at the start of every new chat that says the glass is running and to start watching. `npm run skill -- --remove` takes it all back out.
+**Every chat, not just the first one.** Most of us don't talk to our AI from inside this folder, and a chat somewhere else never hears about the glass, so nothing listens when you press ➤. So setup asks you once whether to make the glass part of every chat. Say yes, and the AI runs `npm run skill -- --hook --allow`: a small skill with its moves, plus a note at the start of every new chat that says the glass is running and to start watching. `npm run skill -- --remove` takes it all back out.
 
 ### By hand
 
@@ -196,6 +182,22 @@ Three parts were wired to our own setup. They're off here, and the glass works w
 - **🎙 Talk into a note.** Ours ran through a local speech model trained on my voice. Set `GLASS_EAR_DIR` to a folder with a `.venv` and a `dump_transcribe.py` that prints `{"ok": true, "text": "..."}` for an audio file. Without it, Windows dictation (Win+H) types into the note box just as well.
 
 `GLASS_NAME` sets the AI's name on the card and its answers (default "Claude"). `GLASS_PORT` changes the local port (default 7931). The face on the card and the AI's answers is Odie's; swap `glass/odie.png` for your own and restart the glass.
+
+## How it got here
+
+The glass has changed a lot in its first week. Here's a picture for every big look upgrade.
+
+**v1** (November 7): the first time we did this, on our letter.
+
+![v1: the AI's amber answer cards beside each of my notes](docs/3-odie-answers.png)
+
+**v2** (November 10): the same marks, the same jokes, in the new cards. Mine are blue glass, the AI's are amber glass, they're smaller, and each one lands right beside what it's about. We'll add a picture like this for every big look upgrade.
+
+![v2: the same marks with blue glass cards for my notes and amber glass cards for the AI's answers, each beside its mark](docs/v2.png)
+
+**v3** (November 12): speech balloons. Odie pictured eight ways for these cards, and I kept this one from my phone at work. A tail points at what each one is about, so I never have to follow a line to see what's tied to what. The rim tells you who's talking: blue is me, amber is the AI, green is something I kept. The stock screener up in "Things I use it for" is v3.
+
+**v4** (November 14): the puck is gone. I lost it all the time and could never find it, so all my tools moved into the AI's card, the one that shows what it's doing. The puck and the bubble being meshed together is actually what it should be: one card that's my tools and my AI at the same time, so I can work on the glass and not need the chat. Its own section is at the top.
 
 ## Not finished
 

@@ -18,6 +18,7 @@ Every command here is the glass's command tool, run by the real Node by its full
    - Without one: run `node "{{GLASS}}" wait --min 60` as a background command. It prints one send and exits. Answer, then start it again, every time.
    While a watch runs, your card on their screen (your face, with their tools along its bottom) is amber, so they know you're there. Red with Not connected means nobody is listening. To check, run `state` again: it should say `watch: an AI is watching`.
 3. `node "{{GLASS}}" here`. **Here** means answer on the glass. **Away** means they're on their phone or gone: answer in chat.
+4. **Pull your "the glass" block** from your memory (its lens, how you work on their screen, what you've learned about them there). If your memory doesn't have one yet, read `{{TOOLS}}/../memory/the-glass.md` and give it a home (the glass's CLAUDE.md, step 7).
 
 One message, no narration. One line in chat at most: "I'm on the glass."
 
