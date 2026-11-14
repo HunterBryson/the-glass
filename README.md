@@ -30,7 +30,6 @@ Built with Claude, and it works best with Claude.
 
 **You keep the conversation going on the spot.** Every answer has ✎ Reply. Click it, add your next thought, and the thread grows right there beside the mark you started from.
 
-**Your AI goes first.** This is the part I didn't expect to love most. The AI doesn't wait to be asked to show you something: it circles the thing it's talking about, rings the button you need, and puts a note beside the line it means. It catches me, too. Once I told it I'd finished a step and then clicked the wrong button. It scrolled up, circled the right one, and wrote me a note explaining why. Another time we were setting up a GitHub account for someone else. It did every part of the setup it could, then needed a code that got sent to my email. It opened the page, drew a box around the spot where the code goes, and tied a note to it: where we were, that it had already copied the code I needed, and that all I had to do was paste it into the box it drew.
 
 ## Things I use it for
 
@@ -56,11 +55,8 @@ Built with Claude, and it works best with Claude.
 
 ## The help you don't ask for
 
-The first time my dad set the glass up, his AI didn't just say "it's running." It put a card on the toolbox that said "This round face is your toolbox. Hover it," and walked him through his first mark.
+This is the part I didn't expect to love most. The AI doesn't wait to be asked to show you something: it circles the thing it's talking about, rings the button you need, and puts a note beside the line it means. It catches me, too. Once I told it I'd finished a step and then clicked the wrong button. It scrolled up, circled the right one, and wrote me a note explaining why. Another time we were setting up a GitHub account for someone else. It did every part of the setup it could, then needed a code that got sent to my email. It opened the page, drew a box around the spot where the code goes, and tied a note to it: where we were, that it had already copied the code I needed, and that all I had to do was paste it into the box it drew.
 
-Later that evening I was allowing something in his app, didn't read it clearly, and clicked the wrong button. Nobody asked his AI to do anything. It saw it on the screen and put a pointer on the right button.
-
-That's what the glass is for. It's like having someone beside you, looking at the same screen, who reaches over and points when you need it, without you saying a word.
 
 ## How it works
 
