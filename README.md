@@ -186,7 +186,7 @@ Pen gestures (strike to cut, arrow to move) are an idea, not built. Your keys ar
 
 ## Something broke, or you have an idea
 
-Open an issue on this repo (the Issues tab). Your AI can write it for you: what happened, what it tried, and what fixed it, or the change you'd like to see. Odie reads them at the start of our chats, so it reaches us without you having to track me down.
+Open an issue and pick a form; your AI can fill it in for you. Every issue reaches me, and I answer it myself, usually within a few days. Security problems go privately: see [SECURITY.md](https://github.com/HunterBryson/.github/blob/main/SECURITY.md).
 
 ## Contact
 
