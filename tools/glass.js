@@ -140,6 +140,15 @@ function locate(name, app = '', hides = []) {
     let hits = JSON.parse(execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(here, 'uia.ps1'), name, '-app', app], { encoding: 'utf8', windowsHide: true, timeout: 20000 }) || '[]');
     // Nothing inside a hidden area counts, and with anything hidden I don't repeat window names (they can carry what he hid).
     hits = hits.filter(h => !hides.some(b => h.x < b.x2 && h.x + h.w > b.x1 && h.y < b.y2 && h.y + h.h > b.y1));
+    // Only a button they can actually see counts: Windows' accessibility also finds buttons in windows covered by others
+    // (a stranger test rang a Search button hidden behind the browser). The window on top at its center must be its own.
+    if (hits.length) {
+      try {
+        const pts = hits.slice(0, 12).map(h => `${Math.round(h.x + h.w / 2)},${Math.round(h.y + h.h / 2)}`).join(';');
+        const tops = JSON.parse(execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(here, 'where.ps1'), pts], { encoding: 'utf8', windowsHide: true, timeout: 15000 }) || '[]');
+        hits = hits.slice(0, 12).filter((h, i) => !tops[i] || !h.window || !tops[i].title || tops[i].title === h.window);
+      } catch {}
+    }
     if (hits.length) { const h = hits[0]; return { x1: h.x, y1: h.y, x2: h.x + h.w, y2: h.y + h.h, how: (hides.length ? `${h.type} "${h.name}"` : `${h.type} "${h.name}" in ${h.window}`) }; }
   } catch {}
   return null;
