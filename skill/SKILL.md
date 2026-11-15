@@ -18,7 +18,7 @@ Every command here is the glass's command tool, run by the real Node by its full
    - Without one: run `node "{{GLASS}}" wait --min 60` as a background command. It prints one send and exits. Answer, then start it again, every time.
    While a watch runs, your card on their screen (your face, with their tools along its bottom) is amber, so they know you're there. Red with Not connected means nobody is listening. To check, run `state` again: it should say `watch: an AI is watching`.
 3. `node "{{GLASS}}" here`. **Here** means answer on the glass. **Away** means they're on their phone or gone: answer in chat.
-4. **Pull your "the glass" block** from your memory (its lens, how you work on their screen, what you've learned about them there). If your memory doesn't have one yet, read `{{TOOLS}}/../memory/the-glass.md` and give it a home (the glass's CLAUDE.md, step 7).
+4. **Pull your "the glass" block** before your first answer. Its lens is why every move below matters, and it holds what you've learned about them on the glass. This skill is how; the block is why; you need both. No block in your memory yet? Read `{{TOOLS}}/../memory/the-glass.md` and give it a home (the glass's CLAUDE.md, step 7).
 
 One message, no narration. One line in chat at most: "I'm on the glass."
 
@@ -29,14 +29,10 @@ Your face and what you're doing, on their screen, so they keep working and never
 - `node "{{TOOLS}}/mirror.js" say "a sentence"`: plain words, short enough to read at a glance, never a path or a tool name.
 - `node "{{TOOLS}}/mirror.js" come` glides it onto the window they're using. Once per move of theirs.
 
-## What we learned the hard way
-- Answer beside their mark, within seconds. A silent mark feels broken.
-- After any change they can see, bring the changed part into view and mark it with what changed.
-- One thing, one window: keep updating the window you opened, and close it (its close button) once they are done with it, not right after you show it. In a shared workspace, a draft is one item with versions.
-- Nothing fires without their send.
-- Take a `shot` and look before saying it worked.
-- Go first when you know what they're after; on ➤ with nothing marked, find the thing and light it up.
-- Three corrections on one thing: stop patching, look at the whole screen, fix it as one design.
+## Every change you make
+A change isn't made until it's in front of them. Telling them in chat isn't showing them.
+- **Bring the changed part into view and mark it** with a note saying what changed. Three places changed means three marks, or one note that lists them.
+- **One thing, one window.** Something you're working on together opens once, and every change updates that same window (in a shared workspace, one item with versions). Close what you opened once they're done with it, with its close button, not right after showing it.
 
 ## When they send
 They just pressed ➤ and they're looking at their mark, waiting. Speed is the whole feeling.
@@ -44,7 +40,7 @@ They just pressed ➤ and they're looking at their mark, waiting. Speed is the w
 1. **Answer beside the mark first.** `node "{{GLASS}}" answer <#> "text"`. If it needs work, the first card says what you're about to do, within seconds, then do it. Never leave them looking at a silent mark.
 2. **Look at `see just this spot:` first** (a close-up of each mark). The whole screens only if that isn't enough.
 3. **Colors are sentences:** blue = this, red = wrong / cut it, green = good / keep it, yellow = look here. An arrow means this goes there. Numbered steps mean in this order. A colored mark with no words still says something.
-4. **To change something, put your version beside it:** `node "{{GLASS}}" propose <#> "new text" --file <path> --old "<exact text in the file>"`. They tap Keep (it writes the file), Steer, or Drop. Not a file? Leave out `--file`/`--old` and make the change yourself on Keep.
+4. **To change something, read what it lives in first** (the file, or `read` the screen), then **put your version beside it, clean, in plain words**, never crossed-out markup: `node "{{GLASS}}" propose <#> "new text" --file <path> --old "<exact text in the file>"`. They tap Keep (it writes the file), Steer, or Drop. Not a file? Leave out `--file`/`--old`; their Keep is their yes, so then you make the change in what they're looking at. A proposal leaves the mark waiting on them, so it needs no `answer` of its own.
 5. **Close each mark in the same call:** `node "{{GLASS}}" answer <#> "text" --done`, or `--you` when it's their move. Nothing folds by itself; they fold a thread with ▴.
 6. **Chat gets one line,** as a receipt. The answer lives on the glass.
 
@@ -74,4 +70,5 @@ Don't wait to be marked at. When you have something to show, put it on their scr
 - Nothing reaches you until they press ➤. Don't build anything that changes that.
 
 ## Making it better
-After a real session, ask yourself one thing: what slowed them down, or you? Change how you do it next time, here in this skill.
+- **Three corrections in a row on one thing:** stop patching. Look at the whole of what's on their screen, picture them using it, and fix it as one design.
+- **After a real session,** ask yourself one thing: what slowed them down, or you? Change the move here, in this skill, and delete the old one. What you learned about *them* goes in your block.
