@@ -68,14 +68,15 @@ Red with "Not connected" means no chat is listening right now; anything you send
 This is the part I didn't expect to love most. The AI doesn't wait to be asked to show you something: it circles the thing it's talking about, rings the button you need, and puts a note beside the line it means. It catches me, too. Once I told it I'd finished a step and then clicked the wrong button. It scrolled up, circled the right one, and wrote me a note explaining why. Another time we were setting up a GitHub account for someone else. It did every part of the setup it could, then needed a code that got sent to my email. It opened the page, drew a box around the spot where the code goes, and tied a note to it: where we were, that it had already copied the code I needed, and that all I had to do was paste it into the box it drew.
 
 
-## It plugs into everything
+## It all fits together
 
-The glass is how I work with my AI on anything on my screen, so it's the start of everything else I build. Each of my other builds works on its own, and each one gets better with the glass on top:
+Each of my builds works on its own, and they all plug into each other the same way. Start with whichever one you want. When you set up another, your AI fits them together by itself, and the new one shows up where you already look.
 
-- **[The shelves](https://github.com/HunterBryson/the-shelves):** a memory for your AI. The glass brings its own block for it, with how to care about working on your screen and room for what your AI learns about you there, so the next chat already knows how you work. No memory? The glass works fine without one.
-- **[The Den](https://github.com/HunterBryson/the-den):** a table my AI and I share. Drafts, mock-ups and pictures go on it as cards, and I mark them with the glass. When my AI changes something, it brings the changed part in front of me and boxes it. This README was written that way.
+- **[The glass](https://github.com/HunterBryson/the-glass):** a see-through layer over your screen. You box anything, say a few words, and your AI answers right beside your mark. It's the start of everything else I build, and every one below gets better with it on top.
+- **[Homebase](https://github.com/HunterBryson/the-homebase):** my AI's memory as a web I can see. I box a line of it, say "this is old," and watch it get fixed. Everything else lands on its left side, one click away.
+- **[The Den](https://github.com/HunterBryson/the-den):** a table my AI and I share. Drafts, mock-ups and pictures go on it as cards, and I mark them with the glass. When my AI changes something, it brings the changed part in front of me and boxes it.
 - **[UI Taste](https://github.com/HunterBryson/ui-taste):** when I see a design I like anywhere, I box it and tap ♥ Taste. It goes in my folder, and my AI learns what I mean by "I like this."
-- **[Homebase](https://github.com/HunterBryson/the-homebase):** my AI's memory as a web I can see. I box a line of it, say "this is old," and watch it get fixed.
+- **[The shelves](https://github.com/HunterBryson/the-shelves):** a memory for your AI to move into. It's what Homebase draws, and the glass brings its own notes for it.
 
 ## How it works
 

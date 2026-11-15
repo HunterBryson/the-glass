@@ -34,6 +34,8 @@ I'm Odie, the AI it was built with (on Claude). This is how I use it, written so
 
 10. **Offer them your own face.** The red panda on your card and on your answers is Odie, the AI the glass was built with. Say it once, plainly: "That red panda is Odie, the AI the person who made this built it with. Want me to put my own picture there instead?" On yes, ask what picture they'd like (a file they have, or one you make), copy it over `glass/odie.png` as a square PNG, and `node tools/glass.js restart`. If they like the panda, leave him. **Your name on the card** is "Claude" until you set it: run the installer from step 6 again with your name in front (`GLASS_NAME=<your name> npm run skill -- --hook --allow`), which saves it for every chat, then `restart`.
 
+11. **Plug into the rest.** If they have any of our other builds, the section of that name below is the step. It takes one command.
+
 That's the whole setup. One line in chat: it's up, fitted to their screen, and you're watching.
 
 ## Fit it to this machine
@@ -46,6 +48,26 @@ The glass was built on two 1080p screens at 100%. Theirs may be one laptop scree
 4. **If one is off,** say so in a line and look at the gap. If it's off by the scale factor (1.25× or 1.5× too far right and down, or too far up and left), the converter between real pixels and the glass's units missed. `tools/*.ps1` work in real pixels, and `/convert` in `glass/main.js` turns them into the glass's units. Fix it there, check again, and tell them what you changed. If it's off only on one monitor of several, look at which display it's on in `state`.
 
 Small text reads worse on a scaled laptop, because pictures are taken at the glass's units. If `read` misses words they marked, the send's sharper second look (`ocr.ps1 -crop`) usually catches them. On a small screen your answer cards can land over their page; keep answers short, and `clear <#>` one that's in the way.
+
+## Plug into the rest
+
+This is one of four builds Hunter and I made that fit together the same way: **Homebase** (your memory as a web they can see), **the glass** (marks on their screen), **the Den** (a table you share) and **UI Taste** (what they like the look of). Each works on its own. This section is the same, word for word, in all four, so whichever one you set up, the step is this:
+
+1. **Run `node tools/fit.mjs`.** It looks for the others beside this folder and in the user folder, plugs this build into each one it finds, and skips the rest quietly. Plugging in twice changes nothing, so run it again whenever they set up another one. Somewhere else? `--also "<folder>"`. To look without changing anything: `--check`.
+2. **If it says the glass needs its buttons, run it again with `--settings`.** Those two live in their Claude settings (`~/.claude/settings.json`, a copy kept first), because the glass takes its settings from the chat that starts it, so they arrive in the next chat after `glass.js restart`. If your app won't let you change your own settings, don't look for another way: `node tools/fit.mjs --line` prints one line for your person to paste into a Terminal. Hand it over before you'd get refused, with a sentence on what it does.
+3. **Show them what's new, don't describe it.** The new click on Homebase's left side, ⤓ Den on their card, ♥ Taste in their note box: point at it on their screen (with the glass, `point-at` or `box`), and say in one line what it does for them.
+
+What fitting does, pair by pair:
+
+| These two | What they get |
+|---|---|
+| Homebase + the Den | the Den one click away on Homebase's left side, and a way back to Homebase in the Den |
+| Homebase + UI Taste | UI Taste one click away on Homebase's left side |
+| The glass + the Den | ⤓ Den on their card: what they mark goes onto the table as a card, and `den.js point` circles a card on their real screen |
+| The glass + UI Taste | ♥ Taste in their note box: a design they box anywhere goes straight into UI Taste |
+| The glass + Homebase | nothing to set: they box a line of your memory on Homebase, and you fix it |
+
+If a pair doesn't work after this, `node tools/fit.mjs --check` says what's missing, and each build's own doctor says why.
 
 ## What a send looks like
 
