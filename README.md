@@ -199,17 +199,17 @@ The glass has changed a lot in its first week. Here's a picture for every big lo
 
 **v4** (November 14): the puck is gone. I lost it all the time and could never find it, so all my tools moved into the AI's card, the one that shows what it's doing. The puck and the bubble being meshed together is actually what it should be: one card that's my tools and my AI at the same time, so I can work on the glass and not need the chat. Its own section is at the top.
 
-## Not finished
+## Still growing
 
-Nothing here is done. It's my current best shot, and this is where it stands today:
+It works today, and I use it every day. It keeps getting better, so here's what's still rough:
 
-- **The card is brand new.** It's been lived in on my PC, not on anyone else's yet. If it lands somewhere weird or won't let go, open an issue.
+- **The card is the newest part.** If it lands somewhere weird or won't let go, open an issue.
 - **Windows only.** The AI's eyes use Windows' own text recognition and accessibility. On a Mac or Linux the ideas carry over, and [how-it-works.md](docs/how-it-works.md) is written so an AI can rebuild those parts.
 - **Scaled screens haven't been run for real.** It's run on two 1080p screens and on one 1080p laptop, all at 100%. It converts for Windows' display scaling (125%, 150%), and the AI checks that on first start, but nobody's tried it yet.
 - **After a restart,** a mark on a page you'd scrolled can come back a little off its words, and a pen drawing comes back as a box around where it was. Still chasing both.
 - **Your keys are fixed in code** (`KEYS` in `glass/main.js`). Ask your AI to change them if they fight with your apps.
 - **Miss the old round puck?** `GLASS_PUCK=1` brings it back.
-- **The code comments are in Odie's voice,** so "Hunter" is me and "me" is Odie. We built it for the two of us first.
+- **The code mentions Odie and Hunter.** We built it for the two of us first, so the comments talk about us.
 
 ## Something broke, or you have an idea
 
