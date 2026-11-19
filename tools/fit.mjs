@@ -23,14 +23,18 @@ const also = []; argv.forEach((a, i) => { if (a === '--also' && argv[i + 1]) als
 
 const has = (dir, ...files) => files.every(f => fs.existsSync(path.join(dir, f)));
 const readJson = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; } };
+// A build's own config: {} when there is none yet (its default port), and { broken } when it's there but won't read.
+// A broken one is never read as the default port: that reached the wrong program (another app on the default port).
+const readConf = f => { if (!fs.existsSync(f)) return {}; try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return { broken: e.message }; } };
+const portOf = (f, dflt) => { const c = readConf(f); return c.broken ? { broken: c.broken, file: path.basename(f) } : (c.port || dflt); };
 const slash = p => p.split(path.sep).join('/');
 
 // How each build is recognized, and where it keeps its address.
 const KINDS = {
-  homebase: { name: 'Homebase', is: d => has(d, 'tools/plug.js', 'lib/brain.js'), port: d => readJson(path.join(d, 'homebase.config.json'))?.port || 7940 },
+  homebase: { name: 'Homebase', is: d => has(d, 'tools/plug.js', 'lib/brain.js'), port: d => portOf(path.join(d, 'homebase.config.json'), 7940) },
   glass:    { name: 'the glass', is: d => has(d, 'tools/glass.js', 'glass/main.js') },
-  den:      { name: 'the Den', is: d => has(d, 'tools/den.js', 'tools/admin.mjs'), port: d => readJson(path.join(d, 'config.json'))?.port || 7950 },
-  taste:    { name: 'UI Taste', is: d => has(d, 'tools/taste.mjs', 'server.js'), port: d => readJson(path.join(d, 'ui-taste.config.json'))?.port || 7960 },
+  den:      { name: 'the Den', is: d => has(d, 'tools/den.js', 'tools/admin.mjs'), port: d => portOf(path.join(d, 'config.json'), 7950) },
+  taste:    { name: 'UI Taste', is: d => has(d, 'tools/taste.mjs', 'server.js'), port: d => portOf(path.join(d, 'ui-taste.config.json'), 7960) },
 };
 
 // Look: this folder, any --also, its neighbors, the user folder.
@@ -47,13 +51,16 @@ for (const d of [...new Set(places)]) for (const [k, kind] of Object.entries(KIN
   if (!kind.is(d)) continue;
   if (!found[k]) found[k] = d; else if (found[k] !== d) extra.push(`${kind.name} at ${slash(d)}`);
 }
+// A build whose config won't read isn't plugged into anything until it's fixed, and the list says why.
+const broken = {};
+for (const k of Object.keys(found)) { const p = KINDS[k].port?.(found[k]); if (p && typeof p === 'object') { broken[k] = { dir: found[k], ...p }; delete found[k]; } }
 const url = k => `http://127.0.0.1:${KINDS[k].port(found[k])}`;
 const node = process.execPath;
 const cmd = (dir, tool, rest) => `"${node}" "${path.join(dir, 'tools', tool)}" ${rest}`;
 const run = (dir, tool, args) => execFileSync(node, [path.join(dir, 'tools', tool), ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 
 const lines = { here: [], done: [], already: [], next: [] };
-for (const [k, kind] of Object.entries(KINDS)) lines.here.push(found[k] ? `✓ ${kind.name}: ${slash(found[k])}${kind.port ? `  (${url(k)}/)` : ''}` : `· ${kind.name}: not here (skipped)`);
+for (const [k, kind] of Object.entries(KINDS)) lines.here.push(found[k] ? `✓ ${kind.name}: ${slash(found[k])}${kind.port ? `  (${url(k)}/)` : ''}` : broken[k] ? `✗ ${kind.name}: ${slash(broken[k].dir)}, but its ${broken[k].file} doesn't read (${broken[k].broken}), so it isn't plugged in. Fix that file (paths with forward slashes), then run this again.` : `· ${kind.name}: not here (skipped)`);
 
 // 1 · Homebase's left side: every build with a page gets one click there.
 function onHomebase(k, label, sub, icon) {
