@@ -298,7 +298,7 @@ function describe(e) {
     }
     const marks = [...(e.marks || [])].sort((p, q) => (p.kind === 'step' && q.kind === 'step') ? p.n - q.n : 0);
     const wins = [...new Set(marks.filter(m => m.app).map(m => `${m.app} "${m.title}"`))], oneWin = wins.length === 1 && marks.length > 1 ? wins[0] : null;
-    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? (m.file ? `STEER on your version (re-propose to #${m.gid}): "${m.text}"` : `REPLY on the thread at #${m.gid} (answer #${m.gid} again): "${m.text}"`) : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app && !oneWin ? `\n       in: ${m.app} "${m.title}"` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       their words on it: "${m.note}"` : ''}${m.crop ? `\n       see just this spot: ${m.crop}` : ''}`);
+    const lines = marks.map((m, i) => `  #${m.gid ?? '?'} ${m.op === 'steer' ? (m.file ? `STEER on your version (re-propose to #${m.gid}): "${m.text}"${m.kept ? ' [that version was already KEPT and written: the file now holds "' + String((m.ver && m.ver.new) || '').slice(0, 300) + '"; re-propose against that text]' : ''}` : `REPLY on the thread at #${m.gid} (answer #${m.gid} again): "${m.text}"`) : m.op === 'note' ? `loose note at ${m.x},${m.y}: "${m.text}"` : m.op === 'ask' ? `? at ${m.x},${m.y}` : markLine(m)}${m.screen === 'second' ? ' (second screen)' : ''}${m.app && !oneWin ? `\n       in: ${m.app} "${m.title}"` : ''}${m.den ? `\n       in the Den, that is: ${m.den}` : ''}${m.reads ? `\n       under it: "${m.reads.replace(/\n/g, ' / ')}"` : ''}${m.note ? `\n       their words on it: "${m.note}"` : ''}${m.crop ? `\n       see just this spot: ${m.crop}` : ''}`);
     if (!lines.length) return `${t} THEY PRESSED ➤ AFTER KEEPING: no new marks. Rebuild whatever shows the kept file(s) (the KEEP lines above), then clear those cards: glass.js clear <#>`;
     return `${t} THEY SENT YOU ${lines.length} mark(s), answer each beside it with: glass.js answer <#> "text" [--done]${oneWin ? `\n  all in: ${oneWin}` : ''}\n${lines.join('\n')}\n  whole screens, only if you need more: ${(e.shots || []).join(' , ')}`;
   }
@@ -495,6 +495,7 @@ try {
         if (gone) console.error(`(stopped an older watch: ${gone.split(/\s+/).join(', ')})`);
       } catch {}
       try { fs.writeFileSync(path.join(glassDir, 'data', 'owner.json'), JSON.stringify({ chat: me, pid: process.pid, since: new Date().toISOString() })); } catch {}
+      { const of = path.join(glassDir, 'data', 'owner.json'); process.on('exit', () => { try { if (JSON.parse(fs.readFileSync(of, 'utf8')).pid === process.pid) fs.unlinkSync(of); } catch {} }); } // no leftover owner after this chat is gone
       const out = async evs => {
         const read = evs.map(readSend);
         console.log(read.map(describe).join('\n'));
@@ -516,19 +517,22 @@ try {
       await backCheck();
       const waiting = (await call('/unread')).events || [];
       if (waiting.length) await out(waiting);
-      let since = (await call('/state')).seq, kept = [];
+      const st0 = await call('/state'); let since = st0.seq, boot = st0.bootId || null, kept = [];
       for (;;) {
         try {
-          const r = await call(`/wait?since=${since}&ms=15000`, undefined, 25000);
-          since = r.seq;
+          const r = await call(`/wait?since=${since}&boot=${boot || ''}&ms=15000`, undefined, 25000);
+          if (r.reset) { const u = (await call('/unread')).events || []; if (u.length) await out(u); } // glass restarted under me: nothing he sent is skipped
+          boot = r.bootId || boot; since = r.seq;
           await backCheck();
           kept.push(...r.events.filter(e => e.op === 'proposal'));
           const wakes = r.events.filter(e => ['send', 'drop', 'watch'].includes(e.op));
           if (wakes.length) { await out([...kept, ...wakes]); kept = []; }
-        } catch { if (!(await up())) { await comeBack(); since = (await call('/state').catch(() => ({ seq: 0 }))).seq; } }
+        } catch { if (!(await up())) { await comeBack(); const st1 = await call('/state').catch(() => null); since = st1 ? st1.seq : 0; boot = st1 ? st1.bootId || null : null; const u = (await call('/unread').catch(() => ({}))).events || []; if (u.length) await out(u); } }
       }
     }
     case 'wait': {
+      // Only a chat a person is in may hold the glass: a scheduled job's chat would stop the live chat's watch (same guard as stream).
+      if (process.env.CLAUDE_CODE_SESSION_ATTENDED === '0' || process.env.GLASS_UNATTENDED === '1') { console.log('not starting the glass watch: this chat has no person in it, so it leaves the glass to the chat that has.'); break; }
       // Short stretches (long requests get cut off), and if the glass goes down, it comes back up.
       const min = Number(flag('min', 60)), end = Date.now() + min * 60000;
       if (!(await up())) await comeBack();
@@ -540,7 +544,7 @@ try {
       } catch {}
       // Anything he sent while no chat of mine was listening comes first, so nothing gets skipped.
       let got = (await call('/unread')).events || [];
-      let since = (await call('/state')).seq;
+      const st0 = await call('/state'); let since = st0.seq, wboot = st0.bootId || null;
       const kept = [];
       // If the chat that started me is gone, stop without taking his sends, so the next chat gets them.
       // Some setups wrap node in another process, so I note my whole line of parents once, and stop as soon as any of them is gone.
@@ -556,16 +560,17 @@ try {
         try {
           // 15-second stretches: a watch whose chat closed notices within seconds, so his puck never says "connected" falsely for long.
           const ms = Math.min(15000, end - Date.now());
-          const r = await call(`/wait?since=${since}&ms=${ms}`, undefined, ms + 10000);
+          const r = await call(`/wait?since=${since}&boot=${wboot || ''}&ms=${ms}`, undefined, ms + 10000);
+          if (r.reset && !got.length) got = (await call('/unread')).events || []; // restarted: their unread sends are the truth
           // A stretch that times out comes back with whatever happened; only their ➤ (or a Den drop, or a watched spot) wakes me.
           // His Keep/Drop on my versions never wakes me (Nov 7: "I'd like to not have things just auto-fire"): they're
           // written already, and they come to me together with his next ➤, so he can keep several in a row.
           kept.push(...r.events.filter(e => e.op === 'proposal'));
           const wakes = e => ['send', 'drop', 'watch'].includes(e.op);
           if (r.events.some(wakes)) got = r.events.filter(wakes);
-          since = r.seq;
+          since = r.seq; wboot = r.bootId || wboot;
         } catch {
-          if (!(await up())) { await comeBack(); since = (await call('/state').catch(() => ({ seq: 0 }))).seq; }
+          if (!(await up())) { await comeBack(); const st1 = await call('/state').catch(() => null); since = st1 ? st1.seq : 0; wboot = st1 ? st1.bootId || null : null; got = (await call('/unread').catch(() => ({}))).events || []; }
         }
       }
       if (!parentAlive()) break;

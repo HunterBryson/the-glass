@@ -3,6 +3,12 @@
 // Odie drives it over HTTP on 127.0.0.1:7931 (tools/glass.js is the friendly way in).
 // One window per screen: Windows keeps a window to one display, so one big window loses the second screen.
 const { app, BrowserWindow, screen, ipcMain, desktopCapturer, nativeImage, globalShortcut } = require('electron');
+const { shell } = require('electron');
+// Nothing ever opens or navigates inside the glass. A web link in a card goes to his real browser.
+app.on('web-contents-created', (_e, c) => {
+  c.setWindowOpenHandler(({ url }) => { if (/^(https?:|mailto:)/i.test(url)) shell.openExternal(url).catch(() => {}); return { action: 'deny' }; });
+  c.on('will-navigate', (e, url) => { if (url === c.getURL()) return; e.preventDefault(); if (/^(https?:|mailto:)/i.test(url)) shell.openExternal(url).catch(() => {}); });
+});
 // The glass sits over everything and is never focused, so Windows can count it as covered and Chromium stops painting
 // and slows its timers (my cursor stayed parked on his words, Nov 7). Keep it live.
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
@@ -51,6 +57,7 @@ const top = w => { if (LEVEL === 'none') w.setAlwaysOnTop(false); else w.setAlwa
 const PUCK = { w: 64, closed: 64, open: 760, right: 16, bottom: 70 };
 const events = [];
 let seq = 0;
+const BOOT_ID = Date.now().toString(36) + '-' + process.pid; // new every start: seq numbers only mean something inside one boot
 const waiters = [];
 
 function log(e) {
@@ -580,7 +587,7 @@ async function commitNote(text) {
       return; }
     const meta = proposals.get(at.steer) || {}, id = at.steer % 1000;
     pending = pending.filter(m => !(m.op === 'steer' && m.gid === at.steer)); // a new steer replaces his last one
-    pending.push({ pane: at.pane, screen: at.screen, op: 'steer', id, gid: at.steer, text, file: meta.file || null }); puckSay();
+    pending.push({ pane: at.pane, screen: at.screen, op: 'steer', id, gid: at.steer, text, file: meta.file || null, ver: meta.old != null ? { old: meta.old, new: meta.new } : null, kept: !!meta.kept }); puckSay();
     await run(panes[at.pane], { op: 'steercard', id, text }).catch(() => {});
     log({ who: 'hunter', screen: at.screen, op: 'steer', id: at.steer, text });
     return;
@@ -656,7 +663,7 @@ function watchFront() {
 }
 app.whenReady().then(watchFront);
 setInterval(() => {
-  if (snipping || mode !== 'off' || !panes.length) return;
+  if (snipping || mode !== 'off' || !panes.length || wheelHeld()) return;
   const c = screen.getCursorScreenPoint();
   panes.forEach((p, i) => {
     const over = (cardRects.get(i) || []).some(r => c.x >= r.x1 && c.x <= r.x2 && c.y >= r.y1 && c.y <= r.y2);
@@ -665,12 +672,22 @@ setInterval(() => {
     p.win.setIgnoreMouseEvents(!over, { forward: true });
   });
 }, 50);
-// A wheel on the glass goes back to his page: the glass lets go for a moment so the next turns of the wheel scroll it.
-let wheelT = null;
+// A wheel on the glass goes back to his page: the glass lets go, and stays let-go until wheelUntil (a deadline each wheel
+// tick pushes forward). Nothing re-captures the mouse before that deadline, so a long scroll is one release, not a loop.
+let wheelT = null, wheelUntil = 0;
+const WHEEL_HOLD = 700;
+const wheelHeld = () => Date.now() < wheelUntil;
+function wheelRestore() {
+  wheelT = null;
+  if (wheelHeld()) { wheelT = setTimeout(wheelRestore, wheelUntil - Date.now() + 5); return; }
+  if (snipping) return;
+  if (mode !== 'off') for (const p of panes) if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(false);
+}
 ipcMain.on('pass-wheel', () => {
-  for (const p of panes) p.win.setIgnoreMouseEvents(true, { forward: true });
-  clearTimeout(wheelT);
-  wheelT = setTimeout(() => { if (mode !== 'off') for (const p of panes) p.win.setIgnoreMouseEvents(false); }, 700);
+  const first = !wheelHeld();
+  wheelUntil = Date.now() + WHEEL_HOLD;
+  if (first) { caught.clear(); for (const p of panes) if (!p.win.isDestroyed()) p.win.setIgnoreMouseEvents(true, { forward: true }); }
+  if (!wheelT) wheelT = setTimeout(wheelRestore, WHEEL_HOLD + 5);
 });
 let puckOpen = false;
 // While he drags, the puck is just the face, so it stays under his cursor.
@@ -736,6 +753,9 @@ async function lookAt() {
 ipcMain.on('send', async () => {
   await finishNote();
   setMode('off');
+  // His one send (Nov 17: "they get sent on the card's send"): what he put on the Den since his last ➤ rides along.
+  // The Den answers sent: 0 when nothing waits, so this is quiet unless he dropped, pasted or added something.
+  if (DEN && process.env.GLASS_DEN !== '0') fetch(DEN + '/send', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(5000) }).catch(() => {});
   if (!pending.length && !keptWaiting) {
     try { const l = await lookAt(); log({ who: 'hunter', op: 'send', marks: [], look: { app: l.app, title: l.title, rect: l.rect, crop: l.crop, screen: l.screen }, shots: [], clean: l.clean }); }
     catch (err) { log({ who: 'hunter', op: 'send', error: String(err) }); }
@@ -975,6 +995,19 @@ function anchor(pane, id, r, keep) {
   const pt = { x: o.x + (r.x1 + r.x2) / 2, y: o.y + (r.y1 + r.y2) / 2 };
   anchors.set(`${pane}:${id}`, { pane, id, pt, bx: [o.x + r.x1, o.x + r.x2], by: [o.y + r.y1, o.y + r.y2], hwnd: keep ? keep.hwnd : null, r0: keep ? keep.r0 : null, sy: keep && keep.sy || 0, dx: 0, dy: 0, shown: true });
   startWins(); if (winList.length) reanchor();
+  if (!keep) denTie(`${pane}:${id}`, pt);
+}
+// ---- den tie (Nov 14): a mark over the Den rides the words under it. The Den says where they are; no pictures, no guessing. ----
+const DEN = process.env.GLASS_DEN_API || (process.env.GLASS_DEN_URL ? process.env.GLASS_DEN_URL.replace(/\/$/, '') + '/api/den' : ''); // no Den set, no Den calls
+function denTie(key, pt) {
+  if (!DEN || process.env.GLASS_DEN_TIE === '0') return;
+  fetch(DEN + '/tie', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, port: PORT, x: Math.round(pt.x), y: Math.round(pt.y) }), signal: AbortSignal.timeout(2500) }).catch(() => {});
+}
+// The Den's report: where each tied mark's words are now, in screen pixels, and whether they are in view.
+function denPos(list) {
+  const drop = [];
+  for (const m of list || []) { const a = anchors.get(String(m.key)); if (!a) { drop.push(m.key); continue; } a.den = { x: m.x, y: m.y, shown: !!m.shown }; }
+  reanchor(); return drop;
 }
 // A thread whose window closed used to stay hidden on the glass until a clear (still counted, still saved, never seen).
 // Now: once its window is really gone (not just minimized), the thread moves to data/scene-closed.json and leaves the glass.
@@ -1003,7 +1036,15 @@ function reanchor() {
   if (snipping) return; // his snip covers the screen for a moment; nothing really moved
   for (const a of anchors.values()) {
     if (a.hwnd === null) { const w = winAt(a.pt.x, a.pt.y); a.hwnd = w ? w[0] : 0; a.r0 = w ? [w[1], w[2]] : null; }
-    if (!a.hwnd) continue; // on the bare desktop: stays put
+    if (!a.hwnd && !a.den) continue; // on the bare desktop: stays put
+    if (!a.hwnd) { // tied to the Den's words, and I couldn't tell which window: the Den's word is enough
+      const dx = a.den.x - a.pt.x, dy = a.den.y - a.pt.y, shown = a.den.shown;
+      if (shown === a.shown && dx === a.dx && dy === a.dy) continue;
+      a.dx = dx; a.dy = dy; a.shown = shown; const p = panes[a.pane]; if (!p || p.win.isDestroyed()) continue;
+      p.win.webContents.send('shift', { id: a.id, dx, dy, shown });
+      for (const m of pending) if (m.pane === a.pane && m.id === a.id) moveMark(m, dx, dy, shown);
+      continue;
+    }
     const i = winList.findIndex(w => w[0] === a.hwnd);
     // Missing from the list for a few seconds: minimized, or closed. If closed, the thread is put aside, not left hidden forever.
     if (i < 0) { if (!a.missSince) { a.missSince = Date.now(); setTimeout(reanchor, 3500); } else if (Date.now() - a.missSince > 3000 && !a.checking) checkClosed(a); }
@@ -1011,8 +1052,9 @@ function reanchor() {
     let dx = a.dx, dy = a.dy, shown = false;
     if (i >= 0) {
       const w = winList[i]; dx = w[1] - a.r0[0]; dy = w[2] - a.r0[1] + (a.sy || 0);
+      if (a.den) { dx = a.den.x - a.pt.x; dy = a.den.y - a.pt.y; }
       const x = a.pt.x + dx, y = a.pt.y + dy;
-      shown = !a.lost && x >= w[1] && x < w[3] && y >= w[2] + 30 && y < w[4] && !winList.slice(0, i).some(u => x >= u[1] && x < u[3] && y >= u[2] && y < u[4]);
+      shown = (a.den ? a.den.shown : !a.lost) && x >= w[1] && x < w[3] && y >= w[2] + 30 && y < w[4] && !winList.slice(0, i).some(u => x >= u[1] && x < u[3] && y >= u[2] && y < u[4]);
     }
     if (shown === a.shown && dx === a.dx && dy === a.dy) continue;
     const mx = dx - a.dx, my = dy - a.dy; a.dx = dx; a.dy = dy; a.shown = shown;
@@ -1031,7 +1073,7 @@ function scrollWatch() {
   if (!ANCHOR || process.env.GLASS_SCROLL === '0') return;
   const by = new Map(); // hwnd -> ["key:x1,x2,y1,y2"] relative to the window's visible top-left, where the mark is now
   for (const [key, a] of anchors) {
-    if (!a.hwnd || !a.r0 || !a.bx || !a.by) continue; const w = winList.find(u => u[0] === a.hwnd); if (!w) continue;
+    if (a.den || !a.hwnd || !a.r0 || !a.bx || !a.by) continue; const w = winList.find(u => u[0] === a.hwnd); if (!w) continue;
     let x1 = Math.round(a.bx[0] + a.dx - w[1]), x2 = Math.round(a.bx[1] + a.dx - w[1]); if (x2 - x1 < 40) { x1 -= 30; x2 += 30; }
     const y1 = Math.round(a.by[0] + a.dy - w[2]), y2 = Math.round(a.by[1] + a.dy - w[2]);
     if (!by.has(a.hwnd)) by.set(a.hwnd, []); by.get(a.hwnd).push(`${key.replace(':', '_')}:${x1},${x2},${y1},${y2}`);
@@ -1275,8 +1317,14 @@ ipcMain.on('steer', async (e, localId, at, prev) => {
   }
   const wa = p.d.workArea || p.d.bounds; if (noteAt.y + NOTE.h > wa.y + wa.height - 8) noteAt.y = wa.y + wa.height - 8 - NOTE.h;
   if (noteWin) { noteWin.setBounds({ x: noteAt.x, y: noteAt.y, width: Math.max(280, at.w || 280), height: NOTE.h });
-    noteWin.webContents.once('did-finish-load', () => noteWin && noteWin.webContents.executeJavaScript(`const t=document.getElementById('t'); t.placeholder=${JSON.stringify(proposals.has(i * 1000 + localId) ? 'Steer my version: what should change? Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤' : 'Reply to keep this thread going. Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤')}; t.value=${JSON.stringify(prev || '')};`).catch(() => {})); }
+    noteWin.webContents.once('did-finish-load', () => noteWin && noteWin.webContents.executeJavaScript(`(() => { const el=document.getElementById('t'); if (!el) return; el.placeholder=${JSON.stringify(proposals.has(i * 1000 + localId) ? 'Steer my version: what should change? Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤' : 'Reply to keep this thread going. Type, or talk with Win+H. Enter keeps it; ✕ on it takes it back; nothing goes until ➤')}; el.value=${JSON.stringify(prev || '')}; el.dispatchEvent(new Event('input')); })();`).catch(() => {})); }
 });
+// Write beside the file, then rename over it: a reader never sees half a file (same as tools/glass-edit.mjs).
+function atomicWriteSync(file, data) {
+  const tmp = file + '.tmp';
+  try { fs.writeFileSync(tmp, data); fs.renameSync(tmp, file); }
+  catch (err) { try { fs.unlinkSync(tmp); } catch {} throw err; }
+}
 ipcMain.on('proposal', async (e, localId, choice) => {
   const p = paneOf(e.sender); if (!p) return;
   const i = panes.indexOf(p), gid = i * 1000 + localId, meta = proposals.get(gid) || {};
@@ -1288,12 +1336,13 @@ ipcMain.on('proposal', async (e, localId, choice) => {
       const src = lf(raw), old = lf(meta.old), neu = lf(meta.new), at = src.indexOf(old), again = at < 0 ? -1 : src.indexOf(old, at + 1);
       if (at < 0) { ok = false; text = "couldn't find it in the file; I'll do it by hand"; }
       else if (again >= 0) { ok = false; text = "it's in the file twice; I'll do it by hand"; }
-      else { const out = src.slice(0, at) + neu + src.slice(at + old.length); fs.writeFileSync(meta.file, crlf ? out.replace(/\n/g, '\r\n') : out); written = true; text = `kept ✓ written to ${path.basename(meta.file)}`; }
+      else { const out = src.slice(0, at) + neu + src.slice(at + old.length); atomicWriteSync(meta.file, crlf ? out.replace(/\n/g, '\r\n') : out); written = true; text = `kept ✓ written to ${path.basename(meta.file)}`; }
     } catch (err) { ok = false; text = 'writing failed: ' + err.message; }
   } else if (choice === 'keep') text = "kept ✓ I'll make the change";
   await run(p, { op: 'proposed', id: localId, choice, ok, text }).catch(() => {});
   if (choice === 'drop') proposals.delete(gid);
   if (choice === 'keep' && proposals.has(gid)) proposals.get(gid).kept = true;
+  if (choice === 'keep' && ok) for (const m of pending) if (m.op === 'steer' && m.gid === gid) { m.kept = true; m.written = written; m.ver = { old: meta.old || null, new: meta.new || null }; } // the steer keeps the version it was about
   if (choice === 'keep') { keptWaiting++; puckSay(); }
   log({ who: 'hunter', op: 'proposal', id: gid, choice, written, file: meta.file || null, note: text });
 });
@@ -1430,26 +1479,29 @@ http.createServer(async (req, res) => {
   if (req.headers.origin || !['127.0.0.1', 'localhost', '[::1]'].includes(host)) { res.writeHead(403); return res.end(); }
   try {
     const url = new URL(req.url, 'http://x');
-    if (req.method === 'GET' && url.pathname === '/state') return send(200, { ok: true, displays: displaysInfo(), seq, events: events.slice(-50), link: link(), puck: puck && !puck.isDestroyed() ? puck.getBounds() : null, card: mirror && !mirror.isDestroyed() && mirror.isVisible() ? mirror.getBounds() : null });
+    if (req.method === 'GET' && url.pathname === '/state') return send(200, { ok: true, displays: displaysInfo(), seq, bootId: BOOT_ID, events: events.slice(-50), link: link(), puck: puck && !puck.isDestroyed() ? puck.getBounds() : null, card: mirror && !mirror.isDestroyed() && mirror.isVisible() ? mirror.getBounds() : null });
     if (req.method === 'GET' && url.pathname === '/wait') {
       const since = Number(url.searchParams.get('since') || seq), ms = Math.min(Number(url.searchParams.get('ms') || 60000), 3600000);
+      const bootArg = url.searchParams.get('boot'); // from another boot (or a since past our seq): tell the watch to re-read /unread
+      if (bootArg ? bootArg !== BOOT_ID : since > seq) return send(200, { seq, bootId: BOOT_ID, reset: true, events: [] });
       // I wake for his sends and Den drops, his Keep/Drop on my versions, and a spot I'm watching changing.
       const wakes = e => (e.who === 'hunter' && ['send', 'drop', 'proposal'].includes(e.op)) || (e.who === 'glass' && e.op === 'watch');
       const has = () => events.some(e => e.n > since && wakes(e));
-      const done = () => send(200, { seq, events: events.filter(e => e.n > since && (e.who === 'hunter' || e.who === 'glass')) });
+      const done = () => send(200, { seq, bootId: BOOT_ID, events: events.filter(e => e.n > since && (e.who === 'hunter' || e.who === 'glass')) });
       if (has()) return done();
       res.on('close', () => { const i = waiters.indexOf(w); if (i >= 0) { waiters.splice(i, 1); clearTimeout(t); linkSay(true); } });
       const t = setTimeout(() => { const i = waiters.indexOf(w); if (i >= 0) waiters.splice(i, 1); lastWaiting = Date.now(); done(); }, ms);
       const w = () => { if (has()) { clearTimeout(t); lastWaiting = Date.now(); done(); } else waiters.push(w); };
       waiters.push(w); linkSay(true); return;
     }
+    if (req.method === 'POST' && url.pathname === '/den-pos') { const b = await body(req); return send(200, { ok: true, drop: denPos(b.list) }); }
     if (req.method === 'GET' && url.pathname === '/mirror') return send(200, { ok: true, mirror: mstate });
     if (req.method === 'GET' && url.pathname === '/mirror/hit') { const c = screen.getCursorScreenPoint(); return send(200, { ok: true, bounds: mirror && !mirror.isDestroyed() ? mirror.getBounds() : null, rects: mirrorRects, catching: mirrorCatching, cursor: c, visible: mirror && mirror.isVisible() }); }
     if (req.method === 'POST' && url.pathname === '/mirror') return send(200, { ok: true, mirror: mirrorSet(await body(req)) });
     if (req.method === 'POST' && url.pathname === '/mirror/come') { const b = await body(req); return send(200, { ok: true, at: await mirrorCome(b.where, b.x, b.y) }); }
     if (req.method === 'POST' && url.pathname === '/convert') { const b = await body(req); const f = b.to === 'screen' ? toScreen : toDip; return send(200, { ok: true, points: (b.points || []).map(f) }); }
     if (req.method === 'GET' && url.pathname === '/hides') return send(200, { ok: true, hides: hides.map(h => h.box) });
-    if (req.method === 'GET' && url.pathname === '/unread') return send(200, { ok: true, delivered, link: link(), events: unread });
+    if (req.method === 'GET' && url.pathname === '/unread') return send(200, { ok: true, bootId: BOOT_ID, delivered, link: link(), events: unread });
     if (req.method === 'POST' && url.pathname === '/ack') { const b = await body(req); ack(b.at); return send(200, { ok: true, delivered }); }
     if (req.method === 'POST' && url.pathname === '/do') {
       const cmd = await body(req);
@@ -1477,17 +1529,45 @@ http.createServer(async (req, res) => {
     send(404, { ok: false, error: 'not here' });
   } catch (err) { send(500, { ok: false, error: String(err && err.message || err) }); }
 }).on('error', err => {
-  // Another program already has this port (seen in the stranger test, Nov 12): the windows were up with no server
-  // behind them, and `glass.js stop` couldn't reach them. Say so where glass.js start can read it, and quit.
+  // Another program already has this port: the windows were up with no server behind them, and glass.js stop couldn't reach them.
+  // Say so where glass.js start can read it, and quit.
   trail(err.code === 'EADDRINUSE' ? `port ${PORT} is already taken by another program. Set GLASS_PORT to a free port and start again.` : 'server error: ' + err);
   try { fs.writeFileSync(path.join(DATA, 'port-taken.txt'), String(PORT)); } catch {}
   app.exit(1);
 }).listen(PORT, '127.0.0.1');
 
+// ---- Display changes (a screen plugged in or out): never let it wipe the glass ----
+// BEGIN display-rebuild-guard
+let rebuilding = false, rebuildTimer = null;
+function writeSceneAtomic(obj) { const tmp = SCENE + '.tmp'; fs.writeFileSync(tmp, JSON.stringify(obj, null, 1)); fs.renameSync(tmp, SCENE); }
+function onDisplaysChanged() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(rebuildPanes, 700); } // plugging in fires several events
+async function rebuildPanes() {
+  if (!restoredOnce) { build(); return; } // first load still running: nothing to save yet, the first put-back will see the new panes
+  if (rebuilding || restoring || !sceneBack) { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(rebuildPanes, 1000); return; }
+  rebuilding = true;
+  try {
+    // 1. Snapshot what is on the glass NOW, before any pane is destroyed. An empty read never replaces the file on disk.
+    let items = null;
+    try { items = await sceneNow(); } catch (e) { trail('display change: snapshot failed: ' + e); }
+    const props = [...proposals].filter(([, m]) => m.raw && !m.kept).map(([gid, m]) => ({ gid, ...m }));
+    if (items && items.length) { try { writeSceneAtomic({ saved: new Date().toISOString(), items, proposals: props }); } catch (e) { trail('display change: snapshot write failed: ' + e); } }
+    else trail('display change: nothing to snapshot, scene.json stays as the saver last wrote it');
+    // 2. Pause the saver (it needs restoredOnce && sceneBack) and forget state tied to the old panes; the snapshot carries it all.
+    restoredOnce = false; sceneBack = false; lastScene = '';
+    pending = []; hides = []; anchors.clear(); proposals.clear(); restoreKeep.clear(); cardRects.clear();
+    trail('display change: rebuilding ' + (items ? items.length : 0) + ' item(s) onto ' + screen.getAllDisplays().length + ' screen(s)');
+    // 3. build() destroys the panes and, because restoredOnce is false, runs restoreScene() once every pane has loaded.
+    //    restoreScene() reads the snapshot and ends with sceneBack = true, which un-pauses the saver.
+    build();
+  } catch (e) { trail('display rebuild failed: ' + (e && e.stack || e)); }
+  finally { rebuilding = false; }
+}
+// END display-rebuild-guard
+
 app.whenReady().then(() => {
   build();
-  screen.on('display-added', build);
-  screen.on('display-removed', build);
+  screen.on('display-added', onDisplaysChanged);
+  screen.on('display-removed', onDisplaysChanged);
 });
 app.on('window-all-closed', () => app.quit());
 app.on('child-process-gone', (_e, d) => trail(`child gone: ${d.type} ${d.reason}`));

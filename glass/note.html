@@ -4,60 +4,76 @@
 <meta charset="utf-8">
 <title>Note to your AI</title>
 <style>
-  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Segoe UI", system-ui, sans-serif; }
-  body { padding: 5px; box-sizing: border-box; }
-  .card { position: relative; box-sizing: border-box; height: 100%; padding: 0 13px 10px; background: #1b1f27; color: #f4f4f2; border: 2px solid #6cc6ff; border-radius: 10px; box-shadow: 0 0 0 3px rgba(0,0,0,.7), 0 0 22px rgba(108,198,255,.38); display: flex; flex-direction: column; }
-  /* The top bar is a handle: grab it and put the box wherever you want it. */
-  .bar { cursor: move; display: flex; align-items: center; justify-content: space-between; height: 26px; flex: none; }
-  .who { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: #0d1116; background: #6cc6ff; font-weight: 700; border-radius: 5px; padding: 1px 7px; }
-  .grip { color: #6cc6ff; font-size: 12px; letter-spacing: 1px; }
-  textarea { flex: 1; width: calc(100% - 4px); margin-bottom: 38px; background: transparent; border: 0; outline: 0; resize: none; color: #eceae6; font: 15px/1.4 "Segoe UI"; padding: 0; }
-  textarea::placeholder { color: #6b717a; }
-  #mic { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid #2a2e36; background: #1d2027; color: #eceae6;
-         font: 16px/1 "Segoe UI Emoji", "Segoe UI Symbol"; cursor: pointer; }
-  #mic:hover { border-color: #6cc6ff; }
-  #mic.on { background: #6cc6ff; color: #0d1116; border-color: #6cc6ff; animation: beat 1.2s ease-in-out infinite; }
+  :root {
+    --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --his: #5ea6ff; --odie: #f5b13d; --ink: #edf1f7; --ink-2: #9ba5b5; --ink-3: #636d7e;
+  }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
+  body { padding: 8px; box-sizing: border-box; }
+  /* Direction D — Antigravity Glow input box: pitch-dark obsidian, 20px corners, silky blue luminous rim */
+  .card {
+    position: relative; box-sizing: border-box; height: 100%; padding: 8px 15px 10px;
+    border-radius: 20px; display: flex; flex-direction: column;
+    background: linear-gradient(180deg, #11131a 0%, #0b0d12 100%); color: var(--ink);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--his) 58%, rgba(255,255,255,.22)),
+      inset 0 1px 0 rgba(255,255,255,.12),
+      0 0 0 1.5px rgba(0,0,0,.88),
+      0 0 18px -2px color-mix(in srgb, var(--his) 32%, transparent);
+  }
+  .bar { cursor: move; display: flex; align-items: center; justify-content: space-between; height: 24px; margin-bottom: 4px; flex: none; opacity: .88; }
+  .who { display: flex; align-items: center; gap: 7px; color: #9bc8ff; font: 600 12.5px/20px var(--font-ui); }
+  .who::before { content: ""; width: 20px; height: 20px; border-radius: 50%; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='9' r='4.2' fill='%2304121e'/%3E%3Cpath d='M4.5 21c.8-4.2 3.8-6.4 7.5-6.4s6.7 2.2 7.5 6.4z' fill='%2304121e'/%3E%3C/svg%3E") center/70% no-repeat, var(--his); }
+  .who .mean { font: 700 11px/18px var(--font-ui); font-style: normal; padding: 0 8px; border-radius: 999px; color: #070b10; }
+  .grip { color: var(--ink-3); font-size: 11.5px; letter-spacing: .04em; }
+  textarea { flex: 1; width: 100%; margin-bottom: 42px; background: transparent; border: 0; outline: 0; resize: none; color: var(--ink); font: 15px/1.5 var(--font-ui); padding: 2px 0 0; scrollbar-width: none; }
+  textarea::-webkit-scrollbar { display: none; }
+  textarea::placeholder { color: var(--ink-3); }
+  .tools { position: absolute; left: 12px; right: 12px; bottom: 9px; display: flex; align-items: center; gap: 6px; }
+  .tools .sp { flex: 1; }
+  #taste, #den {
+    height: 30px; padding: 0 11px; border-radius: 999px; border: 0;
+    background: rgba(255,255,255,.08); color: var(--ink); font: 600 12px/30px var(--font-ui); cursor: pointer;
+    transition: background .15s;
+  }
+  #taste:hover, #den:hover { background: rgba(255,255,255,.16); }
+  #state { font-size: 11.5px; color: var(--his); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+  #mic {
+    width: 32px; height: 32px; border-radius: 50%; border: 0;
+    background: rgba(255,255,255,.08); color: var(--ink); font: 15px/1 "Segoe UI Emoji", "Segoe UI Symbol";
+    cursor: pointer; display: grid; place-items: center; transition: background .15s;
+  }
+  #mic:hover { background: rgba(255,255,255,.16); }
+  #mic.on { background: var(--his); color: #04121c; animation: beat 1.2s ease-in-out infinite; }
   #mic.busy { opacity: .6; cursor: default; }
-  @keyframes beat { 50% { box-shadow: 0 0 0 6px rgba(108,198,255,.25); } }
-  #den { position: absolute; right: 48px; bottom: 8px; height: 34px; padding: 0 11px; border-radius: 17px; border: 1px solid #2a2e36; background: #1d2027; color: #eceae6;
-         font: 600 13px/32px "Segoe UI"; cursor: pointer; }
-  #den:hover { border-color: #f5a524; color: #f5a524; }
-  #taste { position: absolute; right: 124px; bottom: 8px; height: 34px; padding: 0 11px; border-radius: 17px; border: 1px solid #2a2e36; background: #1d2027; color: #eceae6; font: 600 13px "Segoe UI", system-ui, sans-serif; cursor: pointer; }
-  #taste:hover { border-color: #f5a524; color: #f5a524; }
-  #state { position: absolute; right: 130px; bottom: 15px; font-size: 12px; color: #6cc6ff; }
-  /* Lens (Nov 10, his catch: "the box when making steer is the old design"): his typing box is blue glass like his cards. */
-  .card { padding: 0 12px 10px; border-radius: 14px; border: 1px solid rgba(108,198,255,.55); background: linear-gradient(180deg, rgba(34,58,86,.97), rgba(19,33,52,.97)); }
-  .bar { height: 28px; }
-  .who { display: flex; align-items: center; gap: 6px; background: none !important; color: #a9dcff; font: 600 12px/18px "Segoe UI"; letter-spacing: 0; text-transform: none; padding: 0; }
-  .who::before { content: ""; width: 18px; height: 18px; border-radius: 50%; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='9' r='4.2' fill='%2304121e'/%3E%3Cpath d='M4.5 21c.8-4.2 3.8-6.4 7.5-6.4s6.7 2.2 7.5 6.4z' fill='%2304121e'/%3E%3C/svg%3E") center/70% no-repeat, #6cc6ff; }
-  .grip { color: rgba(169,220,255,.6); }
-  textarea { color: #fff; }
-  textarea::placeholder { color: rgba(200,225,245,.45); }
-  #mic, #den, #taste { border: 0; background: rgba(255,255,255,.12); color: #fff; }
-  #mic:hover, #den:hover, #taste:hover { background: rgba(255,255,255,.2); color: #fff; }
-  /* Balloons (Nov 12): his typing box is his balloon. Solid (his note under it used to show through), a thick blue rim,
-     his name; the color's meaning is a tag, and the rim stays his. */
-  .card { border: 3px solid #5cbcff !important; border-radius: 18px; background: #0f1620; box-shadow: 0 0 0 1px rgba(0,0,0,.75) !important; padding: 0 13px 10px; }
-  .bar { height: 32px; }
-  .who { color: #fff; font: 700 13px/22px "Segoe UI", system-ui, sans-serif; gap: 7px; }
-  .who::before { width: 22px; height: 22px; background: #2f86e6; color: #fff; font: 700 11px/22px "Segoe UI"; box-shadow: 0 0 0 2px #5cbcff; }
-  .who .mean { font: 700 11px/18px "Segoe UI", system-ui, sans-serif; font-style: normal; padding: 0 8px; border-radius: 9px; color: #0b0f14; }
-  .grip { color: rgba(160,205,240,.55); }
-  textarea { scrollbar-width: none; } textarea::-webkit-scrollbar { display: none; }
+  @keyframes beat { 50% { box-shadow: 0 0 0 5px rgba(94,166,255,.28); } }
+  #send {
+    width: 32px; height: 32px; border-radius: 50%; border: 0;
+    background: #4c8dff; color: #fff; font: 800 16px/32px var(--font-ui);
+    cursor: pointer; display: grid; place-items: center;
+    box-shadow: 0 0 14px rgba(76,141,255,.45); transition: filter .15s, transform .12s;
+  }
+  #send:hover { filter: brightness(1.12); transform: scale(1.04); }
 </style>
 </head>
 <body>
 <div class="card"><div class="bar"><span class="who">You</span><span class="grip">⠿ drag</span></div>
   <textarea id="t" placeholder="Write or talk to Odie… Enter to keep, Esc to drop"></textarea>
-  <button id="taste" title="Save what you marked to your taste folder, with your words as its line">♥ Taste</button>
-  <button id="den" title="Keep your words on the mark and send it to the Den">⤓ Den</button>
-  <button id="mic" title="Talk instead of typing (click again when you're done)">🎙</button><span id="state"></span></div>
+  <div class="tools">
+    <button id="taste" title="Save what you marked to your taste folder, with your words as its line">♥ Taste</button>
+    <button id="den" title="Keep your words on the mark and send it to the Den">⤓ Den</button>
+    <span class="sp"></span>
+    <span id="state"></span>
+    <button id="mic" title="Talk instead of typing (click again when you're done)">🎙</button>
+    <button id="send" title="Keep note (Enter)">→</button>
+  </div>
+</div>
 <script>
 const t = document.getElementById('t'), mic = document.getElementById('mic'), state = document.getElementById('state');
-// The note box wears his mark's color and says what that color means.
-{ const C = { blue: ['#6cc6ff', ''], red: ['#ff5a5a', 'wrong · cut'], green: ['#3fd37a', 'good · keep'], yellow: ['#ffd23f', 'look here'] };
+// The note box wears his mark's color meaning as a quiet tag while keeping the Antigravity obsidian glow.
+{ const C = { blue: ['#5ea6ff', ''], red: ['#ff5a5a', 'wrong · cut'], green: ['#4ade80', 'good · keep'], yellow: ['#ffd23f', 'look here'] };
   const [hex, means] = C[new URLSearchParams(location.search).get('color')] || C.blue, card = document.querySelector('.card'), who = document.querySelector('.who');
-  card.style.borderColor = hex; card.style.boxShadow = `inset 0 1px 0 rgba(160,215,255,.18), 0 0 0 1px rgba(0,0,0,.6), 0 18px 44px rgba(0,0,0,.62)`;
+  card.style.setProperty('--his', hex);
   if (who && means) { const i = document.createElement('i'); i.className = 'mean'; i.style.background = hex; i.textContent = means; who.appendChild(i); } }
 { const AI = new URLSearchParams(location.search).get('ai') || 'Claude'; const t0 = document.getElementById('t'); t0.placeholder = t0.placeholder.replace(/Odie/g, AI); }
 if (new URLSearchParams(location.search).get("tie") === "1") t.placeholder = "What is this about? Type, or talk with Win+H. Enter ties it, Esc skips";
@@ -68,14 +84,15 @@ document.getElementById('den').addEventListener('mousedown', e => e.preventDefau
 document.getElementById('den').addEventListener('click', () => { if (!busy) host.noteDen(t.value.trim()); });
 document.getElementById('taste').addEventListener('mousedown', e => e.preventDefault());
 document.getElementById('taste').addEventListener('click', () => { if (!busy) host.noteTaste(t.value.trim()); });
+document.getElementById('send').addEventListener('mousedown', e => e.preventDefault());
+document.getElementById('send').addEventListener('click', () => { if (!busy) host.noteDone(t.value.trim()); });
 // The box grows with what's in it, so a long voice note is readable before he keeps it.
 function fit() {
-  // Measure the words themselves, not the box (the box fills its space, so measuring it only ever grows).
   const keep = t.style.cssText; t.style.flex = 'none'; t.style.height = '0px'; const need = t.scrollHeight; t.style.cssText = keep;
-  const h = Math.min(320, Math.max(130, need + 36 + 38 + 26)); // bar 32 + balloon rim and edge (Nov 12: the top line scrolled out of view) if (Math.abs(h - innerHeight) > 4) host.noteSize(h);
+  const h = Math.min(340, Math.max(140, need + 34 + 44 + 28));
+  if (Math.abs(h - innerHeight) > 4) host.noteSize(h);
 }
 t.addEventListener('input', fit);
-// Grab the top bar and move the box anywhere; the line to his mark follows.
 const bar = document.querySelector('.bar');
 bar.addEventListener('pointerdown', e => { bar.setPointerCapture(e.pointerId); host.noteDrag('start', e.screenX, e.screenY); e.preventDefault(); });
 bar.addEventListener('pointermove', e => { if (bar.hasPointerCapture(e.pointerId)) host.noteDrag('move', e.screenX, e.screenY); });
@@ -84,7 +101,6 @@ t.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!busy) host.noteDone(t.value.trim()); }
   if (e.key === 'Escape') { e.preventDefault(); if (rec && rec.state === 'recording') { rec.onstop = null; rec.stop(); } host.noteDone(''); }
 });
-// Talking: click the mic, talk, click again. The Ear (his own model, on this PC) writes it into the box.
 mic.addEventListener('click', async () => {
   if (rec && rec.state === 'recording') { rec.stop(); return; }
   if (busy) return;
@@ -95,7 +111,7 @@ mic.addEventListener('click', async () => {
     rec.ondataavailable = e => chunks.push(e.data);
     rec.onstop = async () => {
       stream.getTracks().forEach(x => x.stop());
-      mic.classList.remove('on'); mic.classList.add('busy'); say('writing it down…');
+      mic.classList.remove('on'); mic.classList.add('busy'); say('writing…');
       const r = await host.noteAudio(await new Blob(chunks).arrayBuffer());
       busy = false; mic.classList.remove('busy'); say(r.error || '');
       if (r.text) t.value = (t.value.trim() ? t.value.trim() + ' ' : '') + r.text;
@@ -104,7 +120,6 @@ mic.addEventListener('click', async () => {
     rec.start(); busy = true; mic.classList.add('on'); say('listening…');
   } catch (e) { say('no mic: ' + (e.message || e)); }
 });
-// Clicking away keeps what's written, but never while it's still listening or writing.
 window.addEventListener('blur', () => { if (!busy) host.noteDone(t.value.trim()); });
 </script>
 </body>

@@ -154,6 +154,24 @@ body.done #face .badge{width:26px;height:26px;font-size:16px;line-height:26px}
 body.done #tools{border-top-color:#24402c}
 body.done.collapsed.tools #card{border-color:var(--green)}
 body.off #pill::before{background:#ff5a5a!important;box-shadow:none!important}
+
+/* Direction D — Antigravity Glow refresh (Nov 23) */
+:root{--ink:#edf1f7;--dim:#9ba5b5;--faint:#636d7e;--amber:#f5b13d;--green:#4ade80;--his:#5ea6ff;--c:var(--amber)}
+#card{border-radius:18px!important;background:linear-gradient(180deg,#11131a,#0b0d12)!important;border:0!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 48%,rgba(255,255,255,.16)),inset 0 1px 0 rgba(255,255,255,.10),0 0 0 1.5px rgba(0,0,0,.88),0 0 24px -2px color-mix(in srgb,var(--c) 30%,transparent),0 16px 36px -6px rgba(0,0,0,.82)!important}
+body.collapsed #card{background:none!important;box-shadow:none!important}
+body.collapsed.tools #card{background:linear-gradient(180deg,#11131a,#0b0d12)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 48%,rgba(255,255,255,.16)),0 0 0 1.5px rgba(0,0,0,.88),0 0 22px -2px color-mix(in srgb,var(--c) 28%,transparent)!important}
+body.done #card{background:linear-gradient(180deg,#0e1913,#0a120d)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--green) 58%,rgba(255,255,255,.14)),0 0 0 1.5px rgba(0,0,0,.88),0 0 28px -1px rgba(74,222,128,.36),0 16px 36px -6px rgba(0,0,0,.82)!important}
+#pill{border:0!important;background:color-mix(in srgb,var(--c) 12%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 38%,transparent)}
+#reply code{font:500 12.6px "Cascadia Code",Consolas,monospace;background:#1a1e29;color:#c7d7f4;box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);padding:2px 6px;border-radius:6px}
+#tools{border-top-color:rgba(255,255,255,.075)!important}
+#tools button{background:rgba(255,255,255,.07)!important;border:0!important;border-radius:9px!important;transition:background .15s}
+#tools button:hover{background:rgba(255,255,255,.15)!important}
+#tools button.on{background:color-mix(in srgb,var(--his) 18%,transparent)!important;box-shadow:inset 0 0 0 1.25px var(--his)!important;color:var(--his)!important}
+#tools #t-send{border-radius:999px!important;background:var(--amber)!important;color:#140e02!important;box-shadow:0 0 14px rgba(245,177,61,.42)!important}
+#you{border-top-color:rgba(255,255,255,.075)!important}
 </style>
 <div id="root"><div id="card">
   <div id="face" title="{{NAME}}"><div id="halo"></div><div id="ring"></div><img src="{{FACE}}" alt=""><div class="badge">✓</div></div>
