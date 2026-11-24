@@ -1,0 +1,50 @@
+{
+  "name": "the-glass",
+  "tokens": {
+    "BUBBLE": "${TOOLS}/bubble-hook.mjs",
+    "SHOTS": "${ROOT}/glass/data/shots"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "command": "\"${NODE}\" \"${GLASS}\" hello",
+        "timeout": 15
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "command": "\"${NODE}\" \"${BUBBLE}\" start",
+        "timeout": 5
+      }
+    ],
+    "PostToolUse": [
+      {
+        "command": "\"${NODE}\" \"${BUBBLE}\" tool",
+        "timeout": 5
+      }
+    ],
+    "Stop": [
+      {
+        "command": "\"${NODE}\" \"${BUBBLE}\" done",
+        "timeout": 5
+      }
+    ]
+  },
+  "hookMatches": [
+    "${GLASS}",
+    "${BUBBLE}"
+  ],
+  "allow": [
+    "Bash(\"${NODE}\" \"${GLASS}\":*)",
+    "Bash(\"${NODE}\" \"${GLASS}\" *)",
+    "Bash(node \"${GLASS}\":*)",
+    "Bash(\"${NODE}\" \"${MIRROR}\":*)",
+    "Bash(node \"${MIRROR}\":*)",
+    "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File \"${TOOLS}/show.ps1\":*)",
+    "Read(${SHOTS}/**)"
+  ],
+  "envKeys": [
+    "GLASS_PORT",
+    "GLASS_NAME"
+  ]
+}

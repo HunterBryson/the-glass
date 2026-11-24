@@ -12,6 +12,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { spawn, execFile } = require('child_process');
+// The Den and UI Taste addresses live in this glass's own config.json (tools/fit.mjs writes them), so they work under any AI app. A real environment setting still wins.
+try { const c = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config.json'), 'utf8')); if (c.denUrl && !process.env.GLASS_DEN_URL) process.env.GLASS_DEN_URL = c.denUrl; if (c.tasteUrl && !process.env.GLASS_TASTE_URL) process.env.GLASS_TASTE_URL = c.tasteUrl; } catch {}
 
 const PORT = Number(process.env.GLASS_PORT) || 7931;
 // Three parts are wired to our own setup and stay off unless you point them somewhere (see README, "Optional parts"):
