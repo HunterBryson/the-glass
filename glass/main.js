@@ -1254,22 +1254,24 @@ async function markToDen(paneIdx, id, note) {
   const p = panes[paneIdx]; if (!p) throw new Error('no such screen');
   const o = p.d.bounds, r = await run(p, { op: 'rect', id });
   if (!r) throw new Error(`no mark #${paneIdx * 1000 + id}`);
-  const first = (note || '').split(/[.!?\n]/)[0].trim(), title = first ? (first.length > 70 ? first.slice(0, 67) + '…' : first) : 'From the glass';
+  const color = r.color || null, kind = r.kind === 'circle' ? 'circle' : r.kind === 'underline' || r.kind === 'highlight' ? 'underline' : 'box';
   if (!r.mark) { // a loose note: just his words
-    const it = await denApi('/items', { kind: 'text', title, body: note || '', by: 'hunter' });
+    const it = await denApi('/cards', { kind: 'drop', title: '', note: note || '', by: 'hunter', from: { app: 'the glass', title: 'a note', screen: p.primary ? 'main' : 'second' } });
     log({ who: 'hunter', op: 'den', id: paneIdx * 1000 + id, item: it.id }); return it.id;
   }
+  // Screen pixels of the mark, and the window under it. A mark over the Den goes onto the card under it; anything else lands as a drop.
+  const sx1 = Math.round(o.x + r.x1), sy1 = Math.round(o.y + r.y1), sx2 = Math.round(o.x + r.x2), sy2 = Math.round(o.y + r.y2);
+  const [win] = await whereIs([[Math.round((sx1 + sx2) / 2), Math.round((sy1 + sy2) / 2)]]);
   const [s] = await shotNow(p.primary ? 'main' : 'second', '-clean');
   const pad = 8, img = nativeImage.createFromPath(s.file), size = img.getSize();
   const x = Math.max(0, Math.round(r.x1 - pad)), y = Math.max(0, Math.round(r.y1 - pad));
   const crop = img.crop({ x, y, width: Math.min(size.width - x, Math.round(r.x2 - r.x1 + pad * 2)), height: Math.min(size.height - y, Math.round(r.y2 - r.y1 + pad * 2)) });
   const file = s.file.replace('-clean.png', `-snip-${paneIdx * 1000 + id}.png`); fs.writeFileSync(file, crop.toPNG());
   const words = await ocrText(file);
-  const it = await denApi('/items', { kind: 'image', title, name: path.basename(file), mime: 'image/png', data: crop.toPNG().toString('base64'), by: 'hunter' });
-  const body = [note ? note : null, words ? '**The words in it:**\n\n' + words.split('\n').map(l => '> ' + l).join('\n') : null].filter(Boolean).join('\n\n');
-  if (body) await denApi('/items', { kind: 'text', title: 'With it', body, by: 'hunter', parent: it.id }).catch(e => trail('den text failed: ' + e));
-  log({ who: 'hunter', op: 'den', id: paneIdx * 1000 + id, item: it.id, snip: file });
-  return it.id;
+  const from = { app: win?.app || null, title: win?.title || null, screen: p.primary ? 'main' : 'second' };
+  const res = await denApi('/glass', { screenRect: { x1: sx1, y1: sy1, x2: sx2, y2: sy2 }, words, note: note || '', color, kind, snip: crop.toPNG().toString('base64'), from, waitMs: 3000 });
+  log({ who: 'hunter', op: 'den', id: paneIdx * 1000 + id, item: res.card, placed: !!res.placed, mark: res.n || null, snip: file });
+  return res.placed ? `${res.card} · mark ${res.n}` : res.card;
 }
 
 // A mark into his UI Taste folder: a clean picture of exactly what he boxed (the glass not in it), and his line.
@@ -1396,16 +1398,13 @@ async function checkWatch(w) {
 
 async function dropToDen(title, which) {
   const shots = await shot(which || 'primary');
-  const tool = path.join(__dirname, '..', 'tools', 'den.js');
   const results = [];
   for (const s of shots) {
-    const res = await new Promise(resolve => {
-      const p = spawn(process.env.NODE_EXE || 'node', [tool, 'put', 'image', title, s.file], { cwd: path.join(__dirname, '..'), windowsHide: true });
-      let o = ''; p.stdout.on('data', d => o += d); p.stderr.on('data', d => o += d);
-      p.on('close', code => resolve({ code, out: o.trim() }));
-      p.on('error', err => resolve({ code: -1, out: String(err) }));
-    });
-    results.push({ file: s.file, ...res });
+    const d = panes.find(p => (p.primary ? 'main' : 'second') === s.screen)?.d;
+    const [win] = d ? await whereIs([[Math.round(d.bounds.x + d.bounds.width / 2), Math.round(d.bounds.y + d.bounds.height / 2)]]) : [null];
+    const words = await ocrText(s.file);
+    const it = await denApi('/cards', { kind: 'drop', title: title && title !== 'From the glass' ? title : '', note: '', words, by: 'hunter', data: fs.readFileSync(s.file).toString('base64'), mime: 'image/png', name: path.basename(s.file), from: { app: win?.app || null, title: win?.title || null, screen: s.screen } });
+    results.push({ file: s.file, card: it.id });
   }
   return { title, results };
 }
