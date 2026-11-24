@@ -10,11 +10,11 @@ You box something on your screen, tie a few words to it, and press ➤. Your AI 
 
 ## Freedom from the chat: the card
 
-![Odie and I working in the Den: the card sits in the top corner, green and done, with my tools along its bottom](docs/card-in-the-den.png)
+![The Glass over The Den: glowing marks, markdown answers, Keep/Steer/Drop, quick note, and the corner card](docs/glass-glow-hero.png)
 
 This is how I work now. Odie and I are in the Den building something, and I don't keep going back to the chat to see if it's working or what's going on. The card up in the corner shows me exactly what my AI is doing. I can see when it's looking at my screen, and which step it's on, so I know how close it is to finishing. When it's done, it turns green and says so.
 
-![The card, done: green, a big check, and the start of the AI's reply](docs/card-done.png)
+![The Glass Card states (Working and Done) beside the Quick Note composer](docs/glass-glow-card.png)
 
 **It goes where you want it.** Lock it and it stays right there. Unlock it, and you can drag it to snap to any corner of any screen. Unlocked, it follows you: click over to your other screen (say your AI just pulled something up there) and the card moves right on top of it. Your AI's chat follows you everywhere you go. You're not pinned to the chat anymore, so you can use the glass all the time.
 
@@ -30,7 +30,7 @@ Red with "Not connected" means no chat is listening right now; anything you send
 
 **You point, and say what you mean.** A box, a circle, a highlight, numbered steps, an arrow, a note you typed or said out loud. Colors mean things: red is "wrong, cut this," green is "keep this," so your mark tells the AI what you think before your words do.
 
-![My marks and notes over a letter: a red circle, a highlight, numbered steps, an arrow, a hidden block, and a hand-drawn Hi](docs/2-your-marks.png)
+![Live Glass loop: mark, working card, done check, and Keep](docs/glass-glow-loop.gif)
 
 **Your AI answers right where you're looking,** beside each mark, in a speech balloon whose tail points at it. No more screenshots, no more "the third paragraph down, on the left." The mark says *where*, your words say *what*, and the AI gets both at once.
 
@@ -45,19 +45,11 @@ Red with "Not connected" means no chat is listening right now; anything you send
 
 **1. Ask, then steer.** I boxed a paragraph: "Can you help me not sound like an idiot here, Odie?" The AI answered beside my note and put its version beside my box. I liked it but wanted more zest, so I steered it. My steer waits on the card until I press ➤.
 
-![My box on a paragraph with my note, the AI's answer, its version with Keep, Steer and Drop, and my steer asking for more zest, all in speech balloons](docs/zest-steer.png)
-
 **2. Keep.** The zested version came back beside my box. I kept it, and the balloon turned green.
-
-![The zested version kept in a green balloon beside my box, with my steer and the AI's reply](docs/zest-kept.png)
 
 **Getting sources without lifting a finger.** I was being silly and asked Odie to find me some sources on how to plug in a microwave. It took care of the rest: found GE's own support page, opened it on my screen, boxed the paragraph that matters, and marked the fine print, each with a note. I didn't lift a finger.
 
-![GE's support page on microwaves and extension cords, the key paragraph boxed in amber with Odie's note ("So no, not the orange one from the garage"), the fine print underlined, and the card in the corner saying Done](docs/source-microwave.png)
-
 **Asking dumb questions.** I pulled up a stock screener I didn't understand, boxed three things and asked three dumb questions. The answers taught me what tickers and P/E are, and why that page pushes stock picking so hard.
-
-![A stock screener with my three questions in blue balloons and the AI's answers in amber balloons, each tail pointing at what it's about](docs/v3.png)
 
 **Getting walked through something.** When I don't know where a setting lives, the AI rings the real button on my screen and waits for my click, one step at a time.
 
@@ -124,8 +116,6 @@ When you finish a mark, a note box opens beside it. Type what you mean (or dicta
 
 ### Your keys: one hand, thumb on Alt
 
-![The card in the bottom corner with the key list popped out beside it: hold Alt, then A text box, R pen, S box, D circle, F highlighter, V arrow, X tool off, C color, W undo, Q send (nothing marked = look with me), E clear glass, K keep this list up. The tool that is on is lit.](docs/card-keys.png)
-
 Every tool is also a key, all under your left hand: hold **Alt** with your thumb and tap the letter. They work from any app, and the glass never takes your keyboard to do it. Tap a tool's key again to put it down.
 
 **This is what you see when you press ⌨ on the card** (or Alt+K): the key list pops out right beside it, lights whichever tool is on, and shows your pen's color. Keep it up while you're learning, and put it away when you're not.
@@ -188,13 +178,9 @@ Two optional parts were wired to our own setup and stay off unless configured:
 
 The glass has changed a lot in its first week. Here's a picture for every big look upgrade.
 
-**v1** (November 7): the first time we did this, on our letter.
+**v1** (November 7): the first time we did this, on our letter—amber answer cards beside each note.
 
-![v1: the AI's amber answer cards beside each of my notes](docs/3-odie-answers.png)
-
-**v2** (November 10): the same marks, the same jokes, in the new cards. Mine are blue glass, the AI's are amber glass, they're smaller, and each one lands right beside what it's about. We'll add a picture like this for every big look upgrade.
-
-![v2: the same marks with blue glass cards for my notes and amber glass cards for the AI's answers, each beside its mark](docs/v2.png)
+**v2** (November 10): the same marks, the same jokes, in smaller glass cards—blue glass for my notes and amber glass for the AI's answers, each landing right beside what it's about.
 
 **v3** (November 12): speech balloons. Odie pictured eight ways for these cards, and I kept this one from my phone while I was out. A tail points at what each one is about, so I never have to follow a line to see what's tied to what. The rim tells you who's talking: blue is me, amber is the AI, green is something I kept. The stock screener up in "Things I use it for" is v3.
 
