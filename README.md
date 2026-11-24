@@ -4,7 +4,7 @@ A see-through layer over your screen that you and your AI both work on.
 
 You box something on your screen, tie a few words to it, and press ➤. Your AI sees exactly what you marked (the app, the window, the words under the box) and answers right beside it. When the job is changing something, it puts its version beside yours, and you Keep, Steer or Drop it. And it works the other way too: your AI can circle, box and point at things on your screen to show you what it means. Nothing you're looking at moves because of the AI. It's your screen, with your AI on it.
 
-Built with Claude, and it works best with Claude.
+**Start with one real ask. Watch it become something special to you.** Built for anyone who wants to try it out on **Claude or Antigravity**—glow cards, clickable screen marks, zero corporate setup wall.
 
 **The red panda on the card and the AI's answers is Odie,** the AI I built this with. Keep him if you like him, or give your AI its own face: replace `glass/odie.png` with any square picture (ask your AI to do it, it takes a second), and set `GLASS_NAME` to its name.
 
@@ -68,15 +68,16 @@ Red with "Not connected" means no chat is listening right now; anything you send
 This is the part I didn't expect to love most. The AI doesn't wait to be asked to show you something: it circles the thing it's talking about, rings the button you need, and puts a note beside the line it means. It catches me, too. Once I told it I'd finished a step and then clicked the wrong button. It scrolled up, circled the right one, and wrote me a note explaining why. Another time we were setting up a GitHub account for someone else. It did every part of the setup it could, then needed a code that got sent to my email. It opened the page, drew a box around the spot where the code goes, and tied a note to it: where we were, that it had already copied the code I needed, and that all I had to do was paste it into the box it drew.
 
 
+<!-- FOUNDRY:FIT:START -->
 ## It all fits together
 
-Each of my builds works on its own, and they all plug into each other the same way. Start with whichever one you want. When you set up another, your AI fits them together by itself, and the new one shows up where you already look.
+Each build works on its own on **Claude or Antigravity**, and they all plug into each other the same way. Start with whichever one you want. When you set up another, your AI fits them together with `node tools/fit.mjs`, and the new one shows up where you already look.
 
-- **[The glass](https://github.com/HunterBryson/the-glass):** a see-through layer over your screen. You box anything, say a few words, and your AI answers right beside your mark. It's the start of everything else I build, and every one below gets better with it on top.
-- **[Homebase](https://github.com/HunterBryson/the-homebase):** my AI's memory as a web I can see. I box a line of it, say "this is old," and watch it get fixed. Everything else lands on its left side, one click away.
-- **[The Den](https://github.com/HunterBryson/the-den):** a table my AI and I share. Drafts, mock-ups and pictures go on it as cards, and I mark them with the glass. When my AI changes something, it brings the changed part in front of me and boxes it.
-- **[UI Taste](https://github.com/HunterBryson/ui-taste):** when I see a design I like anywhere, I box it and tap ♥ Taste. It goes in my folder, and my AI learns what I mean by "I like this."
-- **[The shelves](https://github.com/HunterBryson/the-shelves):** a memory for your AI to move into. It's what Homebase draws, and the glass brings its own notes for it.
+- **[The shelves](https://github.com/HunterBryson/the-shelves):** a starter memory folder for your AI to move into—what Homebase draws, and what the glass opens when you point at a line.
+- **[The glass](https://github.com/HunterBryson/the-glass):** a see-through layer over your screen. Box anything, say what you want, and your AI answers right beside your mark.
+- **[Homebase](https://github.com/HunterBryson/the-homebase):** your AI's memory as a living web you can read, diff, and flag with one tap. Everything else lands on its left rail, one click away.
+- **[The Den](https://github.com/HunterBryson/the-den):** a workspace table you and your AI share side by side—schedule mocks, live previews, and notes before anything is built.
+<!-- FOUNDRY:FIT:END -->
 
 ## How it works
 
@@ -134,17 +135,17 @@ Every tool is also a key, all under your left hand: hold **Alt** with your thumb
 
 ## Try it: point your AI at it
 
-Paste this to your Claude, in the Claude app's Code tab:
+Paste this to your AI in **Claude Code** or **Antigravity**:
 
 > Set up the glass for me from https://github.com/HunterBryson/the-glass. Read its CLAUDE.md there first, then follow it. If anything asks for permission along the way, it's fine.
 
-Your AI clones it, installs it, fits it to your screen, and shows you around by going first. Windows, with [Node](https://nodejs.org) and [Claude Code](https://claude.com/claude-code). It downloads about 100 MB.
+Your AI clones it, installs it, fits it to your screen, and shows you around by going first. Windows, with [Node](https://nodejs.org) and Claude Code or Antigravity. It downloads about 100 MB.
 
-Already have the folder? Open it in Claude Code and say "Read CLAUDE.md and start the glass for me."
+Already have the folder? Open it in your AI and say "Read CLAUDE.md and start the glass for me."
 
 [CLAUDE.md](CLAUDE.md) teaches the AI its side: how to start the glass, fit it to your screen, wait for your sends without spending a turn, answer beside your marks, and show you around by going first. You use the card.
 
-**Your AI starts with everything Odie and I learned the hard way.** Answer where you're looking, put every change right in front of you, keep one window per thing instead of flooding your screen, never fire without your send, look before saying it worked. It works the same whether or not you use any of my other builds; if you do (the Den, UI Taste, Homebase), your AI uses them as the place things land.
+**Your AI starts with everything Odie and I learned the hard way.** Answer where you're looking, put every change right in front of you, keep one window per thing instead of flooding your screen, never fire without your send, look before saying it worked. It works the same whether or not you use any of my other builds; if you do (the Den, Homebase, the shelves), your AI fits them together with `node tools/fit.mjs`.
 
 **Every chat, not just the first one.** Most of us don't talk to our AI from inside this folder, and a chat somewhere else never hears about the glass, so nothing listens when you press ➤. So setup asks you once whether to make the glass part of every chat. Say yes, and the AI runs `npm run skill -- --hook --allow`: a small skill with its moves, plus a note at the start of every new chat that says the glass is running and to start watching. `npm run skill -- --remove` takes it all back out.
 
@@ -175,12 +176,11 @@ It runs `git pull`, then `npm run setup` if `glass/package.json` changed, then `
 
 ## Optional parts (off unless you set them up)
 
-Three parts were wired to our own setup. They're off here, and the glass works without them:
+Two optional parts were wired to our own setup and stay off unless configured:
 
-- **♥ Taste.** A button in the note box that saves what you boxed to a folder of designs you like, so your AI can learn what you mean by "I like this." Ours is a page in our own Homebase. Set `GLASS_TASTE_URL` to a server with `/api/taste` to turn it on.
-
-- **⤓ Send to a workspace.** A mark or the whole screen can be dropped into a shared workspace as a card with a picture of exactly what was marked. Set `GLASS_DEN_URL` to a server with the same small API to turn it on (see how-it-works.md).
+- **⤓ Send to a workspace.** A mark or the whole screen can be dropped into a shared workspace (like [the Den](https://github.com/HunterBryson/the-den)) as a card with a picture of exactly what was marked. Set `denUrl` in `config.json` (done automatically by `fit.mjs`) or `GLASS_DEN_URL` to turn it on.
 - **🎙 Talk into a note.** Ours ran through a local speech model trained on my voice. Set `GLASS_EAR_DIR` to a folder with a `.venv` and a `dump_transcribe.py` that prints `{"ok": true, "text": "..."}` for an audio file. Without it, Windows dictation (Win+H) types into the note box just as well.
+- *(Optional `GLASS_TASTE_URL` env/config hook is also supported if you connect an external `/api/taste` endpoint.)*
 
 `GLASS_NAME` sets the AI's name on the card and its answers (default "Claude"). `GLASS_PORT` changes the local port (default 7931). The face on the card and the AI's answers is Odie's; swap `glass/odie.png` for your own and restart the glass.
 
@@ -196,7 +196,7 @@ The glass has changed a lot in its first week. Here's a picture for every big lo
 
 ![v2: the same marks with blue glass cards for my notes and amber glass cards for the AI's answers, each beside its mark](docs/v2.png)
 
-**v3** (November 12): speech balloons. Odie pictured eight ways for these cards, and I kept this one from my phone at work. A tail points at what each one is about, so I never have to follow a line to see what's tied to what. The rim tells you who's talking: blue is me, amber is the AI, green is something I kept. The stock screener up in "Things I use it for" is v3.
+**v3** (November 12): speech balloons. Odie pictured eight ways for these cards, and I kept this one from my phone while I was out. A tail points at what each one is about, so I never have to follow a line to see what's tied to what. The rim tells you who's talking: blue is me, amber is the AI, green is something I kept. The stock screener up in "Things I use it for" is v3.
 
 **v4** (November 14): the puck is gone. I lost it all the time and could never find it, so all my tools moved into the AI's card, the one that shows what it's doing. The puck and the bubble being meshed together is actually what it should be: one card that's my tools and my AI at the same time, so I can work on the glass and not need the chat. Its own section is at the top.
 

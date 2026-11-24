@@ -49,25 +49,26 @@ The glass was built on two 1080p screens at 100%. Theirs may be one laptop scree
 
 Small text reads worse on a scaled laptop, because pictures are taken at the glass's units. If `read` misses words they marked, the send's sharper second look (`ocr.ps1 -crop`) usually catches them. On a small screen your answer cards can land over their page; keep answers short, and `clear <#>` one that's in the way.
 
+<!-- FOUNDRY:FIT:START -->
 ## Plug into the rest
 
-This is one of four builds Hunter and I made that fit together the same way: **Homebase** (your memory as a web they can see), **the glass** (marks on their screen), **the Den** (a table you share) and **UI Taste** (what they like the look of). Each works on its own. This section is the same, word for word, in all four, so whichever one you set up, the step is this:
+These builds work on both **Claude and Antigravity**, and each works on its own. Whenever your person adds another one (**Homebase**, **the glass**, **the Den**, or **the shelves**), this step connects them automatically:
 
-1. **Run `node tools/fit.mjs`.** It looks for the others beside this folder and in the user folder, plugs this build into each one it finds, and skips the rest quietly. Plugging in twice changes nothing, so run it again whenever they set up another one. Somewhere else? `--also "<folder>"`. To look without changing anything: `--check`.
-2. **If it says the glass needs its buttons, run it again with `--settings`.** Those two live in their Claude settings (`~/.claude/settings.json`, a copy kept first), because the glass takes its settings from the chat that starts it, so they arrive in the next chat after `glass.js restart`. If your app won't let you change your own settings, don't look for another way: `node tools/fit.mjs --line` prints one line for your person to paste into a Terminal. Hand it over before you'd get refused, with a sentence on what it does.
-3. **Show them what's new, don't describe it.** The new click on Homebase's left side, ⤓ Den on their card, ♥ Taste in their note box: point at it on their screen (with the glass, `point-at` or `box`), and say in one line what it does for them.
+1. **Run `node tools/fit.mjs`.** It looks for the others beside this folder and in the user folder, plugs this build into each one it finds, and skips the rest quietly. Plugging in twice changes nothing, so run it again whenever they set up another build. Somewhere else? `--also "<folder>"`. To check without changing anything: `--check`.
+2. **If you have the glass and `fit.mjs` just wired `denUrl` into the glass's `config.json`, restart the glass** (`node tools/glass.js restart`) so the ⤓ Den button lights up on the card. (No settings-file edits needed—both Claude and Antigravity read `config.json` directly.) If the terminal blocks a path outside this folder, `node tools/fit.mjs --line` prints one command for your person to run.
+3. **Show them what's new, don't describe it.** The new click on Homebase's left rail or ⤓ Den on the glass card: circle or point at it on their screen (`point-at` or `box`) and say in one line what it does.
 
 What fitting does, pair by pair:
 
 | These two | What they get |
 |---|---|
-| Homebase + the Den | the Den one click away on Homebase's left side, and a way back to Homebase in the Den |
-| Homebase + UI Taste | UI Taste one click away on Homebase's left side |
+| Homebase + the Den | The Den one click away on Homebase's left rail, and a way back to Homebase in the Den |
 | The glass + the Den | ⤓ Den on their card: what they mark goes onto the table as a card, and `den.js point` circles a card on their real screen |
-| The glass + UI Taste | ♥ Taste in their note box: a design they box anywhere goes straight into UI Taste |
-| The glass + Homebase | nothing to set: they box a line of your memory on Homebase, and you fix it |
+| The glass + Homebase | Nothing extra to wire: they box any line of your memory on Homebase, and you fix it in place |
+| The shelves + Homebase | Homebase draws the shelves folder as a live web with word-by-word diffs and one-tap flags |
 
-If a pair doesn't work after this, `node tools/fit.mjs --check` says what's missing, and each build's own doctor says why.
+If a pair doesn't work after this, `node tools/fit.mjs --check` says what's missing, and each build's own `doctor` says why.
+<!-- FOUNDRY:FIT:END -->
 
 ## What a send looks like
 
