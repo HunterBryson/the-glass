@@ -149,4 +149,4 @@ I use this every single day, and it keeps getting better. Here's what's still ro
 
 Open an issue and pick a form—your AI can even fill it in for you. Rather email? Write to hello@workbenchagents.com. Every issue and email reaches me, and I answer it myself, usually within a few days. Security problems go privately: see [SECURITY.md](https://github.com/HunterBryson/.github/blob/main/SECURITY.md).
 
-Built by me, Hunter Bryson, with Odie, for **Claude and Antigravity**.
+Works with **Claude and Antigravity**. MIT license.
