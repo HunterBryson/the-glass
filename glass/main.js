@@ -969,13 +969,19 @@ async function trackLoop() {
 const ANCHOR = process.env.GLASS_ANCHOR !== '0';
 const anchors = new Map(); // `${pane}:${id}` -> { pane, id, pt (screen), hwnd, r0 (window x1,y1 when anchored), dx, dy, shown }
 let winList = [], winFg = 0, winProc = null;
+const winToDip = w => {
+  if (!Array.isArray(w) || w.length < 5) return w;
+  const [x1, y1] = toDip([w[1], w[2]]), [x2, y2] = toDip([w[3], w[4]]);
+  return [w[0], x1, y1, x2, y2, ...w.slice(5)];
+};
+const scaleOf = paneIdx => panes[paneIdx]?.d?.scaleFactor || 1;
 const winAt = (x, y, list = winList) => list.find(w => x >= w[1] && x < w[3] && y >= w[2] && y < w[4]) || null;
 function startWins() {
   if (winProc || !ANCHOR) return;
   winProc = spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, '..', 'tools', 'windows.ps1'), '-skipPid', String(process.pid)], { windowsHide: true });
   let buf = '';
   winProc.stdout.on('data', d => { buf += d; const lines = buf.split(/\r?\n/); buf = lines.pop(); const l = lines.filter(Boolean).pop(); if (!l) return;
-    try { const j = JSON.parse(l); winList = j.w; winFg = j.fg; reanchor(); } catch {} });
+    try { const j = JSON.parse(l); winList = (j.w || []).map(winToDip); winFg = j.fg; reanchor(); } catch {} });
   const me = winProc; me.on('exit', () => { if (winProc === me) winProc = null; if (anchors.size) setTimeout(startWins, 2000); });
 }
 function stopWinsIfIdle() { if (!anchors.size && winProc) { const p = winProc; winProc = null; winList = []; try { p.kill(); } catch {} } }
@@ -987,7 +993,7 @@ function windowsOnce() {
     const ps = spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, '..', 'tools', 'windows.ps1'), '-skipPid', String(process.pid), '-once'], { windowsHide: true });
     let o = ''; ps.stdout.on('data', d => o += d);
     const t = setTimeout(() => { ps.kill(); resolve({ fg: 0, w: [] }); }, 5000);
-    ps.on('close', () => { clearTimeout(t); try { resolve(JSON.parse(o.trim().split(/\r?\n/).pop())); } catch { resolve({ fg: 0, w: [] }); } });
+    ps.on('close', () => { clearTimeout(t); try { const j = JSON.parse(o.trim().split(/\r?\n/).pop()); resolve({ ...j, w: (j.w || []).map(winToDip) }); } catch { resolve({ fg: 0, w: [] }); } });
   });
 }
 function anchor(pane, id, r, keep) {
@@ -1074,8 +1080,9 @@ function scrollWatch() {
   const by = new Map(); // hwnd -> ["key:x1,x2,y1,y2"] relative to the window's visible top-left, where the mark is now
   for (const [key, a] of anchors) {
     if (a.den || !a.hwnd || !a.r0 || !a.bx || !a.by) continue; const w = winList.find(u => u[0] === a.hwnd); if (!w) continue;
-    let x1 = Math.round(a.bx[0] + a.dx - w[1]), x2 = Math.round(a.bx[1] + a.dx - w[1]); if (x2 - x1 < 40) { x1 -= 30; x2 += 30; }
-    const y1 = Math.round(a.by[0] + a.dy - w[2]), y2 = Math.round(a.by[1] + a.dy - w[2]);
+    const sc = scaleOf(a.pane);
+    let x1 = Math.round((a.bx[0] + a.dx - w[1]) * sc), x2 = Math.round((a.bx[1] + a.dx - w[1]) * sc); if (x2 - x1 < Math.round(40 * sc)) { x1 -= Math.round(30 * sc); x2 += Math.round(30 * sc); }
+    const y1 = Math.round((a.by[0] + a.dy - w[2]) * sc), y2 = Math.round((a.by[1] + a.dy - w[2]) * sc);
     if (!by.has(a.hwnd)) by.set(a.hwnd, []); by.get(a.hwnd).push(`${key.replace(':', '_')}:${x1},${x2},${y1},${y2}`);
   }
   if (!by.size) { if (scrollProc) { try { scrollProc.kill(); } catch {} scrollProc = null; scrollSent = ''; } return; }
@@ -1099,7 +1106,8 @@ function scrollWatch() {
 function onScroll(m) {
   const a = anchors.get(String(m.k).replace('_', ':')); if (!a || a.hwnd !== m.h) return;
   if (m.lost) { if (!a.lost) { a.lost = true; a.forceShift = true; reanchor(); } return; }
-  a.sy = (a.sy || 0) + (m.dy || 0); if (a.lost) { a.lost = false; a.forceShift = true; } reanchor();
+  const sc = scaleOf(a.pane);
+  a.sy = (a.sy || 0) + Math.round((m.dy || 0) / sc); if (a.lost) { a.lost = false; a.forceShift = true; } reanchor();
 }
 setInterval(scrollWatch, 700);
 app.on('before-quit', () => { try { scrollProc && scrollProc.kill(); } catch {} });

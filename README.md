@@ -2,7 +2,7 @@
 
 **Stop taking screenshots and explaining your screen. Just point.**
 
-A see-through layer over your Windows screen for **Claude or Antigravity**. Draw a box around anything in any app, ask a question, and your AI answers right beside it—or lets your AI ring the exact button you need without ever touching your mouse.
+A see-through layer over your Windows screen for **Claude**. Draw a box around anything in any app, ask a question, and your AI answers right beside it—or lets your AI ring the exact button you need without ever touching your mouse. *(Antigravity support is being tested next.)*
 
 ![The Glass floating over a real browser and email](docs/glass-hero.png)
 
@@ -11,16 +11,16 @@ With **The shelves**, your AI knows your life. With **The glass**, it sees what 
 
 ---
 
-## Start in two minutes — your AI handles everything
+## Setting it up — your AI handles everything
 
 You don't download installers, wire up ports, or touch a line of code.
 
 - **Already using [The shelves](https://github.com/HunterBryson/the-shelves)?** Just tell your AI: **"Put The Glass on my screen."**
-- **Starting standalone in Claude (Code tab) or Antigravity?** Paste this one sentence and press Enter:
+- **Starting standalone in Claude (Code tab)?** Paste this one sentence and press Enter:
 
 > Set up the glass for me from https://github.com/HunterBryson/the-glass. Read its CLAUDE.md there first, then follow it. If anything asks for permission along the way, it's fine.
 
-**That's it.** Your AI clones it, installs what it needs (~100 MB), fits it to your screen(s), connects it to your other builds, and walks you through your first mark live on your desktop. *(Windows 10 or 11, Claude Code or Antigravity.)*
+**That's it.** Your AI clones it, installs what it needs (~100 MB), fits it to your screen(s), connects it to your other builds, and walks you through your first mark live on your desktop. *(Windows 10 or 11, Claude Code.)*
 
 ---
 
@@ -65,7 +65,7 @@ This is the part people don't expect to love most. Your AI doesn't wait silently
 <!-- FOUNDRY:FIT:START -->
 ## It all fits together
 
-Each build works on its own on **Claude or Antigravity**, and they all plug into each other the same way. Start with whichever one you want. When you set up another, your AI fits them together with `node tools/fit.mjs`, and the new one shows up where you already look.
+Each build works on its own with **Claude**, and they all plug into each other the same way. Start with whichever one you want. When you set up another, your AI fits them together with `node tools/fit.mjs`, and the new one shows up where you already look.
 
 - **[The shelves](https://github.com/HunterBryson/the-shelves):** a starter memory folder for your AI to move into—what Homebase draws, and what the glass opens when you point at a line.
 - **[The glass](https://github.com/HunterBryson/the-glass):** a see-through layer over your screen. Box anything, say what you want, and your AI answers right beside your mark.
@@ -138,10 +138,11 @@ Tell your AI: *"Update the glass from GitHub and restart it."* Your open marks c
 
 I use this every single day, and it keeps getting better. Here's what's still rough:
 
+- **Claude first right now:** Built and lived on in Claude Code (where live card hooks and background watching run automatically). Antigravity support is being tested next.
 - **Windows only for now.** The AI's eyes use Windows' built-in text recognition and accessibility via PowerShell. On Mac or Linux, the concepts carry over and [docs/how-it-works.md](docs/how-it-works.md) is written so an AI can rebuild those parts.
-- **Display scaling (125% / 150%):** Built and proven on 100% 1080p screens; it converts for scaled displays automatically, though scaled screens haven't been lived on as heavily yet.
+- **Global `Alt+` shortcuts & game focus:** Shortcuts (`Alt+Q/W/E/R/A/S/D/F/V/C/K`) listen system-wide so they work from any app—they can overlap browser (`Alt+D`) or game/overlay binds until you tell your AI to remap `KEYS` in `glass/main.js`. In borderless games, tapping `Alt+Q` with nothing marked leaves focus alone, while opening a note box (`Alt+A`) takes window focus.
+- **Display scaling (125% / 150%):** Built and proven on 100% 1080p screens; window bounds and scroll offsets convert for scaled displays automatically, though scaled laptops haven't been lived on as heavily yet.
 - **After a restart:** A mark on a scrolled page can occasionally land slightly off its words, and freehand pen strokes return as a box around where they were. Still tightening both.
-- **Custom keys:** Shortcuts live in `KEYS` inside `glass/main.js`—just tell your AI to remap any key that clashes with your apps.
 
 ---
 
@@ -149,4 +150,4 @@ I use this every single day, and it keeps getting better. Here's what's still ro
 
 Open an issue and pick a form—your AI can even fill it in for you. Rather email? Write to hello@workbenchagents.com. Every issue and email reaches me, and I answer it myself, usually within a few days. Security problems go privately: see [SECURITY.md](https://github.com/HunterBryson/.github/blob/main/SECURITY.md).
 
-Works with **Claude and Antigravity**. MIT license.
+Works with **Claude** on Windows (Antigravity support in testing). MIT license.
